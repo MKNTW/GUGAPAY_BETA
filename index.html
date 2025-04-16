@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GugaPay</title>
+  <link rel="icon" href="photo/15.png" type="image/jpeg">
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1"></script>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+  <div id="balanceDisplay" style="display:none;">
+    <div id="balanceValue">0.00000 ₲</div>
+    <div id="userIdDisplay"></div> <!-- ID появится здесь -->
+</div>
+  <div id="mineContainer" class="hidden">
+    <img id="mineBtn" src="photo/15.png" alt="Майнить">
+  </div>
+  <div id="loadingIndicator" class="loading-indicator hidden">
+  <img src="photo/25.gif" alt="Загрузка..." />
+ </div>
+  <script src="script.js"></script>
+</body>
+</html>
