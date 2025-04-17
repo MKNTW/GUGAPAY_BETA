@@ -1,6 +1,6 @@
 // CSRF token handling
 let csrfToken = "";
-const API_URL = "https://api.mkntw.ru";
+const API_URL = "https://api.bayville.ru";
 
 /**
  * Fetches a new CSRF token from the server and stores it in csrfToken.
