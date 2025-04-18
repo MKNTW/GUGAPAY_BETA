@@ -71,7 +71,7 @@ const port = process.env.PORT || 10000;
 
 // Настройка CORS (разрешен только домен mkntw.ru)
 const corsOptions = {
-  origin: 'https://bayville.ru',
+  origin: 'https://test.gugapay.ru',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-CSRF-Token']
