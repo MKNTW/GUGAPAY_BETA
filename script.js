@@ -1,6 +1,6 @@
 // CSRF token handling
 let csrfToken = "";
-const API_URL = "https://api.gugapay.ru";
+const API_URL = "https://apiforbeta.gugapay.ru";
 
 /**
  * Fetches a new CSRF token from the server and stores it in csrfToken.
