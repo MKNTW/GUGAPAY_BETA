@@ -1215,98 +1215,76 @@ app.post('/auth/telegram', async (req, res) => {
 
 
 
-/* ========================
-   Telegram WebApp Auth
-======================== */
-const { verifyTelegramWebApp } = require('telegram-webapp-auth');
+// Проверка подписи Telegram Login Widget (вручную, безопасно)
+function isTelegramAuthValid(query, botToken) {
+  const crypto = require('crypto');
+  const secret = crypto.createHash('sha256')
+    .update(botToken)
+    .digest();
 
-app.post('/auth/telegram-webapp', express.json(), async (req, res) => {
-  const { initData } = req.body;
-  try {
-    const user = verifyTelegramWebApp(initData, TELEGRAM_BOT_TOKEN);
-    const tgId = user.id.toString();
+  const dataCheckArr = Object.keys(query)
+    .filter(key => key !== 'hash')
+    .sort()
+    .map(key => `${key}=${query[key]}`);
 
-    const { data: existingUser, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('telegram_id', tgId)
-      .single();
+  const dataCheckString = dataCheckArr.join('\n');
 
-    let userData = existingUser;
-    if (!existingUser) {
-      const { data: newUser } = await supabase
-        .from('users')
-        .insert({
-          telegram_id: tgId,
-          name: user.first_name,
-          username: user.username,
-          avatar: user.photo_url,
-          recovery_code: crypto.randomBytes(6).toString('hex').toUpperCase()
-        })
-        .select()
-        .single();
-      userData = newUser;
-    }
+  const hmac = crypto.createHmac('sha256', secret)
+    .update(dataCheckString)
+    .digest('hex');
 
-    const token = jwt.sign({ id: userData.id, tgId }, JWT_SECRET, { expiresIn: '30d' });
-    res.json({ token, recoveryCode: userData.recovery_code });
-  } catch (err) {
-    console.error('WebApp Auth Error:', err);
-    res.status(400).json({ error: 'Invalid WebApp auth' });
-  }
-});
+  return hmac === query.hash;
+}
 
-/* ========================
-   Telegram Widget Auth
-======================== */
-const { checkTelegramAuthorization } = require('telegram-login-auth');
 
+
+// === Telegram Login Widget (браузер) ===
 app.get('/auth/telegram-widget', async (req, res) => {
   const authData = req.query;
-  if (!checkTelegramAuthorization(TELEGRAM_BOT_TOKEN, authData)) {
+
+  if (!isTelegramAuthValid(authData, TELEGRAM_BOT_TOKEN)) {
     return res.status(403).json({ error: 'Invalid Telegram login' });
   }
 
   const tgId = authData.id.toString();
-  const { data: existingUser, error } = await supabase
+
+  const { data: existingUser } = await supabase
     .from('users')
     .select('*')
     .eq('telegram_id', tgId)
-    .single();
+    .maybeSingle();
 
   let userData = existingUser;
+
   if (!existingUser) {
+    const userId = await generateSixDigitId();
     const { data: newUser } = await supabase
       .from('users')
-      .insert({
+      .insert([{
+        user_id: userId,
         telegram_id: tgId,
-        name: authData.first_name,
-        username: authData.username,
-        avatar: authData.photo_url,
-        recovery_code: crypto.randomBytes(6).toString('hex').toUpperCase()
-      })
+        username: authData.username || '',
+        first_name: authData.first_name || '',
+        photo_url: authData.photo_url || '',
+        balance: 0,
+        rub_balance: 0,
+        blocked: false,
+        password: null
+      }])
       .select()
       .single();
+
     userData = newUser;
   }
 
-  const token = jwt.sign({ id: userData.id, tgId }, JWT_SECRET, { expiresIn: '30d' });
-  res.redirect(`https://gugapay.ru?token=${token}`); // Подставь нужный редирект
-});
+  const token = jwt.sign({ userId: userData.user_id, role: 'user' }, JWT_SECRET, { expiresIn: '1d' });
 
-/* ========================
-   Восстановление по коду
-======================== */
-app.post('/auth/recover', express.json(), async (req, res) => {
-  const { code } = req.body;
-  const { data: user, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('recovery_code', code.toUpperCase())
-    .single();
+  res.cookie('token', token, {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: 'None',
+    maxAge: 86400000
+  });
 
-  if (!user) return res.status(404).json({ error: 'Invalid recovery code' });
-
-  const token = jwt.sign({ id: user.id, tgId: user.telegram_id }, JWT_SECRET, { expiresIn: '30d' });
-  res.json({ token });
+  res.redirect('https://beta.gugapay.ru');
 });
