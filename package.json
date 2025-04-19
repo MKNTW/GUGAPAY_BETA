@@ -18,8 +18,8 @@
     "joi": "^17.10.2",
     "jsonwebtoken": "^9.0.2",
     "node-telegram-bot-api": "^0.61.0",
-    "telegram-login-auth": "^1.0.4",
     "telegram-webapp-auth": "^1.0.0",
+    "telegram-login-auth": "^1.0.4",
     "redis": "^4.6.7",
     "uuid": "^9.0.1"
   }
