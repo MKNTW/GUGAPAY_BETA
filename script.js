@@ -3359,170 +3359,143 @@ async function showTransactionDetails(hash) {
     const res = await fetch(`${API_URL}/transaction/${hash}`, { credentials: "include" });
     const data = await res.json();
     if (!data.success || !data.transaction) {
-      return showNotification("Операция не найдена", "error");
+      showNotification("Операция не найдена", "error");
+      if (bottomBar) bottomBar.style.display = "flex";
+      return;
     }
 
     const tx = data.transaction;
     const symbol = tx.currency === "RUB" ? "₽" : "₲";
-    const amountValue = formatBalance(tx.amount, tx.currency === "RUB" ? 2 : 5);
-    const sign = (tx.from_user_id === currentUserId) ? "-" : "+";
-    const amount = `${sign}${amountValue} ${symbol}`;
-    const timestamp = new Date(tx.created_at || tx.client_time).toLocaleString("ru-RU");
+    const amountVal = formatBalance(tx.amount, tx.currency === "RUB" ? 2 : 5);
+    const sign = tx.from_user_id === currentUserId ? '-' : '+';
+    const signClass = sign === '+' ? 'positive' : 'negative';
+    const amount = `${sign}${amountVal} ${symbol}`;
+    const timestamp = new Date(tx.created_at || tx.client_time).toLocaleString('ru-RU');
 
-    // Получение аватаров и имён из базы (например, из глобального списка пользователей)
-    const fromUser = users?.find(u => u.id === tx.from_user_id) || {};
-    const toUser = users?.find(u => u.id === tx.to_user_id) || {};
-
-    const fromPhoto = fromUser.photo_url || 'photo/15.png';
-    const toPhoto = toUser.photo_url || 'photo/15.png';
+    // Получаем участников из глобального списка
+    const fromUser = users.find(u => u.user_id === tx.from_user_id) || {};
+    const toUser   = users.find(u => u.user_id === tx.to_user_id)   || {};
+    const fromAva  = fromUser.photo_url || 'photo/15.png';
+    const toAva    = toUser.photo_url   || 'photo/15.png';
     const fromName = fromUser.first_name || tx.from_user_id;
-    const toName = toUser.first_name || tx.to_user_id;
+    const toName   = toUser.first_name   || tx.to_user_id;
 
-    const fromIdLabel = `<div class="tx-user-info"><img src="${fromPhoto}" class="tx-avatar"/><div><div class="tx-user-name">${fromName}</div><div class="tx-user-id">ID: ${tx.from_user_id}</div></div></div>`;
-    const toIdLabel = `<div class="tx-user-info"><img src="${toPhoto}" class="tx-avatar"/><div><div class="tx-user-name">${toName}</div><div class="tx-user-id">ID: ${tx.to_user_id}</div></div></div>`;
-
+    // HTML для модалки
     createModal(
       "transactionDetailsModal",
       `
-        <div class="tx-sheet">
-          <div class="tx-icon">
-            <img src="photo/${tx.currency === "RUB" ? "92" : "67"}.png" alt="icon" width="48" height="48" />
-          </div>
-          <div class="tx-amount-main ${sign === '+' ? 'positive' : 'neutral'}">${amount}</div>
-          <div class="tx-status success">Операция прошла успешно</div>
-
-          <div class="tx-detail-box">
-            <div class="tx-detail-row">
-              <div class="tx-label">Дата и время</div>
-              <div class="tx-value">${timestamp}</div>
-            </div>
-
-            <div class="tx-detail-row">
-              <div class="tx-label">Отправитель</div>
-              <div class="tx-value">${fromIdLabel}</div>
-            </div>
-
-            <div class="tx-detail-row">
-              <div class="tx-label">Получатель</div>
-              <div class="tx-value">${toIdLabel}</div>
-            </div>
-
-            <div class="tx-detail-row">
-              <div class="tx-label">ID транзакции</div>
-              <div class="tx-value copyable">
-                <span>${tx.hash}</span>
-                <button onclick="navigator.clipboard.writeText('${tx.hash}')">📋</button>
-              </div>
-            </div>
-
-            ${tx.tags ? `
-              <div class="tx-detail-row">
-                <div class="tx-label">Теги</div>
-                <div class="tx-value">${tx.tags}</div>
-              </div>` : ""
-            }
-          </div>
+      <div class="td-modal">
+        <div class="td-header">
+          <div class="td-icon"><img src="photo/${tx.currency === 'RUB' ? '92' : '67'}.png" alt="icon"/></div>
+          <div class="td-amount ${signClass}">${amount}</div>
+          <div class="td-status">Операция прошла успешно</div>
         </div>
+        <div class="td-body">
+          <div class="td-row">
+            <div class="td-label">Дата & время</div>
+            <div class="td-value">${timestamp}</div>
+          </div>
+          <div class="td-row user-row">
+            <div class="td-label">Отправитель</div>
+            <div class="td-user">
+              <img src="${fromAva}"/>
+              <span>${fromName}</span>
+            </div>
+          </div>
+          <div class="td-row user-row">
+            <div class="td-label">Получатель</div>
+            <div class="td-user">
+              <img src="${toAva}"/>
+              <span>${toName}</span>
+            </div>
+          </div>
+          <div class="td-row">
+            <div class="td-label">ID транзакции</div>
+            <div class="td-value">
+              <span>${tx.hash}</span>
+              <button class="copy-button" onclick="navigator.clipboard.writeText('${tx.hash}')">📋</button>
+            </div>
+          </div>
+          ${tx.tags ? `
+            <div class="td-row">
+              <div class="td-label">Теги</div>
+              <div class="td-value">${tx.tags}</div>
+            </div>
+          ` : ''}
+        </div>
+      </div>
       `,
       {
         showCloseBtn: true,
         cornerTopMargin: 0,
         cornerTopRadius: 0,
+        hasVerticalScroll: false,
+        defaultFromBottom: true,
+        noRadiusByDefault: false,
         onClose: () => {
           if (bottomBar) bottomBar.style.display = "flex";
         }
       }
     );
 
+    // Добавляем стили один раз
     if (!document.getElementById("txDetailStyles")) {
-      const styleEl = document.createElement("style");
-      styleEl.id = "txDetailStyles";
-      styleEl.textContent = `
-.tx-icon {
+      const style = document.createElement('style');
+      style.id = "txDetailStyles";
+      style.textContent = `
+.td-modal {
+  max-width: 360px;
+  margin: 0 auto;
+  background: #FFFFFF;
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.td-header {
   text-align: center;
   margin-bottom: 16px;
 }
-.tx-amount-main {
-  text-align: center;
-  font-size: 28px;
+.td-icon img {
+  width: 48px;
+  height: 48px;
+}
+.td-amount {
+  font-size: 24px;
   font-weight: 700;
-  margin-bottom: 12px;
+  margin: 8px 0;
 }
-.tx-amount-main.positive {
-  color: #27AE60;
-}
-.tx-amount-main.neutral {
-  color: #1A1A1A;
-}
-.tx-status {
-  text-align: center;
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 50px;
-  background: #DFF5E1;
-  padding: 6px 12px;
-  border-radius: 8px;
+.td-amount.positive { color: #27AE60; }
+.td-amount.negative { color: #EB5757; }
+.td-status {
   display: inline-block;
-}
-.tx-detail-box {
-  background: #F8F9FB;
-  border-radius: 16px;
-  padding: 16px;
-  // text-align: left;
-}
-.tx-detail-row {
-  margin-bottom: 16px;
-}
-.tx-label {
-  font-size: 13px;
-  color: #999;
-  margin-bottom: 4px;
-}
-.tx-value {
-  font-size: 14px;
-  color: #1A1A1A;
-  word-break: break-word;
-}
-.tx-user-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.tx-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  object-fit: cover;
-  box-shadow: 0 0 4px rgba(0,0,0,0.1);
-}
-.tx-user-name {
-  font-weight: 600;
-  color: #1A1A1A;
-}
-.tx-user-id {
+  background: #E8F6EF;
+  color: #219653;
+  padding: 4px 12px;
+  border-radius: 12px;
   font-size: 12px;
-  color: #888;
 }
-.copyable {
+.td-body { margin-top: 16px; }
+.td-row {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid #E6E6EB;
 }
-.copyable button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 14px;
-}
-.copyable button:active {
-  transform: translateY(1px);
-}
+.td-row:last-child { border-bottom: none; }
+.td-label { font-size: 13px; color: #999; }
+.td-value { font-size: 14px; color: #1A1A1A; display: flex; align-items: center; gap: 6px; }
+.user-row .td-user { display: flex; align-items: center; gap: 8px; }
+.user-row .td-user img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 4px rgba(0,0,0,0.1); }
+.copy-button { background: none; border: none; cursor: pointer; font-size: 14px; }
       `;
-      document.head.appendChild(styleEl);
+      document.head.appendChild(style);
     }
-  } catch (error) {
-    console.error("Ошибка при получении данных транзакции:", error);
+  } catch (err) {
+    console.error("Ошибка при получении данных транзакции:", err);
     showNotification("Ошибка при загрузке", "error");
+    const bottomBar = document.getElementById("bottomBar");
+    if (bottomBar) bottomBar.style.display = "flex";
   }
 }
 
