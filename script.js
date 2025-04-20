@@ -1249,6 +1249,76 @@ async function flushMinedCoins() {
 }
 
 /**************************************************
+ * saveProfileChanges
+ **************************************************/
+
+async function saveProfileChanges() {
+  const newName = document.getElementById("profileNameInput").value.trim();
+  const fileInput = document.getElementById("profilePhotoInput");
+  let photoUrl;
+
+  try {
+    if (!newName) throw new Error("Имя не может быть пустым");
+
+    const oldPhoto = document.getElementById("profilePhotoPreview").src;
+    let oldPath;
+    if (oldPhoto.includes(supabaseUrl)) {
+      const parts = oldPhoto.split("/storage/v1/object/public/");
+      if (parts[1]) oldPath = parts[1];
+    }
+
+    // Загрузка нового фото (если выбран)
+    if (fileInput.files.length) {
+      const file = fileInput.files[0];
+      const path = `avatars/${currentUserId}/${Date.now()}_${file.name}`;
+
+      const { error: uploadError } = await supabase
+        .storage
+        .from(STORAGE_BUCKET)
+        .upload(path, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: publicData, error: urlError } = supabase
+        .storage
+        .from(STORAGE_BUCKET)
+        .getPublicUrl(path);
+
+      if (urlError) throw urlError;
+      photoUrl = publicData.publicUrl;
+
+      // Удаление старого фото (если это не дефолт)
+      if (oldPath && !oldPath.includes("15.png")) {
+        await supabase.storage.from(STORAGE_BUCKET).remove([oldPath]);
+      }
+    }
+
+    // Отправка на сервер
+    if (!csrfToken) await fetchCsrfToken();
+    const form = new FormData();
+    form.append("first_name", newName);
+    if (photoUrl) form.append("photo_url", photoUrl);
+
+    const res = await fetch(`${API_URL}/user`, {
+      method: "PUT",
+      credentials: "include",
+      headers: { "X-CSRF-Token": csrfToken },
+      body: form
+    });
+
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || "Ошибка при сохранении");
+
+    showNotification("Профиль обновлён", "success");
+    await fetchUserData();  // обновить UI
+    removeAllModals();
+  } catch (err) {
+    console.error("Ошибка сохранения профиля:", err);
+    showNotification(err.message || "Ошибка", "error");
+  }
+}
+
+/**************************************************
  * PROFILE
  **************************************************/
 function openProfileModal() {
