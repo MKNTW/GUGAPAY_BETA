@@ -1576,7 +1576,7 @@ function openTransferModal() {
       </div>
 
       <div style="display: flex; gap: 12px; margin-bottom: 30px;">
-        <div id="btnCurrencyGUGA" class="currency-card" style="border: 2px solid #E6E6EB; border-radius: 16px; padding: 12px; cursor: pointer;">
+        <div id="btnCurrencyGUGA" class="currency-card" style="border: 2px solid #E6E6EB; border-radius: 16px; padding: 12px; cursor: pointer; flex: 1;">
           <div style="display: flex; align-items: center; gap: 12px;">
             <img src="photo/15.png" style="width: 32px; height: 32px; border-radius: 8px;">
             <div>
@@ -1589,7 +1589,7 @@ function openTransferModal() {
           </div>
         </div>
 
-        <div id="btnCurrencyRUB" class="currency-card" style="border: 2px solid #E6E6EB; border-radius: 16px; padding: 12px; cursor: pointer;">
+        <div id="btnCurrencyRUB" class="currency-card" style="border: 2px solid #E6E6EB; border-radius: 16px; padding: 12px; cursor: pointer; flex: 1;">
           <div style="display: flex; align-items: center; gap: 12px;">
             <img src="photo/18.png" style="width: 32px; height: 32px; border-radius: 8px;">
             <div>
@@ -1685,7 +1685,6 @@ function openTransferModal() {
     noRadiusByDefault: false,
     onClose: closeTransferModal
   });
-}
 
   let currentTransferCurrency = "GUGA";
 
@@ -1695,12 +1694,14 @@ function openTransferModal() {
     const gugaBalance = document.getElementById("gugaBalance");
     const rubBalance = document.getElementById("rubBalance");
 
-    document.querySelectorAll(".currency-card").forEach(card => card.classList.remove("active"));
+    document.querySelectorAll(".currency-card").forEach(card => {
+      card.style.borderColor = "#E6E6EB";
+    });
 
     const activeCard = currentTransferCurrency === "GUGA"
       ? document.getElementById("btnCurrencyGUGA")
       : document.getElementById("btnCurrencyRUB");
-    activeCard.classList.add("active");
+    activeCard.style.borderColor = "#2F80ED";
 
     if (currentTransferCurrency === "GUGA") {
       const balance = parseFloat(document.getElementById("gugaBalanceValue")?.innerText || 0);
