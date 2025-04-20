@@ -1015,13 +1015,6 @@ body {
   margin-bottom: 20px;
 }
 
-.tx-detail-box {
-  background: #f9f9f9;
-  border-radius: 14px;
-  padding: 16px;
-  text-align: left;
-}
-
 .tx-detail-row {
   display: flex;
   justify-content: space-between;
