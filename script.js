@@ -1255,7 +1255,6 @@ async function flushMinedCoins() {
 /**************************************************
  * saveProfileChanges
  **************************************************/
-
 async function saveProfileChanges() {
   const newName = document.getElementById("profileNameInput").value.trim();
   const fileInput = document.getElementById("profilePhotoInput");
@@ -1274,26 +1273,26 @@ async function saveProfileChanges() {
     // Загрузка нового фото (если выбран)
     if (fileInput.files.length) {
       const file = fileInput.files[0];
-      const path = `avatars/${currentUserId}/${Date.now()}_${file.name}`;
+      const path = `${currentUserId}/${Date.now()}_${file.name}`; // без avatars/
 
       const { error: uploadError } = await supabase
         .storage
-        .from(STORAGE_BUCKET)
+        .from("avatars")
         .upload(path, file);
 
       if (uploadError) throw uploadError;
 
       const { data: publicData, error: urlError } = supabase
         .storage
-        .from(STORAGE_BUCKET)
+        .from("avatars")
         .getPublicUrl(path);
 
       if (urlError) throw urlError;
       photoUrl = publicData.publicUrl;
 
-      // Удаление старого фото (если это не дефолт)
+      // Удаление старого фото, если это не дефолт
       if (oldPath && !oldPath.includes("15.png")) {
-        await supabase.storage.from(STORAGE_BUCKET).remove([oldPath]);
+        await supabase.storage.from("avatars").remove([oldPath]);
       }
     }
 
@@ -1307,14 +1306,14 @@ async function saveProfileChanges() {
       method: "PUT",
       credentials: "include",
       headers: { "X-CSRF-Token": csrfToken },
-      body: form
+      body: form,
     });
 
     const data = await res.json();
     if (!data.success) throw new Error(data.error || "Ошибка при сохранении");
 
     showNotification("Профиль обновлён", "success");
-    await fetchUserData();  // обновить UI
+    await fetchUserData();
     removeAllModals();
   } catch (err) {
     console.error("Ошибка сохранения профиля:", err);
