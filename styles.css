@@ -989,9 +989,10 @@ body {
 }
 
 .tx-sheet {
-  padding: 24px;
+  // padding: 24px;
   text-align: center;
   font-family: 'Inter', sans-serif;
+  margin-top: 50px;
 }
 
 .tx-icon {
