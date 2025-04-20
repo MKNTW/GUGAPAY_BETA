@@ -1900,7 +1900,6 @@ function openTransferModal() {
     }
     updateTransferUI();
   });
-}
 
 function closeTransferModal() {
   const modal = document.getElementById("transferModal");
