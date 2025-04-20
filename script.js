@@ -2047,6 +2047,15 @@ async function confirmPayUserModal({ userId, amount, purpose }) {
     console.warn("Не удалось получить имя и фото пользователя:", err);
   }
 
+  const toUserHtml = `
+    <div class="tx-user-info" style="display:flex;align-items:center;gap:12px;">
+      <img src="${userData.photo_url || 'photo/default.png'}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 4px rgba(0,0,0,0.1);" />
+      <div>
+        <div style="font-weight: 600; color: #1A1A1A; font-size: 16px;">${userData.first_name || `ID: ${userId}`}</div>
+        <div style="font-size: 12px; color: #888;">ID: ${userId}</div>
+      </div>
+    </div>`;
+
   createModal(
     "confirmPayUserModal",
     `
@@ -2060,11 +2069,7 @@ async function confirmPayUserModal({ userId, amount, purpose }) {
         margin-top: 60px;
       ">
         <div style="text-align: center; margin-bottom: 24px;">
-          <img src="${userData.photo_url || 'photo/default.png'}" style="width: 64px; height: 64px; border-radius: 16px; object-fit: cover;" />
-          <div style="margin-top: 12px; font-size: 18px; font-weight: 600; color: #1A1A1A;">
-            ${userData.first_name || `ID: ${userId}`}
-          </div>
-          <div style="font-size: 13px; color: #999;">ID: ${userId}</div>
+          ${toUserHtml}
         </div>
 
         <div style="margin-bottom: 24px;">
@@ -2145,7 +2150,7 @@ async function confirmPayUserModal({ userId, amount, purpose }) {
       console.error("Transfer error:", err);
       document.getElementById("confirmPayUserModal")?.remove();
       if (bottomBar) bottomBar.style.display = "flex";
-      showNotification(`❌ ${err.message}`, "error");
+      showNotification(`❌ ${err.message}` , "error");
     }
   };
 }
