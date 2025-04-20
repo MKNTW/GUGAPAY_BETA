@@ -3464,7 +3464,7 @@ async function showTransactionDetails(hash) {
   text-align: center;
   font-size: 28px;
   font-weight: 700;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 .tx-amount-main.positive {
   color: #27AE60;
@@ -3476,7 +3476,7 @@ async function showTransactionDetails(hash) {
   text-align: center;
   font-size: 14px;
   font-weight: 500;
-  margin-bottom: 20px;
+  margin-bottom: 50px;
   background: #DFF5E1;
   padding: 6px 12px;
   border-radius: 8px;
@@ -3486,7 +3486,7 @@ async function showTransactionDetails(hash) {
   background: #F8F9FB;
   border-radius: 16px;
   padding: 16px;
-  text-align: left;
+  // text-align: left;
 }
 .tx-detail-row {
   margin-bottom: 16px;
