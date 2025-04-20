@@ -3352,8 +3352,9 @@ document.addEventListener("DOMContentLoaded", async () => {
  * TRANSACTION DETAILS MODAL
  **************************************************/
 async function showTransactionDetails(hash) {
+  let bottomBar;
   try {
-    const bottomBar = document.getElementById("bottomBar");
+    bottomBar = document.getElementById("bottomBar");
     if (bottomBar) bottomBar.style.display = "none";
 
     const res = await fetch(`${API_URL}/transaction/${hash}`, { credentials: "include" });
@@ -3368,60 +3369,79 @@ async function showTransactionDetails(hash) {
     const symbol = tx.currency === "RUB" ? "₽" : "₲";
     const amountVal = formatBalance(tx.amount, tx.currency === "RUB" ? 2 : 5);
     const sign = tx.from_user_id === currentUserId ? '-' : '+';
-    const signClass = sign === '+' ? 'positive' : 'negative';
+    const amountClass = sign === '+' ? 'positive' : 'negative';
     const amount = `${sign}${amountVal} ${symbol}`;
-    const timestamp = new Date(tx.created_at || tx.client_time).toLocaleString('ru-RU');
+    const timestamp = new Date(tx.created_at || tx.client_time)
+      .toLocaleString('ru-RU');
 
-    // Получаем участников из глобального списка
+    // Получаем участников из глобального списка users
     const fromUser = users.find(u => u.user_id === tx.from_user_id) || {};
-    const toUser   = users.find(u => u.user_id === tx.to_user_id)   || {};
-    const fromAva  = fromUser.photo_url || 'photo/15.png';
-    const toAva    = toUser.photo_url   || 'photo/15.png';
+    const toUser = users.find(u => u.user_id === tx.to_user_id) || {};
+    const fromAva = fromUser.photo_url || 'photo/15.png';
+    const toAva = toUser.photo_url || 'photo/15.png';
     const fromName = fromUser.first_name || tx.from_user_id;
-    const toName   = toUser.first_name   || tx.to_user_id;
+    const toName = toUser.first_name || tx.to_user_id;
 
-    // HTML для модалки
+    // Метки участников для вставки
+    const fromIdLabel = 
+      `<div class="tx-user-info">
+        <img src="${fromAva}" class="tx-avatar" />
+        <div>
+          <div class="tx-user-name">${fromName}</div>
+          <div class="tx-user-id">ID: ${tx.from_user_id}</div>
+        </div>
+      </div>`;
+    const toIdLabel = 
+      `<div class="tx-user-info">
+        <img src="${toAva}" class="tx-avatar" />
+        <div>
+          <div class="tx-user-name">${toName}</div>
+          <div class="tx-user-id">ID: ${tx.to_user_id}</div>
+        </div>
+      </div>`;
+
+    // Выбираем иконку: 66 – входящий, 67 – исходящий
+    const iconId = sign === '+' ? '66' : '67';
+
     createModal(
       "transactionDetailsModal",
       `
-      <div class="td-modal">
-        <div class="td-header">
-          <div class="td-icon"><img src="photo/${tx.currency === 'RUB' ? '92' : '67'}.png" alt="icon"/></div>
-          <div class="td-amount ${signClass}">${amount}</div>
-          <div class="td-status">Операция прошла успешно</div>
+      <div class="tx-sheet">
+        <div class="tx-icon">
+          <img src="photo/${iconId}.png" width="48" height="48" />
         </div>
-        <div class="td-body">
-          <div class="td-row">
-            <div class="td-label">Дата & время</div>
-            <div class="td-value">${timestamp}</div>
+        <div class="tx-amount-main ${amountClass}">${amount}</div>
+        <div class="tx-status success">Операция прошла успешно</div>
+
+        <div class="tx-detail-box">
+          <div class="tx-detail-row">
+            <div class="tx-label">Дата и время</div>
+            <div class="tx-value">${timestamp}</div>
           </div>
-          <div class="td-row user-row">
-            <div class="td-label">Отправитель</div>
-            <div class="td-user">
-              <img src="${fromAva}"/>
-              <span>${fromName}</span>
-            </div>
+
+          <div class="tx-detail-row">
+            <div class="tx-label">Отправитель</div>
+            <div class="tx-value">${fromIdLabel}</div>
           </div>
-          <div class="td-row user-row">
-            <div class="td-label">Получатель</div>
-            <div class="td-user">
-              <img src="${toAva}"/>
-              <span>${toName}</span>
-            </div>
+
+          <div class="tx-detail-row">
+            <div class="tx-label">Получатель</div>
+            <div class="tx-value">${toIdLabel}</div>
           </div>
-          <div class="td-row">
-            <div class="td-label">ID транзакции</div>
-            <div class="td-value">
+
+          <div class="tx-detail-row">
+            <div class="tx-label">ID транзакции</div>
+            <div class="tx-value copyable">
               <span>${tx.hash}</span>
-              <button class="copy-button" onclick="navigator.clipboard.writeText('${tx.hash}')">📋</button>
+              <button onclick="navigator.clipboard.writeText('${tx.hash}')">📋</button>
             </div>
           </div>
+
           ${tx.tags ? `
-            <div class="td-row">
-              <div class="td-label">Теги</div>
-              <div class="td-value">${tx.tags}</div>
-            </div>
-          ` : ''}
+          <div class="tx-detail-row">
+            <div class="tx-label">Теги</div>
+            <div class="tx-value">${tx.tags}</div>
+          </div>` : ''}
         </div>
       </div>
       `,
@@ -3438,63 +3458,34 @@ async function showTransactionDetails(hash) {
       }
     );
 
-    // Добавляем стили один раз
+    // Вставляем стили один раз
     if (!document.getElementById("txDetailStyles")) {
-      const style = document.createElement('style');
-      style.id = "txDetailStyles";
-      style.textContent = `
-.td-modal {
-  max-width: 360px;
-  margin: 0 auto;
-  background: #FFFFFF;
-  border-radius: 20px;
-  padding: 20px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-.td-header {
-  text-align: center;
-  margin-bottom: 16px;
-}
-.td-icon img {
-  width: 48px;
-  height: 48px;
-}
-.td-amount {
-  font-size: 24px;
-  font-weight: 700;
-  margin: 8px 0;
-}
-.td-amount.positive { color: #27AE60; }
-.td-amount.negative { color: #EB5757; }
-.td-status {
-  display: inline-block;
-  background: #E8F6EF;
-  color: #219653;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 12px;
-}
-.td-body { margin-top: 16px; }
-.td-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px solid #E6E6EB;
-}
-.td-row:last-child { border-bottom: none; }
-.td-label { font-size: 13px; color: #999; }
-.td-value { font-size: 14px; color: #1A1A1A; display: flex; align-items: center; gap: 6px; }
-.user-row .td-user { display: flex; align-items: center; gap: 8px; }
-.user-row .td-user img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 4px rgba(0,0,0,0.1); }
-.copy-button { background: none; border: none; cursor: pointer; font-size: 14px; }
+      const styleEl = document.createElement('style');
+      styleEl.id = "txDetailStyles";
+      styleEl.textContent = `
+.tx-sheet { max-width: 360px; margin: 0 auto; background: #fff; border-radius: 20px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.tx-icon { text-align: center; margin-bottom: 12px; }
+.tx-icon img { width: 48px; height: 48px; }
+.tx-amount-main { text-align: center; font-size: 24px; font-weight: 700; margin: 8px 0; }
+.tx-amount-main.positive { color: #27AE60; }
+.tx-amount-main.negative { color: #EB5757; }
+.tx-status { text-align: center; margin-bottom: 16px; font-size: 12px; padding: 4px 12px; background: #E8F6EF; color: #219653; border-radius: 12px; display: inline-block; }
+.tx-detail-box { background: #F8F9FB; border-radius: 16px; padding: 16px; }
+.tx-detail-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #E6E6EB; }
+.tx-detail-row:last-child { border-bottom: none; }
+.tx-label { font-size: 13px; color: #666; }
+.tx-value { font-size: 14px; color: #1A1A1A; display: flex; align-items: center; gap: 6px; }
+.tx-user-info { display: flex; align-items: center; gap: 10px; }
+.tx-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 4px rgba(0,0,0,0.1); }
+.tx-user-name { font-weight: 600; color: #1A1A1A; }
+.tx-user-id { font-size: 12px; color: #888; }
+.copyable button { background: none; border: none; cursor: pointer; font-size: 14px; }
       `;
-      document.head.appendChild(style);
+      document.head.appendChild(styleEl);
     }
   } catch (err) {
     console.error("Ошибка при получении данных транзакции:", err);
     showNotification("Ошибка при загрузке", "error");
-    const bottomBar = document.getElementById("bottomBar");
     if (bottomBar) bottomBar.style.display = "flex";
   }
 }
