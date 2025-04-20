@@ -1252,22 +1252,97 @@ async function flushMinedCoins() {
  * PROFILE
  **************************************************/
 function openProfileModal() {
-  createModal(
-    "profileModal",
-    `
-      <h3 style="text-align:center;">Профиль</h3>
-      <button id="profileLogoutBtn" style="padding:10px;margin-top:20px;">Выйти из аккаунта</button>
-    `,
-    {
-      showCloseBtn: true,
-      cornerTopMargin: 0,
-      cornerTopRadius: 0,
-      hasVerticalScroll: true,
-      defaultFromBottom: false,
-      noRadiusByDefault: true
+  const bottomBar = document.getElementById("bottomBar");
+  if (bottomBar) bottomBar.style.display = "none";
+
+  const photo = document.getElementById("profileIcon")?.src || "photo/15.png";
+  const name = document.querySelector("#user-info .user-name")?.textContent || "GugaUser";
+
+  createModal("profileModal", `
+    <div class="profile-modal">
+      <div class="profile-avatar-section">
+        <img id="profilePhotoPreview" src="${photo}" class="profile-avatar" />
+        <input type="file" id="profilePhotoInput" accept="image/*" class="auth-input" />
+      </div>
+
+      <div class="profile-field">
+        <label for="profileNameInput">Имя пользователя</label>
+        <input type="text" id="profileNameInput" class="auth-input" value="${name}" />
+      </div>
+
+      <div class="profile-actions">
+        <button id="saveProfileBtn" class="auth-button primary">Сохранить</button>
+        <button id="profileLogoutBtn" class="auth-button secondary">Выйти из аккаунта</button>
+      </div>
+    </div>
+  `, {
+    showCloseBtn: true,
+    hasVerticalScroll: false,
+    defaultFromBottom: false,
+    onClose: () => { if (bottomBar) bottomBar.style.display = "flex"; }
+  });
+
+  // Стили (можно вынести в CSS)
+  const style = document.createElement("style");
+  style.textContent = `
+    .profile-modal {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
-  );
-  document.getElementById("profileLogoutBtn").onclick = logout;
+    .profile-avatar-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .profile-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      box-shadow: 0 0 4px rgba(0,0,0,0.15);
+    }
+    .profile-field label {
+      font-weight: bold;
+      font-size: 14px;
+      margin-bottom: 4px;
+      display: block;
+    }
+    .profile-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .auth-button.primary {
+      background-color: #007bff;
+      color: white;
+    }
+    .auth-button.secondary {
+      background-color: #f44336;
+      color: white;
+    }
+  `;
+  document.head.appendChild(style);
+
+  // Превью изображения
+  document.getElementById("profilePhotoInput").addEventListener("change", e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      document.getElementById("profilePhotoPreview").src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // Обновление имени и фото
+  document.getElementById("saveProfileBtn").addEventListener("click", () => {
+    saveProfileChanges();
+  });
+
+  // Выход
+  document.getElementById("profileLogoutBtn").addEventListener("click", logout);
 }
 
 /**************************************************
