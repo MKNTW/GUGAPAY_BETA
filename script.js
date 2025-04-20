@@ -1634,6 +1634,7 @@ function openTransferModal() {
   styleEl.textContent = transferStyles;
   document.head.appendChild(styleEl);
 
+  // Current currency ("GUGA" or "RUB")
   let currentTransferCurrency = "GUGA";
 
   const updateTransferUI = () => {
@@ -1641,25 +1642,28 @@ function openTransferModal() {
     const balanceInfo = document.getElementById("transferBalanceInfo");
     const gugaBalance = document.getElementById("gugaBalance");
     const rubBalance = document.getElementById("rubBalance");
-
-    document.querySelectorAll(".currency-card").forEach(card => card.classList.remove("active"));
-    const activeCard = currentTransferCurrency === "GUGA"
+    // Remove active class from all currency cards
+    document.querySelectorAll('.currency-card').forEach(card => {
+      card.classList.remove('active');
+    });
+    // Set active on selected currency card
+    const activeCard = (currentTransferCurrency === "GUGA")
       ? document.getElementById("btnCurrencyGUGA")
       : document.getElementById("btnCurrencyRUB");
-    activeCard.classList.add("active");
-
+    activeCard.classList.add('active');
+    // Update symbol, input step, and balance display
     if (currentTransferCurrency === "GUGA") {
       const balance = parseFloat(document.getElementById("gugaBalanceValue")?.innerText || 0);
-      currencySymbol.textContent = "₲";
+      currencySymbol.textContent = '₲';
       document.getElementById("transferAmountInput").step = "0.00001";
-      gugaBalance.innerHTML = `Доступно: ${formatBalance(balance, 5)} ₲`;
-      balanceInfo.textContent = `Макс: ${formatBalance(balance, 5)} ₲`;
+      gugaBalance.innerHTML = Доступно: ${formatBalance(balance, 5)} ₲;
+      balanceInfo.textContent = Макс: ${formatBalance(balance, 5)} ₲;
     } else {
       const balance = parseFloat(document.getElementById("rubBalanceValue")?.innerText || 0);
-      currencySymbol.textContent = "₽";
+      currencySymbol.textContent = '₽';
       document.getElementById("transferAmountInput").step = "0.01";
-      rubBalance.innerHTML = `Доступно: ${formatBalance(balance, 2)} ₽`;
-      balanceInfo.textContent = `Макс: ${formatBalance(balance, 2)} ₽`;
+      rubBalance.innerHTML = Доступно: ${formatBalance(balance, 2)} ₽;
+      balanceInfo.textContent = Макс: ${formatBalance(balance, 2)} ₽;
     }
   };
 
