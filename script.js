@@ -1547,9 +1547,6 @@ function closeProfileModal() {
   if (bottomBar) bottomBar.style.display = "flex";
 }
 
-/**************************************************
- * TRANSFER (styled like REQUEST modal)
- **************************************************/
 function openTransferModal() {
   const bottomBar = document.getElementById("bottomBar");
   if (bottomBar) bottomBar.style.display = "none";
@@ -1579,7 +1576,7 @@ function openTransferModal() {
         </div>
       </div>
 
-      <div class="currency-select" style="display: flex; gap: 12px; margin-bottom: 30px;">
+      <div style="display: flex; gap: 12px; margin-bottom: 30px;">
         <div id="btnCurrencyGUGA" class="currency-card">
           <div style="display: flex; align-items: center; gap: 12px;">
             <img src="photo/15.png" style="width: 32px; height: 32px; border-radius: 8px;">
@@ -1608,23 +1605,13 @@ function openTransferModal() {
       </div>
 
       <div style="margin-bottom: 24px;">
-        <div style="
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 8px;
-          color: #666;
-          font-size: 14px;
-        ">
-          <span>Получатель</span>
-        </div>
+        <label style="display:block; margin-bottom: 6px; color:#666; font-size: 14px;">Получатель</label>
         <div style="
           background: #F8F9FB;
           border-radius: 16px;
           padding: 16px;
           display: flex;
           align-items: center;
-          gap: 10px;
           border: 1px solid #E6E6EB;
         ">
           <input 
@@ -1638,22 +1625,14 @@ function openTransferModal() {
               color: #1A1A1A;
               font-size: 18px;
               outline: none;
-              padding: 0;
               font-weight: 500;
             ">
         </div>
       </div>
 
       <div style="margin-bottom: 24px;">
-        <div style="
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 8px;
-          color: #666;
-          font-size: 14px;
-        ">
-          <span>Сумма</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <label style="color:#666; font-size:14px;">Сумма</label>
           <div id="transferBalanceInfo" style="font-size: 13px; color: #909099;"></div>
         </div>
         <div style="
@@ -1662,7 +1641,6 @@ function openTransferModal() {
           padding: 16px;
           display: flex;
           align-items: center;
-          gap: 10px;
           border: 1px solid #E6E6EB;
         ">
           <input 
@@ -1676,7 +1654,6 @@ function openTransferModal() {
               color: #1A1A1A;
               font-size: 18px;
               outline: none;
-              padding: 0;
               font-weight: 500;
             ">
           <span id="currencySymbol" style="color: #666; font-size: 16px;">₲</span>
@@ -1696,7 +1673,6 @@ function openTransferModal() {
           font-size: 16px;
           cursor: pointer;
           transition: all 0.2s;
-          margin-top: 8px;
         ">
         Подтвердить перевод
       </button>
@@ -1710,105 +1686,6 @@ function openTransferModal() {
     noRadiusByDefault: false,
     onClose: closeTransferModal
   });
-}
-
-  const transferStyles = `
-    .transfer-container {
-      background: #FFFFFF;
-      border-radius: 24px;
-      padding: 24px;
-      margin-top: 40px;
-      max-width: 440px;
-    }
-    .transfer-header {
-      text-align: center;
-      margin-bottom: 24px;
-    }
-    .transfer-title {
-      font-size: 24px;
-      font-weight: 600;
-      color: #1A1A1A;
-    }
-    .currency-select {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 30px;
-    }
-    .currency-card {
-      flex: 1;
-      padding: 16px;
-      border: 1px solid #E6E6EB;
-      border-radius: 16px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .currency-card.active {
-      border-color: #2F80ED;
-      background: #F5F9FF;
-      box-shadow: 0 2px 8px rgba(47, 128, 237, 0.1);
-    }
-    .currency-card-content {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .currency-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
-    }
-    .currency-name {
-      font-weight: 500;
-      color: #1A1A1A;
-    }
-    .currency-desc {
-      font-size: 13px;
-      color: #909099;
-    }
-    .currency-balance {
-      margin-top: 12px;
-      font-size: 14px;
-      color: #666;
-    }
-    .transfer-form {
-      background: #F8F9FB;
-      border-radius: 16px;
-      padding: 16px;
-      margin-bottom: 24px;
-    }
-    .transfer-field {
-      margin-bottom: 20px;
-    }
-    .transfer-label-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-    .transfer-label {
-      font-size: 14px;
-      color: #666;
-    }
-    .transfer-hint {
-      font-size: 13px;
-      color: #909099;
-    }
-    .transfer-amount {
-      position: relative;
-      display: flex;
-      align-items: center;
-    }
-    .transfer-symbol {
-      background: #E6E6EB;
-      border-radius: 0 8px 8px 0;
-      padding: 0 12px;
-      font-size: 16px;
-      color: #333;
-    }
-  `;
-  const styleEl = document.createElement("style");
-  styleEl.textContent = transferStyles;
-  document.head.appendChild(styleEl);
 
   let currentTransferCurrency = "GUGA";
 
@@ -1900,11 +1777,11 @@ function openTransferModal() {
     }
     updateTransferUI();
   });
+}
 
 function closeTransferModal() {
   const modal = document.getElementById("transferModal");
   if (modal) modal.remove();
-
   const bottomBar = document.getElementById("bottomBar");
   if (bottomBar) bottomBar.style.display = "flex";
 }
