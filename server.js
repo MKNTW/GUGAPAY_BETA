@@ -268,7 +268,6 @@ app.post('/register', async (req, res) => {
 });
 
 const multer = require('multer');
-const upload = multer();
 
 // Middleware для проверки токена (если у тебя уже есть — пропусти)
 function verifyToken(req, res, next) {
