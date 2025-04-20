@@ -3352,53 +3352,34 @@ document.addEventListener("DOMContentLoaded", async () => {
  * TRANSACTION DETAILS MODAL
  **************************************************/
 async function showTransactionDetails(hash) {
-  let bottomBar;
   try {
-    bottomBar = document.getElementById("bottomBar");
+    const bottomBar = document.getElementById("bottomBar");
     if (bottomBar) bottomBar.style.display = "none";
 
-    const res = await fetch(`${API_URL}/transaction/${hash}`, { credentials: "include" });
+    const res = await fetch(${API_URL}/transaction/${hash}, { credentials: "include" });
     const data = await res.json();
     if (!data.success || !data.transaction) {
-      showNotification("Операция не найдена", "error");
-      if (bottomBar) bottomBar.style.display = "flex";
-      return;
+      return showNotification("Операция не найдена", "error");
     }
 
     const tx = data.transaction;
     const symbol = tx.currency === "RUB" ? "₽" : "₲";
-    const amountVal = formatBalance(tx.amount, tx.currency === "RUB" ? 2 : 5);
-    const sign = tx.from_user_id === currentUserId ? '-' : '+';
-    const amountClass = sign === '+' ? 'positive' : 'negative';
-    const amount = `${sign}${amountVal} ${symbol}`;
-    const timestamp = new Date(tx.created_at || tx.client_time)
-      .toLocaleString('ru-RU');
+    const amountValue = formatBalance(tx.amount, tx.currency === "RUB" ? 2 : 5);
+    const sign = (tx.from_user_id === currentUserId) ? "-" : "+";
+    const amount = ${sign}${amountValue} ${symbol};
+    const timestamp = new Date(tx.created_at || tx.client_time).toLocaleString("ru-RU");
 
-    // Получаем участников из глобального списка users
-    const fromUser = users.find(u => u.user_id === tx.from_user_id) || {};
-    const toUser = users.find(u => u.user_id === tx.to_user_id) || {};
-    const fromAva = fromUser.photo_url || 'photo/15.png';
-    const toAva = toUser.photo_url || 'photo/15.png';
+    // Получение аватаров и имён из базы (например, из глобального списка пользователей)
+    const fromUser = users?.find(u => u.id === tx.from_user_id) || {};
+    const toUser = users?.find(u => u.id === tx.to_user_id) || {};
+
+    const fromPhoto = fromUser.photo_url || 'photo/15.png';
+    const toPhoto = toUser.photo_url || 'photo/15.png';
     const fromName = fromUser.first_name || tx.from_user_id;
     const toName = toUser.first_name || tx.to_user_id;
 
-    // Метки участников для вставки
-    const fromIdLabel = 
-      `<div class="tx-user-info">
-        <img src="${fromAva}" class="tx-avatar" />
-        <div>
-          <div class="tx-user-name">${fromName}</div>
-          <div class="tx-user-id">ID: ${tx.from_user_id}</div>
-        </div>
-      </div>`;
-    const toIdLabel = 
-      `<div class="tx-user-info">
-        <img src="${toAva}" class="tx-avatar" />
-        <div>
-          <div class="tx-user-name">${toName}</div>
-          <div class="tx-user-id">ID: ${tx.to_user_id}</div>
-        </div>
-      </div>`;
+    const fromIdLabel = <div class="tx-user-info"><img src="${fromPhoto}" class="tx-avatar"/><div><div class="tx-user-name">${fromName}</div><div class="tx-user-id">ID: ${tx.from_user_id}</div></div></div>;
+    const toIdLabel = <div class="tx-user-info"><img src="${toPhoto}" class="tx-avatar"/><div><div class="tx-user-name">${toName}</div><div class="tx-user-id">ID: ${tx.to_user_id}</div></div></div>;
 
     // Выбираем иконку: 66 – входящий, 67 – исходящий
     const iconId = sign === '+' ? '66' : '67';
