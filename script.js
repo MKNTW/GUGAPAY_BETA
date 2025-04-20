@@ -626,13 +626,16 @@ function openAuthModal() {
   removeAllModals();
 
   createModal("authModal", `
-    <div class="auth-modal">
+    <div class="auth-fullscreen">
+      <div class="auth-illustration">
+        <img src="photo/15.png" alt="Welcome" />
+      </div>
       <div class="auth-card">
         <h2 class="auth-title">Добро пожаловать в <span>GUGACOIN</span></h2>
 
         <!-- Login Form -->
         <div id="loginSection" class="auth-form">
-          <input type="text" id="loginInput" placeholder="Логин" class="auth-input" />
+          <input type="text" id="loginInput" placeholder="Логин" class="auth-input" autofocus />
           <div class="password-wrapper">
             <input type="password" id="passwordInput" placeholder="Пароль" class="auth-input password-input" />
             <span class="toggle-password" onclick="togglePasswordVisibility('passwordInput', this)">👁️</span>
@@ -665,7 +668,7 @@ function openAuthModal() {
     hasVerticalScroll: true,
     defaultFromBottom: true,
     noRadiusByDefault: true,
-    customStyles: { backgroundColor: "#f7f9fc" }
+    customStyles: { backgroundColor: "#f0f2f5" }
   });
 
   document.getElementById("loginSubmitBtn").addEventListener("click", async () => {
@@ -755,12 +758,18 @@ function openAuthModal() {
     const style = document.createElement("style");
     style.id = "authStyleSheet";
     style.textContent = `
-    .auth-modal {
+    .auth-fullscreen {
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: linear-gradient(to bottom right, #eef2f3, #f5f7fa);
       padding: 32px 16px;
-      height: 100%;
+    }
+    .auth-illustration img {
+      max-width: 120px;
+      margin-bottom: 24px;
     }
     .auth-card {
       background: white;
