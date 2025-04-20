@@ -407,6 +407,9 @@ function closeAllAuthModals() {
  * REQUEST PAYMENT (QR generation for user request)
  **************************************************/
 function openRequestModal() {
+  const bottomBar = document.getElementById("bottomBar");
+  if (bottomBar) bottomBar.style.display = "none";
+
   createModal(
     "requestModal",
     `
@@ -477,7 +480,7 @@ function openRequestModal() {
           style="
             width: 100%;
             padding: 16px;
-            background: #1A1A1A;
+            background: linear-gradient(90deg, #2F80ED, #2D9CDB);
             border: none;
             border-radius: 12px;
             color: white;
@@ -486,7 +489,6 @@ function openRequestModal() {
             cursor: pointer;
             transition: all 0.2s;
             margin-top: 8px;
-            background: linear-gradient(90deg, #2F80ED, #2D9CDB);
           ">
           Создать QR-код
         </button>
@@ -499,7 +501,14 @@ function openRequestModal() {
       hasVerticalScroll: true,
       defaultFromBottom: true,
       noRadiusByDefault: false,
-      contentMaxHeight: "calc(100vh - 160px)"
+      contentMaxHeight: "calc(100vh - 160px)",
+      onClose: () => {
+        if (bottomBar) bottomBar.style.display = "flex";
+        if (window.stopQRListener) {
+          clearInterval(window.stopQRListener);
+          window.stopQRListener = null;
+        }
+      }
     }
   );
 
@@ -513,7 +522,11 @@ function openRequestModal() {
       showNotification("Требуется авторизация", "error");
       return;
     }
-    const qrData = `guga://type=person&userId=${currentUserId}&amount=${amount}`;
+
+    // Удаляем предыдущее модальное окно
+    document.getElementById("requestModal")?.remove();
+
+    const qrData = `guga://type=person&toUserId=${currentUserId}&amount=${amount}`;
     createModal(
       "qrModal",
       `
@@ -566,10 +579,17 @@ function openRequestModal() {
         hasVerticalScroll: true,
         defaultFromBottom: true,
         noRadiusByDefault: false,
-        contentMaxHeight: "calc(100vh - 160px)"
+        contentMaxHeight: "calc(100vh - 160px)",
+        onClose: () => {
+          if (bottomBar) bottomBar.style.display = "flex";
+          if (window.stopQRListener) {
+            clearInterval(window.stopQRListener);
+            window.stopQRListener = null;
+          }
+        }
       }
     );
-    // Generate QR code
+
     new QRCode(document.getElementById("qrCodeContainer"), {
       text: qrData,
       width: 200,
@@ -578,44 +598,25 @@ function openRequestModal() {
       colorLight: "#ffffff",
       correctLevel: QRCode.CorrectLevel.H
     });
-  });
-}
 
-/**************************************************
- * USER QR CODE GENERATION (New)
- **************************************************/
-function createUserQR(userId, amount, purpose) {
-  if (!userId) {
-    console.error("Error: userId is missing.");
-    return null;
-  }
-  const qrData = `guga://type=person&userId=${userId}&amount=${amount}&purpose=${encodeURIComponent(purpose)}`;
-  console.log("Generated QR code:", qrData);
-  // Optionally show the QR to user
-  createModal(
-    "qrModal",
-    `
-      <h3>Ваш QR-код</h3>
-      <div id="qrCodeContainer" style="display: flex; justify-content: center; align-items: center; margin: 20px 0;"></div>
-      <p>Сумма: <strong>${amount.toFixed(2)}</strong></p>
-      ${purpose ? `<p>Назначение: <strong>${purpose}</strong></p>` : ""}
-    `,
-    {
-      showCloseBtn: true,
-      cornerTopMargin: 50,
-      cornerTopRadius: 20,
-      hasVerticalScroll: true,
-      defaultFromBottom: true,
-      noRadiusByDefault: false
-    }
-  );
-  const qrCodeContainer = document.getElementById("qrCodeContainer");
-  new QRCode(qrCodeContainer, {
-    text: qrData,
-    width: 300,
-    height: 300
+    // Live check for incoming payments (mocked by polling, replace with websocket if needed)
+    window.stopQRListener = setInterval(async () => {
+      try {
+        const resp = await fetch(`${API_URL}/payments/check?userId=${currentUserId}`);
+        const data = await resp.json();
+        if (data.success && data.payment) {
+          clearInterval(window.stopQRListener);
+          window.stopQRListener = null;
+          document.getElementById("qrModal")?.remove();
+          const fromName = data.payment.fromName || `пользователя #${data.payment.fromUserId}`;
+          showNotification(`✅ Получен перевод ${formatBalance(data.payment.amount, 5)} ₲ от ${fromName}`);
+          fetchUserData();
+        }
+      } catch (err) {
+        console.error("Ошибка при проверке оплаты", err);
+      }
+    }, 3000);
   });
-  return qrData;
 }
 
 /**************************************************
