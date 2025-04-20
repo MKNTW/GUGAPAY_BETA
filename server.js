@@ -298,6 +298,28 @@ app.put('/user', upload.none(), verifyToken, async (req, res) => {
   }
 });
 
+app.get('/payments/check', async (req, res) => {
+  const { userId } = req.query;
+  if (!userId) return res.status(400).json({ error: "Missing userId" });
+
+  // Пример запроса в Supabase (или вашу БД)
+  const { data, error } = await supabase
+    .from('payments')
+    .select('amount, fromUserId, fromName')
+    .eq('toUserId', userId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) {
+    return res.json({ success: false });
+  }
+
+  return res.json({
+    success: true,
+    payment: data
+  });
+});
 
 /* ========================
    2) ЛОГИН ПОЛЬЗОВАТЕЛЯ
