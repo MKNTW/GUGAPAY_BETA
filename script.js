@@ -1788,13 +1788,14 @@ function closeTransferModal() {
 }
 
 /**************************************************
- * TRANSFER (styled like REQUEST modal, updated)
+ * QR PAYMENT (Scanner Modal)
  **************************************************/
-function openTransferModal() {
+function openPayQRModal() {
   const bottomBar = document.getElementById("bottomBar");
   if (bottomBar) bottomBar.style.display = "none";
 
-  createModal("payQRModal",
+  createModal(
+    "payQRModal",
     `
       <div class="qr-scanner-wrapper">
         <video id="opPayVideo" muted playsinline></video>
@@ -1931,10 +1932,10 @@ function openTransferModal() {
   startUniversalQRScanner(videoEl, (rawValue) => {
     const parsed = parseQRCodeData(rawValue);
     if (parsed.type === "person") {
-      if (!parsed.userId) return showNotification("❌ Неверный QR.", "error");
+      if (!parsed.userId) return showNotification("❌ Неверный QR. Нет userId.", "error");
       confirmPayUserModal(parsed);
     } else if (parsed.type === "merchant") {
-      if (!parsed.merchantId) return showNotification("❌ Неверный QR.", "error");
+      if (!parsed.merchantId) return showNotification("❌ Неверный QR. Нет merchantId.", "error");
       confirmPayMerchantModal(parsed);
     } else {
       return showNotification("❌ Неверный тип QR-кода.", "error");
