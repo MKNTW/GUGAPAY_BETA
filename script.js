@@ -2027,16 +2027,26 @@ function confirmPayMerchantModal({ merchantId, amount, purpose }) {
  * CONFIRM USER-TO-USER TRANSFER (via scanned QR)
  **************************************************/
 async function confirmPayUserModal({ userId, amount, purpose }) {
+  const bottomBar = document.getElementById("bottomBar");
+  if (bottomBar) bottomBar.style.display = "none";
+
   if (!userId || !amount || amount <= 0) {
     showNotification("❌ Некорректные данные для перевода", "error");
     return;
   }
 
-  // Получаем имя и фото получателя
-  const userData = window.userCache?.[userId] || {
-    first_name: `ID: ${userId}`,
-    photo_url: "photo/default.png"
-  };
+  let userData = { first_name: `ID: ${userId}`, photo_url: "photo/default.png" };
+
+  // Получаем данные пользователя с сервера
+  try {
+    const resp = await fetch(`${API_URL}/userById?userId=${userId}`, { credentials: "include" });
+    const data = await resp.json();
+    if (data.success && data.user) {
+      userData = data.user;
+    }
+  } catch (err) {
+    console.warn("Не удалось получить имя и фото пользователя:", err);
+  }
 
   createModal(
     "confirmPayUserModal",
@@ -2051,8 +2061,10 @@ async function confirmPayUserModal({ userId, amount, purpose }) {
         margin-top: 60px;
       ">
         <div style="text-align: center; margin-bottom: 24px;">
-          <img src="${userData.photo_url}" style="width: 64px; height: 64px; border-radius: 16px; object-fit: cover;" />
-          <div style="margin-top: 12px; font-size: 18px; font-weight: 600; color: #1A1A1A;">${userData.first_name}</div>
+          <img src="${userData.photo_url || 'photo/default.png'}" style="width: 64px; height: 64px; border-radius: 16px; object-fit: cover;" />
+          <div style="margin-top: 12px; font-size: 18px; font-weight: 600; color: #1A1A1A;">
+            ${userData.first_name || `ID: ${userId}`}
+          </div>
           <div style="font-size: 13px; color: #999;">ID: ${userId}</div>
         </div>
 
@@ -2095,7 +2107,10 @@ async function confirmPayUserModal({ userId, amount, purpose }) {
       hasVerticalScroll: true,
       defaultFromBottom: true,
       noRadiusByDefault: false,
-      contentMaxHeight: "calc(100vh - 160px)"
+      contentMaxHeight: "calc(100vh - 160px)",
+      onClose: () => {
+        if (bottomBar) bottomBar.style.display = "flex";
+      }
     }
   );
 
@@ -2114,8 +2129,7 @@ async function confirmPayUserModal({ userId, amount, purpose }) {
         },
         body: JSON.stringify({
           toUserId: userId,
-          amount: Number(amount),
-          purpose: purpose || ""
+          amount: Number(amount)
         })
       });
 
@@ -2127,10 +2141,12 @@ async function confirmPayUserModal({ userId, amount, purpose }) {
 
       showNotification("✅ Перевод успешно выполнен", "success");
       document.getElementById("confirmPayUserModal")?.remove();
+      if (bottomBar) bottomBar.style.display = "flex";
       await fetchUserData();
     } catch (err) {
       console.error("Transfer error:", err);
       document.getElementById("confirmPayUserModal")?.remove();
+      if (bottomBar) bottomBar.style.display = "flex";
       showNotification(`❌ ${err.message}`, "error");
     }
   };
