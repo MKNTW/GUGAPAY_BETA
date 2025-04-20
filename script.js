@@ -2024,27 +2024,43 @@ function confirmPayMerchantModal({ merchantId, amount, purpose }) {
 }
 
 /**************************************************
- * CONFIRM USER-TO-USER TRANSFER (via scanned QR)
+ * CONFIRM USER‑TO‑USER TRANSFER (via scanned QR)
+ * — обновляет список users и гарантирует скрытие bottomBar
  **************************************************/
 async function confirmPayUserModal({ userId, amount, purpose }) {
-  // Только после валидации скрываем bottomBar
+  /* ───────── валидация ───────── */
   if (!userId || !amount || amount <= 0) {
     showNotification("❌ Некорректные данные для перевода", "error");
     return;
   }
-  const bottomBar = document.getElementById("bottomBar");
-  if (bottomBar) bottomBar.style.display = "none";
 
-  // Ищем пользователя в глобальном массиве users
-  const userData = users.find(u => u.user_id === userId) || {
+  const bottomBar = document.getElementById("bottomBar");
+  if (bottomBar) bottomBar.style.display = "none";               // прячем сразу
+
+  /* ───────── обновляем глобальный список пользователей ───────── */
+  try {
+    const uRes  = await fetch(`${API_URL}/users`, { credentials: "include" });
+    const uJson = await uRes.json();
+    if (uJson.success && Array.isArray(uJson.users)) {
+      window.users = uJson.users;                // id, first_name, photo_url
+    } else {
+      window.users = window.users || [];
+    }
+  } catch (err) {
+    console.error("Ошибка при получении /users:", err);
+    window.users = window.users || [];
+  }
+
+  /* ───────── ищем пользователя ───────── */
+  const userData = users.find(u => u.id === userId) || {
     first_name: `ID: ${userId}`,
-    photo_url: "photo/default.png"
+    photo_url : "photo/default.png"
   };
 
-  // Верстка модального окна
+  /* ───────── вёрстка модалки ───────── */
   const userHtml = `
     <div style="display:flex;align-items:center;gap:12px;">
-      <img src="${userData.photo_url}" 
+      <img src="${userData.photo_url}"
            style="width:48px;height:48px;border-radius:50%;object-fit:cover;box-shadow:0 0 4px rgba(0,0,0,0.1);" />
       <div>
         <div style="font-weight:600;color:#1A1A1A;font-size:16px;">
@@ -2069,21 +2085,15 @@ async function confirmPayUserModal({ userId, amount, purpose }) {
           <div style="background:#F8F9FB;border-radius:16px;padding:16px;">
             <div style="color:#666;font-size:14px;margin-bottom:4px;">Сумма</div>
             <div style="font-weight:500;color:#1A1A1A;">
-              ${formatBalance(amount,5)} ₲
+              ${formatBalance(amount, 5)} ₲
             </div>
           </div>
         </div>
         ${purpose ? `
-          <div style="background:#F8F9FB;border-radius:16px;
-                      padding:16px;margin-bottom:24px;">
-            <div style="color:#666;font-size:14px;margin-bottom:4px;">
-              Назначение
-            </div>
-            <div style="font-weight:500;color:#1A1A1A;">
-              ${purpose}
-            </div>
-          </div>
-        ` : ''}
+          <div style="background:#F8F9FB;border-radius:16px;padding:16px;margin-bottom:24px;">
+            <div style="color:#666;font-size:14px;margin-bottom:4px;">Назначение</div>
+            <div style="font-weight:500;color:#1A1A1A;">${purpose}</div>
+          </div>` : ''}
         <button id="confirmPayUserBtn" style="
           width:100%;padding:16px;
           background:linear-gradient(90deg,#2F80ED,#2D9CDB);
@@ -2095,29 +2105,32 @@ async function confirmPayUserModal({ userId, amount, purpose }) {
       </div>
     `,
     {
-      showCloseBtn: true,
-      cornerTopMargin: 0,
-      cornerTopRadius: 0,
-      hasVerticalScroll: true,
-      defaultFromBottom: true,
-      noRadiusByDefault: false,
-      contentMaxHeight: "calc(100vh - 160px)",
-      onClose: () => {
+      showCloseBtn      : true,
+      cornerTopMargin   : 0,
+      cornerTopRadius   : 0,
+      hasVerticalScroll : true,
+      defaultFromBottom : true,
+      noRadiusByDefault : false,
+      contentMaxHeight  : "calc(100vh - 160px)",
+      onClose           : () => {                 // показываем обратно только при закрытии
         if (bottomBar) bottomBar.style.display = "flex";
       }
     }
   );
 
-  // Обработчик кнопки "Подтвердить"
+  /* на всякий случай ещё раз убеждаемся, что панель скрыта */
+  if (bottomBar) bottomBar.style.display = "none";
+
+  /* ───────── обработчик кнопки "Подтвердить" ───────── */
   document.getElementById("confirmPayUserBtn").onclick = async () => {
     try {
       if (!currentUserId) throw new Error("Требуется авторизация");
       if (!csrfToken) await fetchCsrfToken();
 
       const resp = await fetch(`${API_URL}/transfer`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
+        method      : "POST",
+        credentials : "include",
+        headers     : {
           "Content-Type": "application/json",
           "X-CSRF-Token": csrfToken
         },
@@ -2129,7 +2142,6 @@ async function confirmPayUserModal({ userId, amount, purpose }) {
       }
 
       showNotification("✅ Перевод успешно выполнен", "success");
-      // Закрываем модалку и возвращаем bottomBar
       document.getElementById("confirmPayUserModal")?.remove();
       if (bottomBar) bottomBar.style.display = "flex";
       await fetchUserData();
@@ -3477,13 +3489,13 @@ async function showTransactionDetails(hash) {
       const styleEl = document.createElement('style');
       styleEl.id = "txDetailStyles";
       styleEl.textContent = `
-.tx-sheet { max-width: 360px; margin: 0 auto; background: #fff; border-radius: 20px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.tx-sheet { max-width: 360px; margin-top: 0 auto; background: #fff; border-radius: 20px; }
 .tx-icon { text-align: center; margin-bottom: 12px; }
-.tx-icon img { width: 48px; height: 48px; }
+.tx-icon img { width: 80px; height: 80px; }
 .tx-amount-main { text-align: center; font-size: 24px; font-weight: 700; margin: 8px 0; }
 .tx-amount-main.positive { color: #27AE60; }
 .tx-amount-main.negative { color: #EB5757; }
-.tx-status { text-align: center; margin-bottom: 16px; font-size: 12px; padding: 4px 12px; background: #E8F6EF; color: #219653; border-radius: 12px; display: inline-block; }
+.tx-status { text-align: center; margin-bottom: 50px; font-size: 12px; padding: 4px 12px; background: #E8F6EF; color: #219653; border-radius: 12px; display: inline-block; }
 .tx-detail-box { background: #F8F9FB; border-radius: 16px; padding: 16px; }
 .tx-detail-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #E6E6EB; }
 .tx-detail-row:last-child { border-bottom: none; }
