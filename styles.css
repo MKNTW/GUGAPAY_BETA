@@ -307,7 +307,7 @@ body {
 }
 
 .modal-content input {
-  width: 100%;
+  // width: 100%;
   #padding: 8px;
   #margin-top: 5px;
   #border: 2px solid #000;
