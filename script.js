@@ -624,58 +624,80 @@ function createUserQR(userId, amount, purpose) {
 function openAuthModal() {
   hideMainUI();
   removeAllModals();
-  createModal(
-    "authModal",
-    `
-      <div class="auth-container">
-        <h2>GUGACOIN</h2>
 
-        <!-- Login -->
-        <div id="loginSection">
-          <input type="text" id="loginInput" placeholder="Логин" class="auth-input">
-          <input type="password" id="passwordInput" placeholder="Пароль" class="auth-input">
+  createModal("authModal", `
+    <div class="auth-modal">
+      <div class="auth-card">
+        <h2 class="auth-title">Добро пожаловать в <span>GUGACOIN</span></h2>
+
+        <!-- Login Form -->
+        <div id="loginSection" class="auth-form">
+          <input type="text" id="loginInput" placeholder="Логин" class="auth-input" />
+          <div class="password-wrapper">
+            <input type="password" id="passwordInput" placeholder="Пароль" class="auth-input password-input" />
+            <span class="toggle-password" onclick="togglePasswordVisibility('passwordInput', this)">👁️</span>
+          </div>
           <button id="loginSubmitBtn" class="auth-button">Войти</button>
         </div>
 
-        <!-- Registration -->
-        <div id="registerSection" style="display:none;">
-          <input type="text" id="regLogin" placeholder="Логин" class="auth-input">
-          <input type="password" id="regPassword" placeholder="Пароль" class="auth-input">
+        <!-- Register Form -->
+        <div id="registerSection" class="auth-form" style="display: none;">
+          <input type="text" id="regLogin" placeholder="Логин" class="auth-input" />
+          <div class="password-wrapper">
+            <input type="password" id="regPassword" placeholder="Пароль" class="auth-input password-input" />
+            <span class="toggle-password" onclick="togglePasswordVisibility('regPassword', this)">👁️</span>
+          </div>
           <button id="registerSubmitBtn" class="auth-button">Зарегистрироваться</button>
         </div>
 
-        <!-- Toggle Auth Forms -->
-        <button id="toggleAuthBtn" class="toggle-auth-btn">Войти / Зарегистрироваться</button>
+        <!-- Toggle -->
+        <button id="toggleAuthBtn" class="toggle-auth">Войти / Зарегистрироваться</button>
 
-        <!-- Telegram Login Button will be added here -->
-        <div id="telegramBtnContainer" style="margin-top:15px;">
-          <div style="text-align:center; color:#666; margin-bottom:30px;">Или</div>
-        </div>
+        <div class="divider">или</div>
+
+        <div id="telegramBtnContainer"></div>
       </div>
-    `,
-    {
-      showCloseBtn: false,
-      cornerTopMargin: 0,
-      cornerTopRadius: 0,
-      hasVerticalScroll: true,
-      defaultFromBottom: true,
-      noRadiusByDefault: true,
-      customStyles: { backgroundColor: "#f7f7f7" }
-    }
-  );
-  // Standard auth button handlers
-  document.getElementById("loginSubmitBtn").addEventListener("click", login);
-  document.getElementById("registerSubmitBtn").addEventListener("click", register);
+    </div>
+  `, {
+    showCloseBtn: false,
+    cornerTopMargin: 0,
+    cornerTopRadius: 0,
+    hasVerticalScroll: true,
+    defaultFromBottom: true,
+    noRadiusByDefault: true,
+    customStyles: { backgroundColor: "#f7f9fc" }
+  });
+
+  document.getElementById("loginSubmitBtn").addEventListener("click", async () => {
+    await login();
+    document.getElementById("bottomBar").style.display = "flex";
+  });
+  document.getElementById("registerSubmitBtn").addEventListener("click", async () => {
+    await register();
+    document.getElementById("bottomBar").style.display = "flex";
+  });
   document.getElementById("toggleAuthBtn").addEventListener("click", toggleAuthForms);
 
-  // Add Telegram login button if available
+  // Enter key submits form
+  document.addEventListener("keydown", async (e) => {
+    if (e.key === "Enter") {
+      const loginVisible = document.getElementById("loginSection").style.display !== "none";
+      if (loginVisible) {
+        await login();
+        document.getElementById("bottomBar").style.display = "flex";
+      } else {
+        await register();
+        document.getElementById("bottomBar").style.display = "flex";
+      }
+    }
+  });
+
   if (window.Telegram?.WebApp) {
     const telegramBtn = document.createElement("button");
     telegramBtn.innerHTML = `
-      <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" style="height:20px; margin-right:10px;">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" style="height:20px; margin-right:10px;" />
       Войти через Telegram
     `;
-    // Style the Telegram button
     Object.assign(telegramBtn.style, {
       width: "100%",
       padding: "12px",
@@ -689,125 +711,138 @@ function openAuthModal() {
       alignItems: "center",
       justifyContent: "center"
     });
-    // Telegram auth handler
     telegramBtn.addEventListener("click", async () => {
-  try {
-    showGlobalLoading();
+      try {
+        showGlobalLoading();
+        Telegram.WebApp.ready();
+        const initData = Telegram.WebApp.initData;
+        if (!initData || !initData.includes("hash")) throw new Error("Некорректные initData из Telegram");
 
-    // Убедись, что Telegram WebApp готов
-    Telegram.WebApp.ready();
+        const response = await fetch(`${API_URL}/auth/telegram`, {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-Token": csrfToken
+          },
+          body: JSON.stringify({ initData })
+        });
 
-    // Получаем initData как СТРОКУ
-    const initData = Telegram.WebApp.initData;
+        if (!response.ok) throw new Error((await response.json()).error || "Ошибка сервера");
 
-    if (!initData || !initData.includes("hash")) {
-      throw new Error("Некорректные initData из Telegram");
-    }
-
-    // Отправляем строку initData на сервер
-    const response = await fetch(`${API_URL}/auth/telegram`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": csrfToken
-      },
-      body: JSON.stringify({ initData }) // <-- не трогаем строку!
+        document.getElementById("authModal")?.remove();
+        await fetchUserData();
+        createMainUI();
+        updateUI();
+        document.getElementById("bottomBar").style.display = "flex";
+      } catch (err) {
+        showNotification(err.message, "error");
+      } finally {
+        hideGlobalLoading();
+      }
     });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || "Ошибка сервера");
-    }
-
-    // Успех — продолжаем
-    document.getElementById("authModal")?.remove();
-    await fetchUserData();
-    createMainUI();
-    updateUI();
-  } catch (err) {
-    showNotification(err.message, "error");
-  } finally {
-    hideGlobalLoading();
-  }
-});
     document.getElementById("telegramBtnContainer").appendChild(telegramBtn);
   }
 
-  // Helper to toggle between login and register forms
   function toggleAuthForms() {
-    const loginSection = document.getElementById("loginSection");
-    const registerSection = document.getElementById("registerSection");
-    loginSection.style.display = loginSection.style.display === "none" ? "flex" : "none";
-    registerSection.style.display = registerSection.style.display === "none" ? "flex" : "none";
+    const login = document.getElementById("loginSection");
+    const reg = document.getElementById("registerSection");
+    login.style.display = login.style.display === "none" ? "flex" : "none";
+    reg.style.display = reg.style.display === "none" ? "flex" : "none";
   }
 
-  // Inject styles for auth modal if not already done
-  if (!document.getElementById("authStyles")) {
-    const authStyles = `
-.auth-container {
-  max-width: 400px;
-  margin: 40px auto 0 auto;
-  padding: 20px;
-  background: #FFFFFF;
-  border-radius: 16px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  if (!document.getElementById("authStyleSheet")) {
+    const style = document.createElement("style");
+    style.id = "authStyleSheet";
+    style.textContent = `
+    .auth-modal {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 32px 16px;
+      height: 100%;
+    }
+    .auth-card {
+      background: white;
+      border-radius: 24px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+      padding: 32px;
+      width: 100%;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .auth-title {
+      font-size: 24px;
+      font-weight: 700;
+      text-align: center;
+    }
+    .auth-title span {
+      background: linear-gradient(90deg, #2F80ED, #2D9CDB);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .auth-form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .auth-input {
+      padding: 14px 16px;
+      border: 1px solid #E6E6EB;
+      border-radius: 12px;
+      font-size: 16px;
+    }
+    .auth-button {
+      padding: 14px;
+      background: linear-gradient(90deg, #2F80ED, #2D9CDB);
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .toggle-auth {
+      background: none;
+      border: none;
+      font-size: 14px;
+      color: #2F80ED;
+      text-align: center;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    .divider {
+      text-align: center;
+      font-size: 14px;
+      color: #888;
+    }
+    .password-wrapper {
+      position: relative;
+    }
+    .toggle-password {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      font-size: 18px;
+    }
+    `;
+    document.head.appendChild(style);
+  }
 }
-.auth-container h2 {
-  text-align: center;
-  margin: 0;
-  font-size: 24px;
-  font-weight: 600;
-  color: #1A1A1A;
-}
-.auth-input {
-  width: 100%;
-  padding: 12px 16px;
-  background: #FFFFFF;
-  border: 1px solid #E6E6EB;
-  border-radius: 8px;
-  font-size: 16px;
-  box-sizing: border-box;
-}
-.auth-button {
-  width: 100%;
-  padding: 12px;
-  background: linear-gradient(90deg, #2F80ED, #2D9CDB);
-  border: none;
-  border-radius: 12px;
-  color: #FFFFFF;
-  font-weight: 600;
-  font-size: 16px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.auth-button:hover {
-  opacity: 0.9;
-}
-.auth-button:active {
-  transform: translateY(1px);
-}
-.toggle-auth-btn {
-  background: none;
-  border: none;
-  color: #2F80ED;
-  cursor: pointer;
-  text-decoration: underline;
-  font-size: 14px;
-}
-#loginSection, #registerSection {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-`;
-    const styleEl = document.createElement("style");
-    styleEl.id = "authStyles";
-    styleEl.textContent = authStyles;
-    document.head.appendChild(styleEl);
+
+function togglePasswordVisibility(inputId, toggleEl) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  if (input.type === "password") {
+    input.type = "text";
+    toggleEl.textContent = "🙈";
+  } else {
+    input.type = "password";
+    toggleEl.textContent = "👁️";
   }
 }
 
