@@ -3374,10 +3374,14 @@ async function showTransactionDetails(hash) {
     const amount = `${sign}${amountValue} ${symbol}`;
     const timestamp = new Date(tx.created_at || tx.client_time).toLocaleString("ru-RU");
 
-    const fromPhoto = tx.from_photo_url || 'photo/15.png';
-    const toPhoto = tx.to_photo_url || 'photo/15.png';
-    const fromName = tx.from_name || tx.from_user_id;
-    const toName = tx.to_name || tx.to_user_id;
+    // Получение аватаров и имён из базы (например, из глобального списка пользователей)
+    const fromUser = users?.find(u => u.id === tx.from_user_id) || {};
+    const toUser = users?.find(u => u.id === tx.to_user_id) || {};
+
+    const fromPhoto = fromUser.photo_url || 'photo/15.png';
+    const toPhoto = toUser.photo_url || 'photo/15.png';
+    const fromName = fromUser.first_name || tx.from_user_id;
+    const toName = toUser.first_name || tx.to_user_id;
 
     const fromIdLabel = `<div class="tx-user-info"><img src="${fromPhoto}" class="tx-avatar"/><div><div class="tx-user-name">${fromName}</div><div class="tx-user-id">ID: ${tx.from_user_id}</div></div></div>`;
     const toIdLabel = `<div class="tx-user-info"><img src="${toPhoto}" class="tx-avatar"/><div><div class="tx-user-name">${toName}</div><div class="tx-user-id">ID: ${tx.to_user_id}</div></div></div>`;
