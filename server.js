@@ -127,7 +127,6 @@ function verifyToken(req, res, next) {
 /* ========================
    AUTHENTICATION ENDPOINTS
 ======================== */
-
 // Выход из системы (logout)
 app.post('/logout', (req, res) => {
   res.clearCookie('token', {
@@ -284,6 +283,38 @@ function verifyToken(req, res, next) {
     return res.status(403).json({ success: false, error: 'Недействительный токен' });
   }
 }
+
+const multer = require('multer');
+const upload = multer();
+
+app.put('/user', upload.none(), verifyToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'user') {
+      return res.status(403).json({ success: false, error: 'Доступ запрещён' });
+    }
+
+    const { first_name, photo_url } = req.body;
+    const updateFields = {};
+    if (first_name) updateFields.first_name = first_name;
+    if (photo_url) updateFields.photo_url = photo_url;
+
+    const { error } = await supabase
+      .from('users')
+      .update(updateFields)
+      .eq('user_id', req.user.userId);
+
+    if (error) {
+      console.error('[update /user]', error);
+      return res.status(500).json({ success: false, error: 'Ошибка обновления профиля' });
+    }
+
+    res.json({ success: true, message: 'Профиль обновлён' });
+  } catch (err) {
+    console.error('[PUT /user]', err);
+    res.status(500).json({ success: false, error: 'Ошибка сервера' });
+  }
+});
+
 
 /* ========================
    2) ЛОГИН ПОЛЬЗОВАТЕЛЯ
