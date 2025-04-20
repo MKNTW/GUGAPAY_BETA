@@ -1839,6 +1839,7 @@ function openPayQRModal() {
       onClose: () => {
         const bottomBar = document.getElementById("bottomBar");
         if (bottomBar) bottomBar.style.display = "flex";
+        stopVideoStream();
       }
     }
   );
@@ -1930,24 +1931,42 @@ function openPayQRModal() {
 
   const videoEl = document.getElementById("opPayVideo");
   startUniversalQRScanner(videoEl, (rawValue) => {
-    const parsed = parseQRCodeData(rawValue);
-    if (parsed.type === "person") {
-      if (!parsed.userId) return showNotification("❌ Неверный QR. Нет userId.", "error");
-      confirmPayUserModal(parsed);
-    } else if (parsed.type === "merchant") {
-      if (!parsed.merchantId) return showNotification("❌ Неверный QR. Нет merchantId.", "error");
-      confirmPayMerchantModal(parsed);
-    } else {
-      return showNotification("❌ Неверный тип QR-кода.", "error");
+    let success = false;
+    try {
+      const parsed = parseQRCodeData(rawValue);
+      if (parsed.type === "person") {
+        if (!parsed.userId) throw new Error("❌ Неверный QR. Нет userId.");
+        confirmPayUserModal(parsed);
+        success = true;
+      } else if (parsed.type === "merchant") {
+        if (!parsed.merchantId) throw new Error("❌ Неверный QR. Нет merchantId.");
+        confirmPayMerchantModal(parsed);
+        success = true;
+      } else {
+        throw new Error("❌ Неверный тип QR-кода.");
+      }
+    } catch (err) {
+      showNotification(err.message || "Ошибка сканирования", "error");
+    } finally {
+      setTimeout(() => {
+        document.getElementById("payQRModal")?.remove();
+        stopVideoStream();
+        if (bottomBar) bottomBar.style.display = "flex";
+      }, success ? 500 : 1000);
     }
-    setTimeout(() => {
-      document.getElementById("payQRModal")?.remove();
-      if (bottomBar) bottomBar.style.display = "flex";
-    }, 500);
   });
+
+  function stopVideoStream() {
+    const video = document.getElementById("opPayVideo");
+    if (video && video.srcObject) {
+      video.srcObject.getTracks().forEach(track => track.stop());
+      video.srcObject = null;
+    }
+  }
 
   document.getElementById("closeQRScannerBtn").addEventListener("click", () => {
     document.getElementById("payQRModal")?.remove();
+    stopVideoStream();
     if (bottomBar) bottomBar.style.display = "flex";
   });
 }
