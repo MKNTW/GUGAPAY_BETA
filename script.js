@@ -3352,11 +3352,12 @@ document.addEventListener("DOMContentLoaded", async () => {
  * TRANSACTION DETAILS MODAL
  **************************************************/
 async function showTransactionDetails(hash) {
+  // Скрываем нижнюю панель
   const bottomBar = document.getElementById("bottomBar");
   if (bottomBar) bottomBar.style.display = "none";
 
   try {
-    // Fetch transaction by hash
+    // Получаем данные транзакции
     const res = await fetch(`${API_URL}/transaction/${hash}`, { credentials: "include" });
     const data = await res.json();
     if (!data.success || !data.transaction) {
@@ -3367,13 +3368,14 @@ async function showTransactionDetails(hash) {
 
     const tx = data.transaction;
     const symbol = tx.currency === "RUB" ? "₽" : "₲";
-    const amountVal = formatBalance(tx.amount, tx.currency === "RUB" ? 2 : 5);
-    const sign = tx.from_user_id === currentUserId ? '-' : '+';
-    const amount = `${sign}${amountVal} ${symbol}`;
-    const amountClass = sign === '+' ? 'positive' : 'negative';
+    const amountValue = formatBalance(tx.amount, tx.currency === "RUB" ? 2 : 5);
+    const isOutgoing = tx.from_user_id === currentUserId;
+    const sign = isOutgoing ? '-' : '+';
+    const amount = `${sign}${amountValue} ${symbol}`;
+    const amountClass = isOutgoing ? 'negative' : 'positive';
     const timestamp = new Date(tx.created_at || tx.client_time).toLocaleString('ru-RU');
 
-    // Retrieve user info from global users array
+    // Получаем информацию об отправителе и получателе из глобального массива users
     const fromUser = users.find(u => u.user_id === tx.from_user_id) || {};
     const toUser   = users.find(u => u.user_id === tx.to_user_id)   || {};
 
@@ -3399,8 +3401,8 @@ async function showTransactionDetails(hash) {
         </div>
       </div>`;
 
-    // Select icon: 66 for incoming, 67 for outgoing
-    const iconId = sign === '+' ? '66' : '67';
+    // Иконка: 66 — входящий, 67 — исходящий
+    const iconId = isOutgoing ? '67' : '66';
 
     createModal(
       "transactionDetailsModal",
@@ -3437,10 +3439,10 @@ async function showTransactionDetails(hash) {
             </div>
 
             ${tx.tags ? `
-            <div class="tx-detail-row">
-              <div class="tx-label">Теги</div>
-              <div class="tx-value">${tx.tags}</div>
-            </div>` : ''}
+              <div class="tx-detail-row">
+                <div class="tx-label">Теги</div>
+                <div class="tx-value">${tx.tags}</div>
+              </div>` : ''}
           </div>
         </div>
       `,
@@ -3457,7 +3459,7 @@ async function showTransactionDetails(hash) {
       }
     );
 
-    // Inject styles once
+    // Инъекция стилей один раз
     if (!document.getElementById("txDetailStyles")) {
       const styleEl = document.createElement('style');
       styleEl.id = "txDetailStyles";
