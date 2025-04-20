@@ -3352,38 +3352,51 @@ document.addEventListener("DOMContentLoaded", async () => {
  * TRANSACTION DETAILS MODAL
  **************************************************/
 async function showTransactionDetails(hash) {
-  // Скрываем нижнюю панель
   const bottomBar = document.getElementById("bottomBar");
   if (bottomBar) bottomBar.style.display = "none";
 
   try {
-    // Получаем данные транзакции
-    const res = await fetch(`${API_URL}/transaction/${hash}`, { credentials: "include" });
-    const data = await res.json();
-    if (!data.success || !data.transaction) {
+    /* 1. параллельно запрашиваем транзакцию и свежих пользователей */
+    const [txRes, usersRes] = await Promise.all([
+      fetch(`${API_URL}/transaction/${hash}`, { credentials: "include" }),
+      fetch(`${API_URL}/users`,           { credentials: "include" })
+    ]);
+
+    const txData    = await txRes.json();
+    const usersData = await usersRes.json();
+
+    if (!txData.success || !txData.transaction) {
       showNotification("Операция не найдена", "error");
       if (bottomBar) bottomBar.style.display = "flex";
       return;
     }
 
-    const tx = data.transaction;
-    const symbol = tx.currency === "RUB" ? "₽" : "₲";
-    const amountValue = formatBalance(tx.amount, tx.currency === "RUB" ? 2 : 5);
-    const isOutgoing = tx.from_user_id === currentUserId;
-    const sign = isOutgoing ? '-' : '+';
-    const amount = `${sign}${amountValue} ${symbol}`;
-    const amountClass = isOutgoing ? 'negative' : 'positive';
-    const timestamp = new Date(tx.created_at || tx.client_time).toLocaleString('ru-RU');
+    /* 2. перезаписываем глобальный массив users (чтобы был всегда актуален) */
+    if (usersData.success && Array.isArray(usersData.users)) {
+      window.users = usersData.users;   // id, first_name, photo_url
+    } else {
+      window.users = window.users || [];  // fallback, если /users не ответил
+    }
 
-    // Получаем информацию об отправителе и получателе из глобального массива users
-    const fromUser = users.find(u => u.user_id === tx.from_user_id) || {};
-    const toUser   = users.find(u => u.user_id === tx.to_user_id)   || {};
+    const tx = txData.transaction;
 
-    const fromAva  = fromUser.photo_url   || 'photo/15.png';
-    const toAva    = toUser.photo_url     || 'photo/15.png';
-    const fromName = fromUser.first_name  || tx.from_user_id;
-    const toName   = toUser.first_name    || tx.to_user_id;
+    /* 3. остальной код без изменений */
+    const symbol       = tx.currency === "RUB" ? "₽" : "₲";
+    const amountValue  = formatBalance(tx.amount, tx.currency === "RUB" ? 2 : 5);
+    const isOutgoing   = tx.from_user_id === currentUserId;
+    const sign         = isOutgoing ? '-' : '+';
+    const amount       = `${sign}${amountValue} ${symbol}`;
+    const amountClass  = isOutgoing ? 'negative' : 'positive';
+    const timestamp    = new Date(tx.created_at || tx.client_time).toLocaleString('ru-RU');
 
+    const fromUser = users.find(u => u.id === tx.from_user_id) || {};
+    const toUser   = users.find(u => u.id === tx.to_user_id)   || {};
+
+    const fromAva  = fromUser.photo_url  || 'photo/15.png';
+    const toAva    = toUser.photo_url    || 'photo/15.png';
+    const fromName = fromUser.first_name || tx.from_user_id;
+    const toName   = toUser.first_name   || tx.to_user_id;
+    
     const fromIdLabel = `
       <div class="tx-user-info">
         <img src="${fromAva}" class="tx-avatar" />
