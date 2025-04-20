@@ -1212,30 +1212,38 @@ function injectMainUIStyles() {
 /**************************************************
  * USER DATA & SYNC
  **************************************************/
+
 /**
- * Fetches user data and latest exchange rate, then updates UI.
+ * Fetches user data, latest exchange rate, and all users, then updates UI.
  */
 async function fetchUserData() {
   try {
-    const [userResp, ratesResp] = await Promise.all([
+    const [userResp, ratesResp, allUsersResp] = await Promise.all([
       fetch(`${API_URL}/user`, { credentials: "include" }),
-      fetch(`${API_URL}/exchangeRates?limit=1`, { credentials: "include" })
+      fetch(`${API_URL}/exchangeRates?limit=1`, { credentials: "include" }),
+      fetch(`${API_URL}/users`, { credentials: "include" })
     ]);
+
     const userData = await userResp.json();
     const ratesData = await ratesResp.json();
+    const usersData = await allUsersResp.json();
+
+    if (usersData.success && Array.isArray(usersData.users)) {
+      users = usersData.users;
+    }
+
     if (userData.success && userData.user) {
-      // If user is blocked
       if (userData.user.blocked) {
         showNotification("Ваш аккаунт заблокирован. Доступ ограничен.", "error");
         logout();
         return;
       }
-      // Set current user ID
+
       currentUserId = userData.user.user_id;
       const coinBalance = userData.user.balance || 0;
       const rubBalance = userData.user.rub_balance || 0;
       const currentRate = (ratesData.success && ratesData.rates.length) ? parseFloat(ratesData.rates[0].exchange_rate) : 0;
-      // Update user info (photo and name)
+
       const photoUrl = userData.user.photo_url || "";
       const firstName = userData.user.first_name || "Гость";
       const userInfoContainer = document.getElementById("user-info");
@@ -1259,32 +1267,33 @@ async function fetchUserData() {
         newUserInfoContainer.appendChild(userNameEl);
         document.body.appendChild(newUserInfoContainer);
       }
-      // Legacy display updates
+
       const balanceValue = document.getElementById("balanceValue");
       if (balanceValue) {
         const totalRub = rubBalance + (coinBalance * currentRate);
         balanceValue.textContent = `${formatBalance(totalRub, 2)} ₽`;
       }
+
       const userIdEl = document.getElementById("userIdDisplay");
       if (userIdEl) {
         userIdEl.textContent = "ID: " + currentUserId;
       }
-      // Update RUB balance (old logic)
+
       const rubBalanceInfo = document.getElementById("rubBalanceValue");
       if (rubBalanceInfo) {
         rubBalanceInfo.textContent = `${formatBalance(rubBalance, 2)} ₽`;
       }
-      // Update GUGA balance
+
       const gugaBalanceElement = document.getElementById("gugaBalanceValue");
       if (gugaBalanceElement) {
         gugaBalanceElement.textContent = `${formatBalance(coinBalance, 5)} ₲`;
       }
-      // Converted balance (coins in rubles)
+
       const convertedBalanceElement = document.getElementById("convertedBalance");
       if (convertedBalanceElement) {
         convertedBalanceElement.textContent = `${formatBalance(coinBalance * currentRate, 2)} ₽`;
       }
-      // Current rate display
+
       const rateDisplayElement = document.getElementById("currentRateDisplay");
       if (rateDisplayElement) {
         rateDisplayElement.textContent = formatBalance(currentRate, 2);
