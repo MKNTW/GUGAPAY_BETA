@@ -792,7 +792,7 @@ function openAuthModal() {
     .auth-beta-tag {
       background: #e0e0e0;
       padding: 2px 8px;
-      border-radius: 12px;
+      border-radius: 8px;
       font-size: 12px;
       color: #555;
     }
@@ -800,7 +800,7 @@ function openAuthModal() {
       width: 100%;
       max-width: 400px;
       padding: 24px;
-      background: #fff;
+      background: #F8F9FB;
       border-radius: 24px;
       box-shadow: 0 8px 30px rgba(0,0,0,0.05);
       display: flex;
