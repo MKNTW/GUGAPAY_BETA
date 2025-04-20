@@ -1478,8 +1478,8 @@ function openProfileModal() {
 
         <button id="profileLogoutBtn" style="
           width: 100%;
-          padding: 16px;
-          background: #F44336;
+          padding: 14px;
+          background: #808080;
           border: none;
           border-radius: 12px;
           color: white;
