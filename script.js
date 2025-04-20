@@ -3486,29 +3486,55 @@ async function showTransactionDetails(hash) {
 
     // Инъекция стилей один раз
     if (!document.getElementById("txDetailStyles")) {
-      const styleEl = document.createElement('style');
-      styleEl.id = "txDetailStyles";
-      styleEl.textContent = `
-.tx-sheet { max-width: 360px; margin-top: 50px; background: #fff; border-radius: 0px; }
-.tx-icon { text-align: center; margin-bottom: 12px; }
-.tx-icon img { width: 80px; height: 80px; }
-.tx-amount-main { text-align: center; font-size: 24px; font-weight: 700; margin: 8px 0; }
-.tx-amount-main.positive { color: #27AE60; }
-.tx-amount-main.negative { color: #EB5757; }
-.tx-status { text-align: center; margin-bottom: 50px; font-size: 12px; padding: 4px 12px; background: #E8F6EF; color: #219653; border-radius: 12px; display: inline-block; }
-.tx-detail-box { background: #F8F9FB; border-radius: 16px; padding: 16px; }
-.tx-detail-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #E6E6EB; }
-.tx-detail-row:last-child { border-bottom: none; }
-.tx-label { font-size: 13px; color: #666; }
-.tx-value { font-size: 14px; color: #1A1A1A; display: flex; align-items: center; gap: 6px; }
-.tx-user-info { display: flex; align-items: center; gap: 10px; }
-.tx-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 4px rgba(0,0,0,0.1); }
-.tx-user-name { font-weight: 600; color: #1A1A1A; }
-.tx-user-id { font-size: 12px; color: #888; }
-.copyable button { background: none; border: none; cursor: pointer; font-size: 14px; }
-      `;
-      document.head.appendChild(styleEl);
-    }
+  const styleEl = document.createElement("style");
+  styleEl.id = "txDetailStyles";
+  styleEl.textContent = `
+/* центрируем модалку и даём внутренний padding */
+.tx-sheet{
+  max-width:360px;
+  margin:50px auto 0;     /* auto по горизонтали → по центру */
+  background:#fff;
+  border-radius:20px;
+  padding:20px;           /* содержимое не прилипает к левому краю */
+  box-shadow:0 4px 12px rgba(0,0,0,.1);
+}
+
+.tx-icon{ text-align:center; margin-bottom:12px; }
+.tx-icon img{ width:80px; height:80px; }
+
+.tx-amount-main{ text-align:center; font-size:24px; font-weight:700; margin:8px 0; }
+.tx-amount-main.positive{ color:#27AE60; }
+.tx-amount-main.negative{ color:#EB5757; }
+
+.tx-status{
+  text-align:center;
+  margin-bottom:50px;
+  font-size:12px;
+  padding:4px 12px;
+  background:#E8F6EF;
+  color:#219653;
+  border-radius:12px;
+  display:inline-block;
+}
+
+.tx-detail-box{ background:#F8F9FB; border-radius:16px; padding:16px; }
+.tx-detail-row{ display:flex; justify-content:space-between; align-items:center;
+                padding:10px 0; border-bottom:1px solid #E6E6EB; }
+.tx-detail-row:last-child{ border-bottom:none; }
+
+.tx-label{ font-size:13px; color:#666; }
+.tx-value{ font-size:14px; color:#1A1A1A; display:flex; align-items:center; gap:6px; }
+
+.tx-user-info{ display:flex; align-items:center; gap:10px; }
+.tx-avatar{ width:32px; height:32px; border-radius:50%; object-fit:cover;
+            box-shadow:0 0 4px rgba(0,0,0,.1); }
+.tx-user-name{ font-weight:600; color:#1A1A1A; }
+.tx-user-id{ font-size:12px; color:#888; }
+
+.copyable button{ background:none; border:none; cursor:pointer; font-size:14px; }
+  `;
+  document.head.appendChild(styleEl);
+}
   } catch (err) {
     console.error("Ошибка при получении данных транзакции:", err);
     showNotification("Ошибка при загрузке", "error");
