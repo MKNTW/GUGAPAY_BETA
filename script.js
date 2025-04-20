@@ -837,6 +837,7 @@ function openAuthModal() {
       border: 1px solid #E6E6EB;
       border-radius: 12px;
       font-size: 16px;
+      width: 100%;
     }
     .auth-button {
       padding: 14px;
