@@ -3495,8 +3495,8 @@ async function showTransactionDetails(hash) {
   margin:50px auto 0;     /* auto по горизонтали → по центру */
   background:#fff;
   border-radius:20px;
-  padding:20px;           /* содержимое не прилипает к левому краю */
-  box-shadow:0 4px 12px rgba(0,0,0,.1);
+  // padding:20px;           /* содержимое не прилипает к левому краю */
+  // box-shadow:0 4px 12px rgba(0,0,0,.1);
 }
 
 .tx-icon{ text-align:center; margin-bottom:12px; }
