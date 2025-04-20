@@ -2027,26 +2027,30 @@ function confirmPayMerchantModal({ merchantId, amount, purpose }) {
  * CONFIRM USER-TO-USER TRANSFER (via scanned QR)
  **************************************************/
 async function confirmPayUserModal({ userId, amount, purpose }) {
-  const bottomBar = document.getElementById("bottomBar");
-  if (bottomBar) bottomBar.style.display = "none";
-
+  // Только после валидации скрываем bottomBar
   if (!userId || !amount || amount <= 0) {
     showNotification("❌ Некорректные данные для перевода", "error");
     return;
   }
+  const bottomBar = document.getElementById("bottomBar");
+  if (bottomBar) bottomBar.style.display = "none";
 
-  // Используем глобальный список пользователей, как в showTransactionDetails
-  const userData = users?.find(u => u.user_id === userId) || {
+  // Ищем пользователя в глобальном массиве users
+  const userData = users.find(u => u.user_id === userId) || {
     first_name: `ID: ${userId}`,
     photo_url: "photo/default.png"
   };
 
-  const toUserHtml = `
-    <div class="tx-user-info" style="display:flex;align-items:center;gap:12px;">
-      <img src="${userData.photo_url || 'photo/default.png'}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 4px rgba(0,0,0,0.1);" />
+  // Верстка модального окна
+  const userHtml = `
+    <div style="display:flex;align-items:center;gap:12px;">
+      <img src="${userData.photo_url}" 
+           style="width:48px;height:48px;border-radius:50%;object-fit:cover;box-shadow:0 0 4px rgba(0,0,0,0.1);" />
       <div>
-        <div style="font-weight: 600; color: #1A1A1A; font-size: 16px;">${userData.first_name || `ID: ${userId}`}</div>
-        <div style="font-size: 12px; color: #888;">ID: ${userId}</div>
+        <div style="font-weight:600;color:#1A1A1A;font-size:16px;">
+          ${userData.first_name}
+        </div>
+        <div style="font-size:12px;color:#888;">ID: ${userId}</div>
       </div>
     </div>`;
 
@@ -2054,46 +2058,38 @@ async function confirmPayUserModal({ userId, amount, purpose }) {
     "confirmPayUserModal",
     `
       <div style="
-        max-width: 400px;
-        margin: 0 auto;
-        padding: 24px;
-        background: #FFFFFF;
-        border-radius: 24px;
-        box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
-        margin-top: 60px;
+        max-width:400px;margin:0 auto;padding:24px;
+        background:#fff;border-radius:24px;
+        box-shadow:0 4px 20px rgba(0,0,0,0.1);margin-top:60px;
       ">
-        <div style="text-align: center; margin-bottom: 24px;">
-          ${toUserHtml}
+        <div style="text-align:center;margin-bottom:24px;">
+          ${userHtml}
         </div>
-
-        <div style="margin-bottom: 24px;">
-          <div style="background: #F8F9FB; border-radius: 16px; padding: 16px;">
-            <div style="color: #666; font-size: 14px; margin-bottom: 4px;">Сумма</div>
-            <div style="font-weight: 500; color: #1A1A1A;">${formatBalance(amount, 5)} ₲</div>
+        <div style="margin-bottom:24px;">
+          <div style="background:#F8F9FB;border-radius:16px;padding:16px;">
+            <div style="color:#666;font-size:14px;margin-bottom:4px;">Сумма</div>
+            <div style="font-weight:500;color:#1A1A1A;">
+              ${formatBalance(amount,5)} ₲
+            </div>
           </div>
         </div>
-
         ${purpose ? `
-          <div style="background: #F8F9FB; border-radius: 16px; padding: 16px; margin-bottom: 24px;">
-            <div style="color: #666; font-size: 14px; margin-bottom: 4px;">Назначение</div>
-            <div style="font-weight: 500; color: #1A1A1A;">${purpose}</div>
+          <div style="background:#F8F9FB;border-radius:16px;
+                      padding:16px;margin-bottom:24px;">
+            <div style="color:#666;font-size:14px;margin-bottom:4px;">
+              Назначение
+            </div>
+            <div style="font-weight:500;color:#1A1A1A;">
+              ${purpose}
+            </div>
           </div>
         ` : ''}
-
-        <button 
-          id="confirmPayUserBtn" 
-          style="
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(90deg, #2F80ED, #2D9CDB);
-            border: none;
-            border-radius: 12px;
-            color: white;
-            font-weight: 600;
-            font-size: 16px;
-            cursor: pointer;
-            transition: opacity 0.2s;
-          ">
+        <button id="confirmPayUserBtn" style="
+          width:100%;padding:16px;
+          background:linear-gradient(90deg,#2F80ED,#2D9CDB);
+          border:none;border-radius:12px;color:#fff;
+          font-weight:600;font-size:16px;cursor:pointer;
+        ">
           Подтвердить перевод
         </button>
       </div>
@@ -2112,6 +2108,7 @@ async function confirmPayUserModal({ userId, amount, purpose }) {
     }
   );
 
+  // Обработчик кнопки "Подтвердить"
   document.getElementById("confirmPayUserBtn").onclick = async () => {
     try {
       if (!currentUserId) throw new Error("Требуется авторизация");
@@ -2124,19 +2121,15 @@ async function confirmPayUserModal({ userId, amount, purpose }) {
           "Content-Type": "application/json",
           "X-CSRF-Token": csrfToken
         },
-        body: JSON.stringify({
-          toUserId: userId,
-          amount: Number(amount)
-        })
+        body: JSON.stringify({ toUserId: userId, amount: Number(amount) })
       });
-
-      const data = await resp.json();
-
-      if (!resp.ok || !data.success) {
-        throw new Error(data.error || "Ошибка сервера");
+      const result = await resp.json();
+      if (!resp.ok || !result.success) {
+        throw new Error(result.error || "Ошибка сервера");
       }
 
       showNotification("✅ Перевод успешно выполнен", "success");
+      // Закрываем модалку и возвращаем bottomBar
       document.getElementById("confirmPayUserModal")?.remove();
       if (bottomBar) bottomBar.style.display = "flex";
       await fetchUserData();
