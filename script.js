@@ -1548,67 +1548,158 @@ function closeProfileModal() {
 }
 
 /**************************************************
- * TRANSFER
+ * TRANSFER (styled like REQUEST modal)
  **************************************************/
 function openTransferModal() {
   const bottomBar = document.getElementById("bottomBar");
   if (bottomBar) bottomBar.style.display = "none";
 
   createModal("transferModal", `
-    <div class="transfer-container">
-      <div class="transfer-header">
-        <div class="header-info">
-          <div class="transfer-title">Перевод средств</div>
+    <div style="
+      max-width: 400px;
+      margin: 0 auto;
+      padding: 24px;
+      background: #FFFFFF;
+      border-radius: 24px;
+      box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
+      position: relative;
+      margin-top: 40px;
+    ">
+      <div style="
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 32px;
+        justify-content: center;
+      ">
+        <img src="photo/15.png" style="width: 40px; height: 40px;">
+        <div>
+          <div style="font-size: 20px; font-weight: 600; color: #1A1A1A;">GUGA</div>
+          <div style="font-size: 16px; color: #666;">Перевод средств</div>
         </div>
       </div>
 
-      <div class="currency-select">
+      <div class="currency-select" style="display: flex; gap: 12px; margin-bottom: 30px;">
         <div id="btnCurrencyGUGA" class="currency-card">
-          <div class="currency-card-content">
-            <img src="photo/15.png" class="currency-icon">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <img src="photo/15.png" style="width: 32px; height: 32px; border-radius: 8px;">
             <div>
-              <div class="currency-name">GUGA</div>
-              <div class="currency-desc">Криптовалюта</div>
+              <div style="font-weight: 500; color: #1A1A1A;">GUGA</div>
+              <div style="font-size: 13px; color: #909099;">Криптовалюта</div>
             </div>
           </div>
-          <div id="gugaBalance" class="currency-balance">
+          <div id="gugaBalance" style="margin-top: 12px; font-size: 14px; color: #666;">
             Доступно: 0.00000 ₲
           </div>
         </div>
 
         <div id="btnCurrencyRUB" class="currency-card">
-          <div class="currency-card-content">
-            <img src="photo/18.png" class="currency-icon">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <img src="photo/18.png" style="width: 32px; height: 32px; border-radius: 8px;">
             <div>
-              <div class="currency-name">RUB</div>
-              <div class="currency-desc">Фиатные деньги</div>
+              <div style="font-weight: 500; color: #1A1A1A;">RUB</div>
+              <div style="font-size: 13px; color: #909099;">Фиатные деньги</div>
             </div>
           </div>
-          <div id="rubBalance" class="currency-balance">
+          <div id="rubBalance" style="margin-top: 12px; font-size: 14px; color: #666;">
             Доступно: 0.00 ₽
           </div>
         </div>
       </div>
 
-      <div class="transfer-form">
-        <div class="transfer-field">
-          <label class="transfer-label">Получатель</label>
-          <input type="text" id="toUserIdInput" placeholder="Введите ID пользователя" class="auth-input">
+      <div style="margin-bottom: 24px;">
+        <div style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 8px;
+          color: #666;
+          font-size: 14px;
+        ">
+          <span>Получатель</span>
         </div>
-
-        <div class="transfer-field">
-          <div class="transfer-label-row">
-            <label class="transfer-label">Сумма</label>
-            <div id="transferBalanceInfo" class="transfer-hint"></div>
-          </div>
-          <div class="transfer-amount">
-            <input type="number" id="transferAmountInput" placeholder="0.00" class="auth-input">
-            <span id="currencySymbol" class="transfer-symbol">₲</span>
-          </div>
+        <div style="
+          background: #F8F9FB;
+          border-radius: 16px;
+          padding: 16px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          border: 1px solid #E6E6EB;
+        ">
+          <input 
+            type="text" 
+            id="toUserIdInput" 
+            placeholder="Введите ID пользователя"
+            style="
+              flex: 1;
+              background: none;
+              border: none;
+              color: #1A1A1A;
+              font-size: 18px;
+              outline: none;
+              padding: 0;
+              font-weight: 500;
+            ">
         </div>
       </div>
 
-      <button id="sendTransferBtn" class="auth-button primary">Подтвердить перевод</button>
+      <div style="margin-bottom: 24px;">
+        <div style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 8px;
+          color: #666;
+          font-size: 14px;
+        ">
+          <span>Сумма</span>
+          <div id="transferBalanceInfo" style="font-size: 13px; color: #909099;"></div>
+        </div>
+        <div style="
+          background: #F8F9FB;
+          border-radius: 16px;
+          padding: 16px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          border: 1px solid #E6E6EB;
+        ">
+          <input 
+            type="number" 
+            id="transferAmountInput" 
+            placeholder="0.00"
+            style="
+              flex: 1;
+              background: none;
+              border: none;
+              color: #1A1A1A;
+              font-size: 18px;
+              outline: none;
+              padding: 0;
+              font-weight: 500;
+            ">
+          <span id="currencySymbol" style="color: #666; font-size: 16px;">₲</span>
+        </div>
+      </div>
+
+      <button 
+        id="sendTransferBtn" 
+        style="
+          width: 100%;
+          padding: 16px;
+          background: linear-gradient(90deg, #2F80ED, #2D9CDB);
+          border: none;
+          border-radius: 12px;
+          color: white;
+          font-weight: 600;
+          font-size: 16px;
+          cursor: pointer;
+          transition: all 0.2s;
+          margin-top: 8px;
+        ">
+        Подтвердить перевод
+      </button>
     </div>
   `, {
     showCloseBtn: true,
@@ -1619,6 +1710,7 @@ function openTransferModal() {
     noRadiusByDefault: false,
     onClose: closeTransferModal
   });
+}
 
   const transferStyles = `
     .transfer-container {
