@@ -2035,17 +2035,11 @@ async function confirmPayUserModal({ userId, amount, purpose }) {
     return;
   }
 
-  let userData = { first_name: `ID: ${userId}`, photo_url: "photo/default.png" };
-
-  try {
-    const resp = await fetch(`${API_URL}/userById?userId=${userId}`, { credentials: "include" });
-    const data = await resp.json();
-    if (data.success && data.user) {
-      userData = data.user;
-    }
-  } catch (err) {
-    console.warn("Не удалось получить имя и фото пользователя:", err);
-  }
+  // Используем глобальный список пользователей, как в showTransactionDetails
+  const userData = users?.find(u => u.user_id === userId) || {
+    first_name: `ID: ${userId}`,
+    photo_url: "photo/default.png"
+  };
 
   const toUserHtml = `
     <div class="tx-user-info" style="display:flex;align-items:center;gap:12px;">
@@ -2150,7 +2144,7 @@ async function confirmPayUserModal({ userId, amount, purpose }) {
       console.error("Transfer error:", err);
       document.getElementById("confirmPayUserModal")?.remove();
       if (bottomBar) bottomBar.style.display = "flex";
-      showNotification(`❌ ${err.message}` , "error");
+      showNotification(`❌ ${err.message}`, "error");
     }
   };
 }
