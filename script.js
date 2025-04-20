@@ -1342,10 +1342,8 @@ function openProfileModal() {
     <div style="
       max-width: 400px;
       margin: 0 auto;
-      padding: 24px;
       background: #FFFFFF;
       border-radius: 24px;
-      box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
       position: relative;
       margin-top: 40px;
       display: flex;
@@ -1414,8 +1412,8 @@ function openProfileModal() {
     </div>
   `, {
     showCloseBtn: true,
-    cornerTopMargin: 20,
-    cornerTopRadius: 24,
+    cornerTopMargin: 0,
+    cornerTopRadius: 0,
     hasVerticalScroll: true,
     defaultFromBottom: true,
     noRadiusByDefault: false
