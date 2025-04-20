@@ -574,8 +574,8 @@ function openRequestModal() {
       `,
       {
         showCloseBtn: true,
-        cornerTopMargin: 20,
-        cornerTopRadius: 24,
+        cornerTopMargin: 0,
+        cornerTopRadius: 0,
         hasVerticalScroll: true,
         defaultFromBottom: true,
         noRadiusByDefault: false,
@@ -3363,25 +3363,25 @@ async function showTransactionDetails(hash) {
     if (!data.success || !data.transaction) {
       return showNotification("Операция не найдена", "error");
     }
+
     const tx = data.transaction;
     const symbol = tx.currency === "RUB" ? "₽" : "₲";
     const amountValue = formatBalance(tx.amount, tx.currency === "RUB" ? 2 : 5);
     const sign = (tx.from_user_id === currentUserId) ? "-" : "+";
     const amount = `${sign}${amountValue} ${symbol}`;
     const timestamp = new Date(tx.created_at || tx.client_time).toLocaleString("ru-RU");
+
     let fromLabel = tx.from_user_id;
     let toLabel = tx.to_user_id;
+
     if (typeof fromLabel === "string" && fromLabel.startsWith("MERCHANT:")) {
       fromLabel = "Мерчант " + fromLabel.replace("MERCHANT:", "");
     }
     if (typeof toLabel === "string" && toLabel.startsWith("MERCHANT:")) {
       toLabel = "Мерчант " + toLabel.replace("MERCHANT:", "");
     }
-    // Остальной код функции
-  } catch (error) {
-    console.error("Ошибка при получении данных транзакции:", error);
-  }
-}
+
+    // Показать модальное окно
     createModal(
       "transactionDetailsModal",
       `
@@ -3426,9 +3426,12 @@ async function showTransactionDetails(hash) {
         cornerTopRadius: 0
       }
     );
-    // Inject styles for transaction details if not already
+
+    // Стили, если ещё не добавлены
     if (!document.getElementById("txDetailStyles")) {
-      const detailStyles = `
+      const styleEl = document.createElement("style");
+      styleEl.id = "txDetailStyles";
+      styleEl.textContent = `
 .tx-icon {
   text-align: center;
   margin-bottom: 16px;
@@ -3472,7 +3475,7 @@ async function showTransactionDetails(hash) {
 .tx-value {
   font-size: 14px;
   color: #1A1A1A;
-  word-break: break-all;
+  word-break: break-word;
   text-align: right;
 }
 .copyable button {
@@ -3483,16 +3486,14 @@ async function showTransactionDetails(hash) {
 }
 .copyable button:active {
   transform: translateY(1px);
-}
-`;
-      try {
-  const styleEl = document.createElement("style");
-  styleEl.id = "txDetailStyles";
-  styleEl.textContent = detailStyles;
-  document.head.appendChild(styleEl);
-} catch (err) {
-  console.error("Ошибка при загрузке транзакции:", err);
-  showNotification("Ошибка при загрузке", "error");
+}`;
+      document.head.appendChild(styleEl);
+    }
+
+  } catch (error) {
+    console.error("Ошибка при получении данных транзакции:", error);
+    showNotification("Ошибка при загрузке", "error");
+  }
 }
 
 /**************************************************
