@@ -43,6 +43,7 @@ let currentHalvingStep = 0;
 let lastDirection = null;
 let cycleCount = 0;
 let exchangeChartInstance = null;
+let users = [];
 
 /**************************************************
  * BASE STYLES INJECTION
