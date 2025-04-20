@@ -1335,99 +1335,93 @@ function openProfileModal() {
   const bottomBar = document.getElementById("bottomBar");
   if (bottomBar) bottomBar.style.display = "none";
 
-  // Получаем фото и имя из блока #user-info
   const photo = document.querySelector("#user-info .user-photo")?.src || "photo/15.png";
   const name = document.querySelector("#user-info .user-name")?.textContent || "GugaUser";
 
-  // Создаём модалку профиля
   createModal("profileModal", `
-    <div class="profile-modal">
-      <div class="profile-avatar-section">
-        <img id="profilePhotoPreview" src="${photo}" class="profile-avatar" />
-        <input type="file" id="profilePhotoInput" accept="image/*" class="auth-input" />
+    <div style="
+      max-width: 400px;
+      margin: 0 auto;
+      padding: 24px;
+      background: #FFFFFF;
+      border-radius: 24px;
+      box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
+      position: relative;
+      margin-top: 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    ">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+        <img id="profilePhotoPreview" src="${photo}" style="
+          width: 80px;
+          height: 80px;
+          border-radius: 50%;
+          object-fit: cover;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        " />
+        <input type="file" id="profilePhotoInput" accept="image/*" style="
+          font-size: 14px;
+          padding: 8px 0;
+        "/>
       </div>
 
-      <div class="profile-field">
-        <label for="profileNameInput">Имя пользователя</label>
-        <input type="text" id="profileNameInput" class="auth-input" value="${name}" />
+      <div>
+        <label for="profileNameInput" style="
+          display: block;
+          font-size: 14px;
+          font-weight: 600;
+          margin-bottom: 6px;
+          color: #333;
+        ">Имя пользователя</label>
+        <input type="text" id="profileNameInput" value="${name}" style="
+          width: 100%;
+          padding: 12px 16px;
+          border: 1px solid #E6E6EB;
+          border-radius: 12px;
+          font-size: 16px;
+          box-sizing: border-box;
+        "/>
       </div>
 
-      <div class="profile-actions">
-        <button id="saveProfileBtn" class="auth-button primary">Сохранить</button>
-        <button id="profileLogoutBtn" class="auth-button secondary">Выйти из аккаунта</button>
+      <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
+        <button id="saveProfileBtn" style="
+          width: 100%;
+          padding: 16px;
+          background: linear-gradient(90deg, #2F80ED, #2D9CDB);
+          border: none;
+          border-radius: 12px;
+          color: white;
+          font-weight: 600;
+          font-size: 16px;
+          cursor: pointer;
+          transition: all 0.2s;
+        ">Сохранить</button>
+
+        <button id="profileLogoutBtn" style="
+          width: 100%;
+          padding: 16px;
+          background: #F44336;
+          border: none;
+          border-radius: 12px;
+          color: white;
+          font-weight: 600;
+          font-size: 16px;
+          cursor: pointer;
+          transition: all 0.2s;
+        ">Выйти из аккаунта</button>
       </div>
     </div>
   `, {
     showCloseBtn: true,
-    hasVerticalScroll: false,
-    defaultFromBottom: false,
-    onClose: () => { if (bottomBar) bottomBar.style.display = "flex"; }
+    cornerTopMargin: 20,
+    cornerTopRadius: 24,
+    hasVerticalScroll: true,
+    defaultFromBottom: true,
+    noRadiusByDefault: false
   });
 
-  // Стили один раз
-  if (!document.getElementById("profileModalStyles")) {
-    const style = document.createElement("style");
-    style.id = "profileModalStyles";
-    style.textContent = `
-      .profile-modal {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
-      .profile-avatar-section {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 12px;
-      }
-      .profile-avatar {
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        object-fit: cover;
-        box-shadow: 0 0 4px rgba(0,0,0,0.15);
-      }
-      .profile-field label {
-        font-weight: bold;
-        font-size: 14px;
-        margin-bottom: 4px;
-        display: block;
-      }
-      .auth-input {
-        width: 100%;
-        padding: 10px 12px;
-        border-radius: 8px;
-        border: 1px solid #ccc;
-        font-size: 14px;
-      }
-      .profile-actions {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-      .auth-button.primary {
-        background-color: #007bff;
-        color: white;
-        padding: 12px;
-        border: none;
-        border-radius: 10px;
-        font-weight: 600;
-        cursor: pointer;
-      }
-      .auth-button.secondary {
-        background-color: #f44336;
-        color: white;
-        padding: 12px;
-        border: none;
-        border-radius: 10px;
-        font-weight: 600;
-        cursor: pointer;
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
-  // Превью фото
+  // Превью изображения
   document.getElementById("profilePhotoInput").addEventListener("change", e => {
     const file = e.target.files[0];
     if (!file) return;
@@ -1438,9 +1432,8 @@ function openProfileModal() {
     reader.readAsDataURL(file);
   });
 
-  // Сохраняем изменения
+  // Сохраняем
   document.getElementById("saveProfileBtn").addEventListener("click", saveProfileChanges);
-
   // Выход
   document.getElementById("profileLogoutBtn").addEventListener("click", logout);
 }
