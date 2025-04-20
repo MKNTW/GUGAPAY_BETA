@@ -1607,8 +1607,8 @@ function openTransferModal() {
         <label style="display:block; margin-bottom: 6px; color:#666; font-size: 14px;">Получатель</label>
         <div style="
           background: #F8F9FB;
-          border-radius: 16px;
-          padding: 16px;
+          border-radius: 14px;
+          padding: 14px;
           display: flex;
           align-items: center;
           border: 1px solid #E6E6EB;
@@ -1636,8 +1636,8 @@ function openTransferModal() {
         </div>
         <div style="
           background: #F8F9FB;
-          border-radius: 16px;
-          padding: 16px;
+          border-radius: 14px;
+          padding: 14px;
           display: flex;
           align-items: center;
           border: 1px solid #E6E6EB;
