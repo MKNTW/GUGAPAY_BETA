@@ -332,6 +332,7 @@ async function login() {
       openMerchantUI();
     } catch (err) {
       console.error("Logout error:", err);
+      showNotification("❌ " + err.message, "error");
     }
   }
 }
