@@ -330,7 +330,9 @@ async function login() {
       await fetchMerchantData();
       closeAllAuthModals();
       openMerchantUI();
-    } 
+    } catch (err) {
+      console.error("Logout error:", err);
+    }
   }
 }
 
