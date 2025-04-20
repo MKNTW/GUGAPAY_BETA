@@ -1788,11 +1788,13 @@ function closeTransferModal() {
 }
 
 /**************************************************
- * QR PAYMENT (Scanner Modal)
+ * TRANSFER (styled like REQUEST modal, updated)
  **************************************************/
-function openPayQRModal() {
-  createModal(
-    "payQRModal",
+function openTransferModal() {
+  const bottomBar = document.getElementById("bottomBar");
+  if (bottomBar) bottomBar.style.display = "none";
+
+  createModal("payQRModal",
     `
       <div class="qr-scanner-wrapper">
         <video id="opPayVideo" muted playsinline></video>
@@ -1803,6 +1805,21 @@ function openPayQRModal() {
           <div class="corner bottom-left"></div>
           <div class="corner bottom-right"></div>
         </div>
+        <button id="closeQRScannerBtn" style="
+          position: absolute;
+          bottom: 32px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: #ffffff;
+          color: #1A1A1A;
+          font-weight: 600;
+          font-size: 16px;
+          border: none;
+          border-radius: 12px;
+          padding: 14px 28px;
+          cursor: pointer;
+          z-index: 9999;
+        ">Закрыть</button>
       </div>
     `,
     {
@@ -1817,10 +1834,14 @@ function openPayQRModal() {
         zIndex: 10000,
         padding: '0',
         overflow: 'hidden'
+      },
+      onClose: () => {
+        const bottomBar = document.getElementById("bottomBar");
+        if (bottomBar) bottomBar.style.display = "flex";
       }
     }
   );
-  // Inject scanner styles
+
   const style = document.createElement('style');
   style.innerHTML = `
     .qr-scanner-wrapper {
@@ -1910,27 +1931,23 @@ function openPayQRModal() {
   startUniversalQRScanner(videoEl, (rawValue) => {
     const parsed = parseQRCodeData(rawValue);
     if (parsed.type === "person") {
-      // User-to-user transfer
-      if (!parsed.userId) {
-        alert("❌ Неверный QR. Нет userId.");
-        return;
-      }
+      if (!parsed.userId) return showNotification("❌ Неверный QR.", "error");
       confirmPayUserModal(parsed);
     } else if (parsed.type === "merchant") {
-      // Payment to merchant
-      if (!parsed.merchantId) {
-        alert("❌ Неверный QR. Нет merchantId.");
-        return;
-      }
+      if (!parsed.merchantId) return showNotification("❌ Неверный QR.", "error");
       confirmPayMerchantModal(parsed);
     } else {
-      alert("❌ Неверный тип QR-кода.");
-      return;
+      return showNotification("❌ Неверный тип QR-кода.", "error");
     }
-    // Close scanner after successful scan
     setTimeout(() => {
       document.getElementById("payQRModal")?.remove();
+      if (bottomBar) bottomBar.style.display = "flex";
     }, 500);
+  });
+
+  document.getElementById("closeQRScannerBtn").addEventListener("click", () => {
+    document.getElementById("payQRModal")?.remove();
+    if (bottomBar) bottomBar.style.display = "flex";
   });
 }
 
