@@ -1349,8 +1349,7 @@ function openProfileModal() {
       display: flex;
       flex-direction: column;
       gap: 20px;
-      padding: 24px;
-      box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
+      padding-top: 24px;
     ">
       <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
         <img id="profilePhotoPreview" src="${photo}" style="
