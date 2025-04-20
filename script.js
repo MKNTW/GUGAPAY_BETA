@@ -2032,8 +2032,11 @@ async function confirmPayUserModal({ userId, amount, purpose }) {
     return;
   }
 
-  // Получаем имя и фото получателя из локального кэша (или добавь API-запрос)
-  const userData = window.userCache?.[userId] || { first_name: `ID: ${userId}`, photo_url: "photo/default.png" };
+  // Получаем имя и фото получателя
+  const userData = window.userCache?.[userId] || {
+    first_name: `ID: ${userId}`,
+    photo_url: "photo/default.png"
+  };
 
   createModal(
     "confirmPayUserModal",
@@ -2054,23 +2057,14 @@ async function confirmPayUserModal({ userId, amount, purpose }) {
         </div>
 
         <div style="margin-bottom: 24px;">
-          <div style="
-            background: #F8F9FB;
-            border-radius: 16px;
-            padding: 16px;
-          ">
+          <div style="background: #F8F9FB; border-radius: 16px; padding: 16px;">
             <div style="color: #666; font-size: 14px; margin-bottom: 4px;">Сумма</div>
             <div style="font-weight: 500; color: #1A1A1A;">${formatBalance(amount, 5)} ₲</div>
           </div>
         </div>
 
         ${purpose ? `
-          <div style="
-            background: #F8F9FB;
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 24px;
-          ">
+          <div style="background: #F8F9FB; border-radius: 16px; padding: 16px; margin-bottom: 24px;">
             <div style="color: #666; font-size: 14px; margin-bottom: 4px;">Назначение</div>
             <div style="font-weight: 500; color: #1A1A1A;">${purpose}</div>
           </div>
@@ -2096,8 +2090,8 @@ async function confirmPayUserModal({ userId, amount, purpose }) {
     `,
     {
       showCloseBtn: true,
-      cornerTopMargin: 20,
-      cornerTopRadius: 24,
+      cornerTopMargin: 0,
+      cornerTopRadius: 0,
       hasVerticalScroll: true,
       defaultFromBottom: true,
       noRadiusByDefault: false,
@@ -2106,40 +2100,41 @@ async function confirmPayUserModal({ userId, amount, purpose }) {
   );
 
   document.getElementById("confirmPayUserBtn").onclick = async () => {
-  try {
-    if (!currentUserId) throw new Error("Требуется авторизация");
+    try {
+      if (!currentUserId) throw new Error("Требуется авторизация");
 
-    if (!csrfToken) await fetchCsrfToken();
+      if (!csrfToken) await fetchCsrfToken();
 
-    const resp = await fetch(`${API_URL}/transfer`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": csrfToken
-      },
-      body: JSON.stringify({
-        toUserId: userId,
-        amount: Number(amount),
-        purpose: purpose || ""
-      })
-    });
+      const resp = await fetch(`${API_URL}/transfer`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken
+        },
+        body: JSON.stringify({
+          toUserId: userId,
+          amount: Number(amount),
+          purpose: purpose || ""
+        })
+      });
 
-    const data = await resp.json();
+      const data = await resp.json();
 
-    if (!resp.ok || !data.success) {
-      throw new Error(data.error || "Ошибка сервера");
+      if (!resp.ok || !data.success) {
+        throw new Error(data.error || "Ошибка сервера");
+      }
+
+      showNotification("✅ Перевод успешно выполнен", "success");
+      document.getElementById("confirmPayUserModal")?.remove();
+      await fetchUserData();
+    } catch (err) {
+      console.error("Transfer error:", err);
+      document.getElementById("confirmPayUserModal")?.remove();
+      showNotification(`❌ ${err.message}`, "error");
     }
-
-    showNotification("✅ Перевод успешно выполнен", "success");
-    document.getElementById("confirmPayUserModal")?.remove();
-    await fetchUserData();
-  } catch (err) {
-    console.error("Transfer error:", err);
-    document.getElementById("confirmPayUserModal")?.remove();
-    showNotification(`❌ ${err.message}`, "error");
-  }
-};
+  };
+}
 
 /**************************************************
  * QR CODE DATA PARSING
