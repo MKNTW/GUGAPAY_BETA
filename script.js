@@ -3356,10 +3356,12 @@ async function showTransactionDetails(hash) {
   if (bottomBar) bottomBar.style.display = "none";
 
   try {
+    // Fetch transaction by hash
     const res = await fetch(`${API_URL}/transaction/${hash}`, { credentials: "include" });
     const data = await res.json();
     if (!data.success || !data.transaction) {
       showNotification("Операция не найдена", "error");
+      if (bottomBar) bottomBar.style.display = "flex";
       return;
     }
 
@@ -3368,9 +3370,10 @@ async function showTransactionDetails(hash) {
     const amountVal = formatBalance(tx.amount, tx.currency === "RUB" ? 2 : 5);
     const sign = tx.from_user_id === currentUserId ? '-' : '+';
     const amount = `${sign}${amountVal} ${symbol}`;
+    const amountClass = sign === '+' ? 'positive' : 'negative';
     const timestamp = new Date(tx.created_at || tx.client_time).toLocaleString('ru-RU');
 
-    // Получаем участников из глобального списка users
+    // Retrieve user info from global users array
     const fromUser = users.find(u => u.user_id === tx.from_user_id) || {};
     const toUser   = users.find(u => u.user_id === tx.to_user_id)   || {};
 
@@ -3396,50 +3399,50 @@ async function showTransactionDetails(hash) {
         </div>
       </div>`;
 
-    // Выбираем иконку: 66 – входящий, 67 – исходящий
+    // Select icon: 66 for incoming, 67 for outgoing
     const iconId = sign === '+' ? '66' : '67';
 
     createModal(
       "transactionDetailsModal",
       `
-      <div class="tx-sheet">
-        <div class="tx-icon">
-          <img src="photo/${iconId}.png" width="48" height="48" />
-        </div>
-        <div class="tx-amount-main ${amountClass}">${amount}</div>
-        <div class="tx-status success">Операция прошла успешно</div>
-
-        <div class="tx-detail-box">
-          <div class="tx-detail-row">
-            <div class="tx-label">Дата и время</div>
-            <div class="tx-value">${timestamp}</div>
+        <div class="tx-sheet">
+          <div class="tx-icon">
+            <img src="photo/${iconId}.png" width="48" height="48" />
           </div>
+          <div class="tx-amount-main ${amountClass}">${amount}</div>
+          <div class="tx-status success">Операция прошла успешно</div>
 
-          <div class="tx-detail-row">
-            <div class="tx-label">Отправитель</div>
-            <div class="tx-value">${fromIdLabel}</div>
-          </div>
-
-          <div class="tx-detail-row">
-            <div class="tx-label">Получатель</div>
-            <div class="tx-value">${toIdLabel}</div>
-          </div>
-
-          <div class="tx-detail-row">
-            <div class="tx-label">ID транзакции</div>
-            <div class="tx-value copyable">
-              <span>${tx.hash}</span>
-              <button onclick="navigator.clipboard.writeText('${tx.hash}')">📋</button>
+          <div class="tx-detail-box">
+            <div class="tx-detail-row">
+              <div class="tx-label">Дата и время</div>
+              <div class="tx-value">${timestamp}</div>
             </div>
-          </div>
 
-          ${tx.tags ? `
-          <div class="tx-detail-row">
-            <div class="tx-label">Теги</div>
-            <div class="tx-value">${tx.tags}</div>
-          </div>` : ''}
+            <div class="tx-detail-row">
+              <div class="tx-label">Отправитель</div>
+              <div class="tx-value">${fromIdLabel}</div>
+            </div>
+
+            <div class="tx-detail-row">
+              <div class="tx-label">Получатель</div>
+              <div class="tx-value">${toIdLabel}</div>
+            </div>
+
+            <div class="tx-detail-row">
+              <div class="tx-label">ID транзакции</div>
+              <div class="tx-value copyable">
+                <span>${tx.hash}</span>
+                <button onclick="navigator.clipboard.writeText('${tx.hash}')">📋</button>
+              </div>
+            </div>
+
+            ${tx.tags ? `
+            <div class="tx-detail-row">
+              <div class="tx-label">Теги</div>
+              <div class="tx-value">${tx.tags}</div>
+            </div>` : ''}
+          </div>
         </div>
-      </div>
       `,
       {
         showCloseBtn: true,
@@ -3454,7 +3457,7 @@ async function showTransactionDetails(hash) {
       }
     );
 
-    // Вставляем стили один раз
+    // Inject styles once
     if (!document.getElementById("txDetailStyles")) {
       const styleEl = document.createElement('style');
       styleEl.id = "txDetailStyles";
