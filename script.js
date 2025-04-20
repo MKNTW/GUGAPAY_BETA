@@ -2037,7 +2037,6 @@ async function confirmPayUserModal({ userId, amount, purpose }) {
 
   let userData = { first_name: `ID: ${userId}`, photo_url: "photo/default.png" };
 
-  // Получаем данные пользователя с сервера
   try {
     const resp = await fetch(`${API_URL}/userById?userId=${userId}`, { credentials: "include" });
     const data = await resp.json();
@@ -2117,7 +2116,6 @@ async function confirmPayUserModal({ userId, amount, purpose }) {
   document.getElementById("confirmPayUserBtn").onclick = async () => {
     try {
       if (!currentUserId) throw new Error("Требуется авторизация");
-
       if (!csrfToken) await fetchCsrfToken();
 
       const resp = await fetch(`${API_URL}/transfer`, {
