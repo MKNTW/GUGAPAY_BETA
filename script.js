@@ -2106,42 +2106,40 @@ async function confirmPayUserModal({ userId, amount, purpose }) {
   );
 
   document.getElementById("confirmPayUserBtn").onclick = async () => {
-    try {
-      if (!currentUserId) throw new Error("Требуется авторизация");
+  try {
+    if (!currentUserId) throw new Error("Требуется авторизация");
 
-      if (!csrfToken) await fetchCsrfToken();
+    if (!csrfToken) await fetchCsrfToken();
 
-      const resp = await fetch(`${API_URL}/transfer`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRF-Token": csrfToken
-        },
-        body: JSON.stringify({
-          fromUserId: currentUserId,
-          toUserId: userId,
-          amount: Number(amount),
-          purpose: purpose || ""
-        })
-      });
+    const resp = await fetch(`${API_URL}/transfer`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": csrfToken
+      },
+      body: JSON.stringify({
+        toUserId: userId,
+        amount: Number(amount),
+        purpose: purpose || ""
+      })
+    });
 
-      const data = await resp.json();
+    const data = await resp.json();
 
-      if (!resp.ok || !data.success) {
-        throw new Error(data.error || "Ошибка сервера");
-      }
-
-      showNotification("✅ Перевод успешно выполнен", "success");
-      document.getElementById("confirmPayUserModal")?.remove();
-      await fetchUserData();
-    } catch (err) {
-      console.error("Transfer error:", err);
-      document.getElementById("confirmPayUserModal")?.remove();
-      showNotification(`❌ ${err.message}`, "error");
+    if (!resp.ok || !data.success) {
+      throw new Error(data.error || "Ошибка сервера");
     }
-  };
-}
+
+    showNotification("✅ Перевод успешно выполнен", "success");
+    document.getElementById("confirmPayUserModal")?.remove();
+    await fetchUserData();
+  } catch (err) {
+    console.error("Transfer error:", err);
+    document.getElementById("confirmPayUserModal")?.remove();
+    showNotification(`❌ ${err.message}`, "error");
+  }
+};
 
 /**************************************************
  * QR CODE DATA PARSING
