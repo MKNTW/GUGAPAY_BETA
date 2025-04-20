@@ -3489,7 +3489,7 @@ async function showTransactionDetails(hash) {
       const styleEl = document.createElement('style');
       styleEl.id = "txDetailStyles";
       styleEl.textContent = `
-.tx-sheet { max-width: 360px; margin-top: 50px; background: #fff; border-radius: 20px; }
+.tx-sheet { max-width: 360px; margin-top: 50px; background: #fff; border-radius: 0px; }
 .tx-icon { text-align: center; margin-bottom: 12px; }
 .tx-icon img { width: 80px; height: 80px; }
 .tx-amount-main { text-align: center; font-size: 24px; font-weight: 700; margin: 8px 0; }
