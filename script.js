@@ -1564,27 +1564,27 @@ function openTransferModal() {
 
       <div class="currency-select">
         <div id="btnCurrencyGUGA" class="currency-card">
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <img src="photo/15.png" style="width: 32px; height: 32px; border-radius: 8px;">
+          <div class="currency-card-content">
+            <img src="photo/15.png" class="currency-icon">
             <div>
-              <div style="font-weight: 500; color: #1A1A1A;">GUGA</div>
-              <div style="font-size: 13px; color: #909099;">Криптовалюта</div>
+              <div class="currency-name">GUGA</div>
+              <div class="currency-desc">Криптовалюта</div>
             </div>
           </div>
-          <div id="gugaBalance" style="margin-top: 12px; font-size: 14px; color: #666;">
+          <div id="gugaBalance" class="currency-balance">
             Доступно: 0.00000 ₲
           </div>
         </div>
 
         <div id="btnCurrencyRUB" class="currency-card">
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <img src="photo/18.png" style="width: 32px; height: 32px; border-radius: 8px;">
+          <div class="currency-card-content">
+            <img src="photo/18.png" class="currency-icon">
             <div>
-              <div style="font-weight: 500; color: #1A1A1A;">RUB</div>
-              <div style="font-size: 13px; color: #909099;">Фиатные деньги</div>
+              <div class="currency-name">RUB</div>
+              <div class="currency-desc">Фиатные деньги</div>
             </div>
           </div>
-          <div id="rubBalance" style="margin-top: 12px; font-size: 14px; color: #666;">
+          <div id="rubBalance" class="currency-balance">
             Доступно: 0.00 ₽
           </div>
         </div>
@@ -1593,22 +1593,22 @@ function openTransferModal() {
       <div class="transfer-form">
         <div class="transfer-field">
           <label class="transfer-label">Получатель</label>
-          <input type="text" id="toUserIdInput" placeholder="Введите ID пользователя" class="transfer-input">
+          <input type="text" id="toUserIdInput" placeholder="Введите ID пользователя" class="auth-input">
         </div>
 
         <div class="transfer-field">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <div class="transfer-label-row">
             <label class="transfer-label">Сумма</label>
-            <div id="transferBalanceInfo" style="font-size: 13px; color: #909099;"></div>
+            <div id="transferBalanceInfo" class="transfer-hint"></div>
           </div>
           <div class="transfer-amount">
-            <input type="number" id="transferAmountInput" placeholder="0.00">
-            <span id="currencySymbol">₲</span>
+            <input type="number" id="transferAmountInput" placeholder="0.00" class="auth-input">
+            <span id="currencySymbol" class="transfer-symbol">₲</span>
           </div>
         </div>
       </div>
 
-      <button id="sendTransferBtn" class="transfer-submit-btn">Подтвердить перевод</button>
+      <button id="sendTransferBtn" class="auth-button primary">Подтвердить перевод</button>
     </div>
   `, {
     showCloseBtn: true,
@@ -1620,24 +1620,22 @@ function openTransferModal() {
     onClose: closeTransferModal
   });
 
-  // Стили
   const transferStyles = `
     .transfer-container {
       background: #FFFFFF;
-      border-radius: 16px;
-      padding: 0px;
-      margin-top: 25px;
+      border-radius: 24px;
+      padding: 24px;
+      margin-top: 40px;
       max-width: 440px;
     }
     .transfer-header {
-      margin-bottom: 24px;
       text-align: center;
+      margin-bottom: 24px;
     }
     .transfer-title {
       font-size: 24px;
       font-weight: 600;
       color: #1A1A1A;
-      margin: 0;
     }
     .currency-select {
       display: flex;
@@ -1657,6 +1655,29 @@ function openTransferModal() {
       background: #F5F9FF;
       box-shadow: 0 2px 8px rgba(47, 128, 237, 0.1);
     }
+    .currency-card-content {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .currency-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+    }
+    .currency-name {
+      font-weight: 500;
+      color: #1A1A1A;
+    }
+    .currency-desc {
+      font-size: 13px;
+      color: #909099;
+    }
+    .currency-balance {
+      margin-top: 12px;
+      font-size: 14px;
+      color: #666;
+    }
     .transfer-form {
       background: #F8F9FB;
       border-radius: 16px;
@@ -1666,70 +1687,36 @@ function openTransferModal() {
     .transfer-field {
       margin-bottom: 20px;
     }
-    .transfer-label {
-      display: block;
-      font-size: 14px;
-      color: #666;
+    .transfer-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 8px;
     }
-    .transfer-input {
-      width: 100%;
-      padding: 12px 16px;
-      background: #fff;
-      border: 1px solid #E6E6EB;
-      border-radius: 8px;
-      font-size: 16px;
-      box-sizing: border-box;
+    .transfer-label {
+      font-size: 14px;
+      color: #666;
+    }
+    .transfer-hint {
+      font-size: 13px;
+      color: #909099;
     }
     .transfer-amount {
       position: relative;
       display: flex;
       align-items: center;
     }
-    .transfer-amount input {
-      flex: 1;
-      width: 100%;
-      padding: 12px 16px;
-      background: #fff;
-      border: 1px solid #E6E6EB;
-      border-radius: 8px;
-      font-size: 16px;
-      box-sizing: border-box;
-    }
-    .transfer-amount span {
-      display: inline-block;
-      width: 32px;
-      height: 100%;
+    .transfer-symbol {
       background: #E6E6EB;
       border-radius: 0 8px 8px 0;
-      text-align: center;
-      line-height: 36px;
-    }
-    .transfer-submit-btn {
-      width: 100%;
-      padding: 16px;
-      background: linear-gradient(90deg, #2F80ED, #2D9CDB);
-      border: none;
-      border-radius: 12px;
-      color: white;
-      font-weight: 600;
+      padding: 0 12px;
       font-size: 16px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .transfer-submit-btn:hover {
-      opacity: 0.9;
-      transform: translateY(-1px);
-    }
-    .transfer-submit-btn:active {
-      transform: translateY(0);
+      color: #333;
     }
   `;
   const styleEl = document.createElement("style");
   styleEl.textContent = transferStyles;
   document.head.appendChild(styleEl);
-
-  // ================= Логика =====================
 
   let currentTransferCurrency = "GUGA";
 
@@ -1823,7 +1810,6 @@ function openTransferModal() {
   });
 }
 
-// Закрытие окна и возврат bottomBar
 function closeTransferModal() {
   const modal = document.getElementById("transferModal");
   if (modal) modal.remove();
