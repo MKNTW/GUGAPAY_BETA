@@ -270,20 +270,6 @@ app.post('/register', async (req, res) => {
 const multer = require('multer');
 const upload = multer();
 
-// Middleware для проверки токена (если у тебя уже есть — пропусти)
-function verifyToken(req, res, next) {
-  const token = req.headers['authorization']?.split(' ')[1];
-  if (!token) return res.status(401).json({ success: false, error: 'Нет токена' });
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded;
-    next();
-  } catch (err) {
-    return res.status(403).json({ success: false, error: 'Недействительный токен' });
-  }
-}
-
 app.put('/user', upload.none(), verifyToken, async (req, res) => {
   try {
     if (req.user.role !== 'user') {
