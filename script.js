@@ -43,7 +43,6 @@ let currentHalvingStep = 0;
 let lastDirection = null;
 let cycleCount = 0;
 let exchangeChartInstance = null;
-let users = [];
 
 /**************************************************
  * BASE STYLES INJECTION
@@ -1212,25 +1211,17 @@ function injectMainUIStyles() {
 /**************************************************
  * USER DATA & SYNC
  **************************************************/
+let users = []; // глобальный массив пользователей
 
-/**
- * Fetches user data, latest exchange rate, and all users, then updates UI.
- */
 async function fetchUserData() {
   try {
-    const [userResp, ratesResp, allUsersResp] = await Promise.all([
+    const [userResp, ratesResp] = await Promise.all([
       fetch(`${API_URL}/user`, { credentials: "include" }),
-      fetch(`${API_URL}/exchangeRates?limit=1`, { credentials: "include" }),
-      fetch(`${API_URL}/users`, { credentials: "include" })
+      fetch(`${API_URL}/exchangeRates?limit=1`, { credentials: "include" })
     ]);
 
     const userData = await userResp.json();
     const ratesData = await ratesResp.json();
-    const usersData = await allUsersResp.json();
-
-    if (usersData.success && Array.isArray(usersData.users)) {
-      users = usersData.users;
-    }
 
     if (userData.success && userData.user) {
       if (userData.user.blocked) {
@@ -1247,6 +1238,7 @@ async function fetchUserData() {
       const photoUrl = userData.user.photo_url || "";
       const firstName = userData.user.first_name || "Гость";
       const userInfoContainer = document.getElementById("user-info");
+
       if (userInfoContainer) {
         const userPhotoEl = userInfoContainer.querySelector(".user-photo");
         const userNameEl = userInfoContainer.querySelector(".user-name");
@@ -1297,6 +1289,17 @@ async function fetchUserData() {
       const rateDisplayElement = document.getElementById("currentRateDisplay");
       if (rateDisplayElement) {
         rateDisplayElement.textContent = formatBalance(currentRate, 2);
+      }
+
+      // 👇 Загружаем список всех пользователей для отображения в деталях транзакций
+      try {
+        const allResp = await fetch(`${API_URL}/users`, { credentials: "include" });
+        const allUsersData = await allResp.json();
+        if (allUsersData.success && Array.isArray(allUsersData.users)) {
+          users = allUsersData.users;
+        }
+      } catch (err) {
+        console.warn("Не удалось загрузить список пользователей:", err);
       }
     }
   } catch (err) {
