@@ -626,9 +626,15 @@ function openAuthModal() {
   removeAllModals();
 
   createModal("authModal", `
-    <div class="auth-fullscreen colorful-background">
+    <div class="auth-fullscreen white-background">
+      <div class="auth-header">
+        <img src="photo/15.png" alt="logo" class="auth-logo" />
+        <span class="auth-app-name">GugaPay</span>
+        <span class="auth-beta-tag">beta</span>
+      </div>
+
       <div class="auth-overlay">
-        <h2 class="auth-title">Добро пожаловать в <span>GUGACOIN</span></h2>
+        <p class="auth-subtitle">Пожалуйста, авторизуйтесь через логин или Telegram</p>
 
         <!-- Login Form -->
         <div id="loginSection" class="auth-form">
@@ -663,7 +669,7 @@ function openAuthModal() {
     hasVerticalScroll: false,
     defaultFromBottom: false,
     noRadiusByDefault: true,
-    customStyles: { backgroundColor: "#000" }
+    customStyles: { backgroundColor: "#ffffff" }
   });
 
   document.getElementById("loginSubmitBtn").addEventListener("click", async () => {
@@ -757,30 +763,59 @@ function openAuthModal() {
       position: fixed;
       inset: 0;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       align-items: center;
-      overflow: hidden;
-      z-index: 10000;
+      justify-content: flex-start;
+      padding-top: 48px;
+      background-color: #ffffff;
     }
-    .colorful-background {
-      background: radial-gradient(circle at top left, #ffafbd, #ffc3a0),
-                  radial-gradient(circle at bottom right, #2193b0, #6dd5ed);
-      background-blend-mode: screen;
+    .white-background {
+      background: #ffffff;
+    }
+    .auth-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .auth-logo {
+      height: 36px;
+      width: 36px;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+    .auth-app-name {
+      font-size: 22px;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+    .auth-beta-tag {
+      background: #e0e0e0;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      color: #555;
     }
     .auth-overlay {
-      background: rgba(255, 255, 255, 0.85);
-      backdrop-filter: blur(10px);
-      border-radius: 24px;
-      padding: 32px;
       width: 100%;
       max-width: 400px;
+      padding: 24px;
+      background: #fff;
+      border-radius: 24px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.05);
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 20px;
     }
+    .auth-subtitle {
+      font-size: 15px;
+      color: #555;
+      text-align: center;
+      margin-top: 0;
+    }
     .auth-title {
-      font-size: 26px;
+      font-size: 24px;
       font-weight: 700;
       text-align: center;
       color: #1a1a1a;
