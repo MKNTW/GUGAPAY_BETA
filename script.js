@@ -1353,8 +1353,8 @@ function openProfileModal() {
     ">
       <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
         <img id="profilePhotoPreview" src="${photo}" style="
-          width: 80px;
-          height: 80px;
+          width: 100px;
+          height: 100px;
           border-radius: 50%;
           object-fit: cover;
           box-shadow: 0 2px 6px rgba(0,0,0,0.1);
@@ -1457,196 +1457,183 @@ function closeProfileModal() {
  * TRANSFER
  **************************************************/
 function openTransferModal() {
-  createModal(
-    "transferModal",
-    `
-<div class="transfer-container">
-    <div class="transfer-header">
+  const bottomBar = document.getElementById("bottomBar");
+  if (bottomBar) bottomBar.style.display = "none";
+
+  createModal("transferModal", `
+    <div class="transfer-container">
+      <div class="transfer-header">
         <div class="header-info">
-            <div class="transfer-title">Перевод средств</div>
+          <div class="transfer-title">Перевод средств</div>
         </div>
-    </div>
+      </div>
 
-    <!-- Currency selection block -->
-    <div class="currency-select">
+      <div class="currency-select">
         <div id="btnCurrencyGUGA" class="currency-card">
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <img src="photo/15.png" style="width: 32px; height: 32px; border-radius: 8px;">
-                <div>
-                    <div style="font-weight: 500; color: #1A1A1A;">GUGA</div>
-                    <div style="font-size: 13px; color: #909099;">Криптовалюта</div>
-                </div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <img src="photo/15.png" style="width: 32px; height: 32px; border-radius: 8px;">
+            <div>
+              <div style="font-weight: 500; color: #1A1A1A;">GUGA</div>
+              <div style="font-size: 13px; color: #909099;">Криптовалюта</div>
             </div>
-            <div id="gugaBalance" style="margin-top: 12px; font-size: 14px; color: #666;">
-                Доступно: 0.00000 ₲
-            </div>
+          </div>
+          <div id="gugaBalance" style="margin-top: 12px; font-size: 14px; color: #666;">
+            Доступно: 0.00000 ₲
+          </div>
         </div>
-        
+
         <div id="btnCurrencyRUB" class="currency-card">
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <img src="photo/18.png" style="width: 32px; height: 32px; border-radius: 8px;">
-                <div>
-                    <div style="font-weight: 500; color: #1A1A1A;">RUB</div>
-                    <div style="font-size: 13px; color: #909099;">Фиатные деньги</div>
-                </div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <img src="photo/18.png" style="width: 32px; height: 32px; border-radius: 8px;">
+            <div>
+              <div style="font-weight: 500; color: #1A1A1A;">RUB</div>
+              <div style="font-size: 13px; color: #909099;">Фиатные деньги</div>
             </div>
-            <div id="rubBalance" style="margin-top: 12px; font-size: 14px; color: #666;">
-                Доступно: 0.00 ₽
-            </div>
+          </div>
+          <div id="rubBalance" style="margin-top: 12px; font-size: 14px; color: #666;">
+            Доступно: 0.00 ₽
+          </div>
         </div>
-    </div>
+      </div>
 
-    <!-- Transfer form -->
-    <div class="transfer-form">
+      <div class="transfer-form">
         <div class="transfer-field">
-            <label class="transfer-label">Получатель</label>
-            <input 
-                type="text" 
-                id="toUserIdInput" 
-                placeholder="Введите ID пользователя" 
-                class="transfer-input">
+          <label class="transfer-label">Получатель</label>
+          <input type="text" id="toUserIdInput" placeholder="Введите ID пользователя" class="transfer-input">
         </div>
 
         <div class="transfer-field">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <label class="transfer-label">Сумма</label>
-                <div id="transferBalanceInfo" style="font-size: 13px; color: #909099;"></div>
-            </div>
-            <div class="transfer-amount">
-                <input 
-                    type="number" 
-                    id="transferAmountInput"
-                    placeholder="0.00">
-                <span id="currencySymbol">₲</span>
-            </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <label class="transfer-label">Сумма</label>
+            <div id="transferBalanceInfo" style="font-size: 13px; color: #909099;"></div>
+          </div>
+          <div class="transfer-amount">
+            <input type="number" id="transferAmountInput" placeholder="0.00">
+            <span id="currencySymbol">₲</span>
+          </div>
         </div>
-    </div>
+      </div>
 
-    <!-- Submit button -->
-    <button id="sendTransferBtn" class="transfer-submit-btn">
-        Подтвердить перевод
-    </button>
-</div>
-    `,
-    {
-      showCloseBtn: true,
-      cornerTopMargin: 0,
-      cornerTopRadius: 0,
-      hasVerticalScroll: true,
-      defaultFromBottom: true,
-      noRadiusByDefault: false
-    }
-  );
-  // Common styles for transfer modal
+      <button id="sendTransferBtn" class="transfer-submit-btn">Подтвердить перевод</button>
+    </div>
+  `, {
+    showCloseBtn: true,
+    cornerTopMargin: 0,
+    cornerTopRadius: 0,
+    hasVerticalScroll: true,
+    defaultFromBottom: true,
+    noRadiusByDefault: false,
+    onClose: closeTransferModal
+  });
+
   const transferStyles = `
-  .transfer-container {
-    background: #FFFFFF;
-    border-radius: 16px;
-    padding: 0px;
-    margin-top: 25px;
-    max-width: 440px;
-  }
-  .transfer-header {
-    margin-bottom: 24px;
-    text-align: center;
-  }
-  .transfer-title {
-    font-size: 24px;
-    font-weight: 600;
-    color: #1A1A1A;
-    margin: 0;
-  }
-  .currency-select {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 30px;
-  }
-  .currency-card {
-    flex: 1;
-    padding: 16px;
-    border: 1px solid #E6E6EB;
-    border-radius: 16px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .currency-card.active {
-    border-color: #2F80ED;
-    background: #F5F9FF;
-    box-shadow: 0 2px 8px rgba(47, 128, 237, 0.1);
-  }
-  .transfer-form {
-    background: #F8F9FB;
-    border-radius: 16px;
-    padding: 16px;
-    margin-bottom: 24px;
-  }
-  .transfer-field {
-    margin-bottom: 20px;
-  }
-  .transfer-label {
-    display: block;
-    font-size: 14px;
-    color: #666;
-    margin-bottom: 8px;
-  }
-  .transfer-input {
-    width: 100%;
-    padding: 12px 16px;
-    background: #fff;
-    border: 1px solid #E6E6EB;
-    border-radius: 8px;
-    font-size: 16px;
-    box-sizing: border-box;
-  }
-  .transfer-amount {
-    position: relative;
-    display: flex;
-    align-items: center;
-  }
-  .transfer-amount input {
-    flex: 1;
-    width: 100%;
-    padding: 12px 16px;
-    background: #fff;
-    border: 1px solid #E6E6EB;
-    border-radius: 8px;
-    font-size: 16px;
-    box-sizing: border-box;
-  }
-  .transfer-amount span {
-    display: inline-block;
-    width: 32px;
-    height: 100%;
-    background: #E6E6EB;
-    border-radius: 0 8px 8px 0;
-    text-align: center;
-    line-height: 36px;
-  }
-  .transfer-submit-btn {
-    width: 100%;
-    padding: 16px;
-    background: linear-gradient(90deg, #2F80ED, #2D9CDB);
-    border: none;
-    border-radius: 12px;
-    color: white;
-    font-weight: 600;
-    font-size: 16px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .transfer-submit-btn:hover {
-    opacity: 0.9;
-    transform: translateY(-1px);
-  }
-  .transfer-submit-btn:active {
-    transform: translateY(0);
-  }
+    .transfer-container {
+      background: #FFFFFF;
+      border-radius: 16px;
+      padding: 0px;
+      margin-top: 25px;
+      max-width: 440px;
+    }
+    .transfer-header {
+      margin-bottom: 24px;
+      text-align: center;
+    }
+    .transfer-title {
+      font-size: 24px;
+      font-weight: 600;
+      color: #1A1A1A;
+      margin: 0;
+    }
+    .currency-select {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 30px;
+    }
+    .currency-card {
+      flex: 1;
+      padding: 16px;
+      border: 1px solid #E6E6EB;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .currency-card.active {
+      border-color: #2F80ED;
+      background: #F5F9FF;
+      box-shadow: 0 2px 8px rgba(47, 128, 237, 0.1);
+    }
+    .transfer-form {
+      background: #F8F9FB;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+    .transfer-field {
+      margin-bottom: 20px;
+    }
+    .transfer-label {
+      display: block;
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 8px;
+    }
+    .transfer-input {
+      width: 100%;
+      padding: 12px 16px;
+      background: #fff;
+      border: 1px solid #E6E6EB;
+      border-radius: 8px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    .transfer-amount {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .transfer-amount input {
+      flex: 1;
+      width: 100%;
+      padding: 12px 16px;
+      background: #fff;
+      border: 1px solid #E6E6EB;
+      border-radius: 8px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    .transfer-amount span {
+      display: inline-block;
+      width: 32px;
+      height: 100%;
+      background: #E6E6EB;
+      border-radius: 0 8px 8px 0;
+      text-align: center;
+      line-height: 36px;
+    }
+    .transfer-submit-btn {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(90deg, #2F80ED, #2D9CDB);
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .transfer-submit-btn:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+    .transfer-submit-btn:active {
+      transform: translateY(0);
+    }
   `;
-  const styleEl = document.createElement('style');
+  const styleEl = document.createElement("style");
   styleEl.textContent = transferStyles;
   document.head.appendChild(styleEl);
 
-  // Current currency ("GUGA" or "RUB")
   let currentTransferCurrency = "GUGA";
 
   const updateTransferUI = () => {
@@ -1654,58 +1641,49 @@ function openTransferModal() {
     const balanceInfo = document.getElementById("transferBalanceInfo");
     const gugaBalance = document.getElementById("gugaBalance");
     const rubBalance = document.getElementById("rubBalance");
-    // Remove active class from all currency cards
-    document.querySelectorAll('.currency-card').forEach(card => {
-      card.classList.remove('active');
-    });
-    // Set active on selected currency card
-    const activeCard = (currentTransferCurrency === "GUGA")
+
+    document.querySelectorAll(".currency-card").forEach(card => card.classList.remove("active"));
+    const activeCard = currentTransferCurrency === "GUGA"
       ? document.getElementById("btnCurrencyGUGA")
       : document.getElementById("btnCurrencyRUB");
-    activeCard.classList.add('active');
-    // Update symbol, input step, and balance display
+    activeCard.classList.add("active");
+
     if (currentTransferCurrency === "GUGA") {
       const balance = parseFloat(document.getElementById("gugaBalanceValue")?.innerText || 0);
-      currencySymbol.textContent = '₲';
+      currencySymbol.textContent = "₲";
       document.getElementById("transferAmountInput").step = "0.00001";
       gugaBalance.innerHTML = `Доступно: ${formatBalance(balance, 5)} ₲`;
       balanceInfo.textContent = `Макс: ${formatBalance(balance, 5)} ₲`;
     } else {
       const balance = parseFloat(document.getElementById("rubBalanceValue")?.innerText || 0);
-      currencySymbol.textContent = '₽';
+      currencySymbol.textContent = "₽";
       document.getElementById("transferAmountInput").step = "0.01";
       rubBalance.innerHTML = `Доступно: ${formatBalance(balance, 2)} ₽`;
       balanceInfo.textContent = `Макс: ${formatBalance(balance, 2)} ₽`;
     }
   };
 
-  // Currency switch events
-  document.getElementById("btnCurrencyGUGA").addEventListener('click', () => {
+  document.getElementById("btnCurrencyGUGA").addEventListener("click", () => {
     currentTransferCurrency = "GUGA";
     updateTransferUI();
   });
-  document.getElementById("btnCurrencyRUB").addEventListener('click', () => {
+
+  document.getElementById("btnCurrencyRUB").addEventListener("click", () => {
     currentTransferCurrency = "RUB";
     updateTransferUI();
   });
 
-  // Send transfer button
   document.getElementById("sendTransferBtn").onclick = async () => {
     const toUser = document.getElementById("toUserIdInput")?.value.trim();
     const amount = parseFloat(document.getElementById("transferAmountInput")?.value);
-    if (!toUser || !amount || amount <= 0) {
-      alert("❌ Введите корректные данные!");
-      return;
-    }
-    if (toUser === currentUserId) {
-      alert("❌ Нельзя перевести самому себе");
-      return;
-    }
-    const endpoint = (currentTransferCurrency === "GUGA") ? "/transfer" : "/transferRub";
+
+    if (!toUser || !amount || amount <= 0) return alert("❌ Введите корректные данные!");
+    if (toUser === currentUserId) return alert("❌ Нельзя перевести самому себе");
+
+    const endpoint = currentTransferCurrency === "GUGA" ? "/transfer" : "/transferRub";
+
     try {
-      if (!csrfToken) {
-        await fetchCsrfToken();
-      }
+      if (!csrfToken) await fetchCsrfToken();
       const resp = await fetch(`${API_URL}${endpoint}`, {
         method: "POST",
         credentials: "include",
@@ -1718,7 +1696,7 @@ function openTransferModal() {
       const data = await resp.json();
       if (data.success) {
         alert("✅ Перевод выполнен!");
-        document.getElementById("transferModal")?.remove();
+        closeTransferModal();
         fetchUserData();
       } else {
         alert("❌ Ошибка перевода: " + data.error);
@@ -1729,7 +1707,6 @@ function openTransferModal() {
     }
   };
 
-  // After balances are loaded, update UI and initialize
   fetchUserData().then(() => {
     const rubBalanceElement = document.getElementById("rubBalance");
     const rubBalanceValue = parseFloat(document.getElementById("rubBalanceValue")?.innerText || 0);
@@ -1738,6 +1715,14 @@ function openTransferModal() {
     }
     updateTransferUI();
   });
+}
+
+function closeTransferModal() {
+  const modal = document.getElementById("transferModal");
+  if (modal) modal.remove();
+
+  const bottomBar = document.getElementById("bottomBar");
+  if (bottomBar) bottomBar.style.display = "flex";
 }
 
 /**************************************************
