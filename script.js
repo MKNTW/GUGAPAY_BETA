@@ -740,8 +740,6 @@ function openAuthModal() {
         createMainUI();
         updateUI();
         document.getElementById("bottomBar").style.display = "flex";
-      } catch (err) {
-        showNotification(err.message, "error");
       } finally {
         hideGlobalLoading();
       }
