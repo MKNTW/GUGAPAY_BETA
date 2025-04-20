@@ -633,7 +633,7 @@ function openAuthModal() {
         <span class="auth-beta-tag">beta</span>
       </div>
 
-      <p class="auth-subtitle">Для доступа к функционалу GugaPay, пожалуйста, авторизуйтесь с помощью логина и пароля или через Telegram. Это поможет нам защитить ваш аккаунт и сохранить ваши данные.</p>
+      <p class="auth-subtitle">Для входа в GugaPay, пожалуйста, авторизуйтесь с помощью логина и пароля или через Telegram.</p>
 
       <div class="auth-overlay">
         <!-- Login Form -->
@@ -704,7 +704,7 @@ function openAuthModal() {
     `;
     Object.assign(telegramBtn.style, {
       width: "100%",
-      padding: "16px",
+      padding: "14px",
       backgroundColor: "#0088cc",
       color: "white",
       border: "none",
@@ -805,7 +805,6 @@ function openAuthModal() {
       box-shadow: 0 8px 30px rgba(0,0,0,0.05);
       display: flex;
       flex-direction: column;
-      align-items: center;
       gap: 20px;
     }
     .auth-subtitle {
@@ -814,7 +813,7 @@ function openAuthModal() {
       text-align: center;
       max-width: 400px;
       line-height: 1.5;
-      margin: 0 20px 20px;
+      margin: 20px 20px 40px;
     }
     .auth-title {
       font-size: 24px;
