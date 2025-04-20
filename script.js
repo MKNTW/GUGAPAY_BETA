@@ -1558,10 +1558,10 @@ function openTransferModal() {
     <div style="
       max-width: 400px;
       margin: 0 auto;
-      padding: 24px;
+      // padding: 24px;
       background: #FFFFFF;
       border-radius: 24px;
-      box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
+      // box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
       position: relative;
       margin-top: 40px;
     ">
