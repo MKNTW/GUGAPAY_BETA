@@ -3358,6 +3358,9 @@ document.addEventListener("DOMContentLoaded", async () => {
  **************************************************/
 async function showTransactionDetails(hash) {
   try {
+    const bottomBar = document.getElementById("bottomBar");
+    if (bottomBar) bottomBar.style.display = "none";
+
     const res = await fetch(`${API_URL}/transaction/${hash}`, { credentials: "include" });
     const data = await res.json();
     if (!data.success || !data.transaction) {
@@ -3371,17 +3374,14 @@ async function showTransactionDetails(hash) {
     const amount = `${sign}${amountValue} ${symbol}`;
     const timestamp = new Date(tx.created_at || tx.client_time).toLocaleString("ru-RU");
 
-    let fromLabel = tx.from_user_id;
-    let toLabel = tx.to_user_id;
+    const fromPhoto = tx.from_photo || 'photo/15.png';
+    const toPhoto = tx.to_photo || 'photo/15.png';
+    const fromName = tx.from_name || tx.from_user_id;
+    const toName = tx.to_name || tx.to_user_id;
 
-    if (typeof fromLabel === "string" && fromLabel.startsWith("MERCHANT:")) {
-      fromLabel = "Мерчант " + fromLabel.replace("MERCHANT:", "");
-    }
-    if (typeof toLabel === "string" && toLabel.startsWith("MERCHANT:")) {
-      toLabel = "Мерчант " + toLabel.replace("MERCHANT:", "");
-    }
+    const fromIdLabel = `<div class="tx-user-info"><img src="${fromPhoto}" class="tx-avatar"/><div><div class="tx-user-name">${fromName}</div><div class="tx-user-id">ID: ${tx.from_user_id}</div></div></div>`;
+    const toIdLabel = `<div class="tx-user-info"><img src="${toPhoto}" class="tx-avatar"/><div><div class="tx-user-name">${toName}</div><div class="tx-user-id">ID: ${tx.to_user_id}</div></div></div>`;
 
-    // Показать модальное окно
     createModal(
       "transactionDetailsModal",
       `
@@ -3390,20 +3390,24 @@ async function showTransactionDetails(hash) {
             <img src="photo/${tx.currency === "RUB" ? "92" : "67"}.png" alt="icon" width="48" height="48" />
           </div>
           <div class="tx-amount-main ${sign === '+' ? 'positive' : 'negative'}">${amount}</div>
-          <div class="tx-status success">Успешно</div>
+          <div class="tx-status success">Операция прошла успешно</div>
+
           <div class="tx-detail-box">
             <div class="tx-detail-row">
               <div class="tx-label">Дата и время</div>
               <div class="tx-value">${timestamp}</div>
             </div>
+
             <div class="tx-detail-row">
               <div class="tx-label">Отправитель</div>
-              <div class="tx-value">${fromLabel}</div>
+              <div class="tx-value">${fromIdLabel}</div>
             </div>
+
             <div class="tx-detail-row">
               <div class="tx-label">Получатель</div>
-              <div class="tx-value">${toLabel}</div>
+              <div class="tx-value">${toIdLabel}</div>
             </div>
+
             <div class="tx-detail-row">
               <div class="tx-label">ID транзакции</div>
               <div class="tx-value copyable">
@@ -3411,6 +3415,7 @@ async function showTransactionDetails(hash) {
                 <button onclick="navigator.clipboard.writeText('${tx.hash}')">📋</button>
               </div>
             </div>
+
             ${tx.tags ? `
               <div class="tx-detail-row">
                 <div class="tx-label">Теги</div>
@@ -3423,11 +3428,14 @@ async function showTransactionDetails(hash) {
       {
         showCloseBtn: true,
         cornerTopMargin: 0,
-        cornerTopRadius: 0
+        cornerTopRadius: 0,
+        onClose: () => {
+          if (bottomBar) bottomBar.style.display = "flex";
+        }
       }
     );
 
-    // Стили, если ещё не добавлены
+    // Добавить стили один раз
     if (!document.getElementById("txDetailStyles")) {
       const styleEl = document.createElement("style");
       styleEl.id = "txDetailStyles";
@@ -3438,45 +3446,66 @@ async function showTransactionDetails(hash) {
 }
 .tx-amount-main {
   text-align: center;
-  font-size: 24px;
-  font-weight: 600;
-  margin-bottom: 4px;
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 8px;
 }
 .tx-amount-main.positive {
-  color: rgb(25, 150, 70);
+  color: #27AE60;
 }
 .tx-amount-main.negative {
-  color: #1A1A1A;
+  color: #EB5757;
 }
 .tx-status {
   text-align: center;
   font-size: 14px;
   font-weight: 500;
-  margin-bottom: 16px;
-}
-.tx-status.success {
-  color: #219653;
+  margin-bottom: 20px;
+  color: #2F80ED;
 }
 .tx-detail-box {
   background: #F8F9FB;
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 16px;
   text-align: left;
 }
 .tx-detail-row {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 .tx-label {
-  font-size: 14px;
-  color: #666;
+  font-size: 13px;
+  color: #999;
+  margin-bottom: 4px;
 }
 .tx-value {
   font-size: 14px;
   color: #1A1A1A;
   word-break: break-word;
-  text-align: right;
+}
+.tx-user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.tx-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 0 4px rgba(0,0,0,0.1);
+}
+.tx-user-name {
+  font-weight: 600;
+  color: #1A1A1A;
+}
+.tx-user-id {
+  font-size: 12px;
+  color: #888;
+}
+.copyable {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 .copyable button {
   background: none;
@@ -3486,10 +3515,10 @@ async function showTransactionDetails(hash) {
 }
 .copyable button:active {
   transform: translateY(1px);
-}`;
+}
+      `;
       document.head.appendChild(styleEl);
     }
-
   } catch (error) {
     console.error("Ошибка при получении данных транзакции:", error);
     showNotification("Ошибка при загрузке", "error");
