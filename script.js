@@ -1547,6 +1547,9 @@ function closeProfileModal() {
   if (bottomBar) bottomBar.style.display = "flex";
 }
 
+/**************************************************
+ * TRANSFER (styled like REQUEST modal, updated)
+ **************************************************/
 function openTransferModal() {
   const bottomBar = document.getElementById("bottomBar");
   if (bottomBar) bottomBar.style.display = "none";
@@ -1563,25 +1566,21 @@ function openTransferModal() {
       margin-top: 40px;
     ">
       <div style="
-        display: flex;
-        align-items: center;
-        gap: 12px;
+        font-size: 20px;
+        font-weight: 600;
+        color: #1A1A1A;
+        text-align: center;
         margin-bottom: 32px;
-        justify-content: center;
       ">
-        <img src="photo/15.png" style="width: 40px; height: 40px;">
-        <div>
-          <div style="font-size: 20px; font-weight: 600; color: #1A1A1A;">GUGA</div>
-          <div style="font-size: 16px; color: #666;">Перевод средств</div>
-        </div>
+        Перевод средств
       </div>
 
       <div style="display: flex; gap: 12px; margin-bottom: 30px;">
-        <div id="btnCurrencyGUGA" class="currency-card">
+        <div id="btnCurrencyGUGA" class="currency-card" style="border: 2px solid #E6E6EB; border-radius: 16px; padding: 12px; cursor: pointer;">
           <div style="display: flex; align-items: center; gap: 12px;">
             <img src="photo/15.png" style="width: 32px; height: 32px; border-radius: 8px;">
             <div>
-              <div style="font-weight: 500; color: #1A1A1A;">GUGA</div>
+              <div style="font-weight: 500; color: #1A1A1A; font-size: 14px;">GUGA</div>
               <div style="font-size: 13px; color: #909099;">Криптовалюта</div>
             </div>
           </div>
@@ -1590,11 +1589,11 @@ function openTransferModal() {
           </div>
         </div>
 
-        <div id="btnCurrencyRUB" class="currency-card">
+        <div id="btnCurrencyRUB" class="currency-card" style="border: 2px solid #E6E6EB; border-radius: 16px; padding: 12px; cursor: pointer;">
           <div style="display: flex; align-items: center; gap: 12px;">
             <img src="photo/18.png" style="width: 32px; height: 32px; border-radius: 8px;">
             <div>
-              <div style="font-weight: 500; color: #1A1A1A;">RUB</div>
+              <div style="font-weight: 500; color: #1A1A1A; font-size: 14px;">RUB</div>
               <div style="font-size: 13px; color: #909099;">Фиатные деньги</div>
             </div>
           </div>
@@ -1623,7 +1622,7 @@ function openTransferModal() {
               background: none;
               border: none;
               color: #1A1A1A;
-              font-size: 18px;
+              font-size: 16px;
               outline: none;
               font-weight: 500;
             ">
@@ -1652,7 +1651,7 @@ function openTransferModal() {
               background: none;
               border: none;
               color: #1A1A1A;
-              font-size: 18px;
+              font-size: 16px;
               outline: none;
               font-weight: 500;
             ">
@@ -1686,6 +1685,7 @@ function openTransferModal() {
     noRadiusByDefault: false,
     onClose: closeTransferModal
   });
+}
 
   let currentTransferCurrency = "GUGA";
 
