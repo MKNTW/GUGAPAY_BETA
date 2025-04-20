@@ -283,9 +283,6 @@ function verifyToken(req, res, next) {
   }
 }
 
-const multer = require('multer');
-const upload = multer();
-
 app.put('/user', upload.none(), verifyToken, async (req, res) => {
   try {
     if (req.user.role !== 'user') {
