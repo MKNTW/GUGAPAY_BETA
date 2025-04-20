@@ -321,6 +321,25 @@ app.get('/payments/check', async (req, res) => {
   });
 });
 
+// Получить всех пользователей (имя + фото)
+app.get('/users', verifyToken, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('user_id as id, first_name, photo_url');
+
+    if (error) {
+      console.error("[/users] Supabase error:", error);
+      return res.status(500).json({ success: false, error: 'Ошибка при получении пользователей' });
+    }
+
+    return res.json({ success: true, users: data });
+  } catch (err) {
+    console.error("[/users] Server error:", err);
+    return res.status(500).json({ success: false, error: 'Внутренняя ошибка сервера' });
+  }
+});
+
 /* ========================
    2) ЛОГИН ПОЛЬЗОВАТЕЛЯ
 ======================== */
