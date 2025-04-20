@@ -2031,6 +2031,10 @@ async function confirmPayUserModal({ userId, amount, purpose }) {
     showNotification("❌ Некорректные данные для перевода", "error");
     return;
   }
+
+  // Получаем имя и фото получателя из локального кэша (или добавь API-запрос)
+  const userData = window.userCache?.[userId] || { first_name: `ID: ${userId}`, photo_url: "photo/default.png" };
+
   createModal(
     "confirmPayUserModal",
     `
@@ -2043,30 +2047,13 @@ async function confirmPayUserModal({ userId, amount, purpose }) {
         box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
         margin-top: 60px;
       ">
-        <div style="
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          margin-bottom: 24px;
-        ">
-          <img src="photo/15.png" style="width: 40px; height: 40px;">
-          <div>
-            <div style="font-size: 20px; font-weight: 600; color: #1A1A1A;">Подтверждение перевода</div>
-            <div style="font-size: 16px; color: #666;">Операция с GUGA</div>
-          </div>
+        <div style="text-align: center; margin-bottom: 24px;">
+          <img src="${userData.photo_url}" style="width: 64px; height: 64px; border-radius: 16px; object-fit: cover;" />
+          <div style="margin-top: 12px; font-size: 18px; font-weight: 600; color: #1A1A1A;">${userData.first_name}</div>
+          <div style="font-size: 13px; color: #999;">ID: ${userId}</div>
         </div>
 
         <div style="margin-bottom: 24px;">
-          <div style="
-            background: #F8F9FB;
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 16px;
-          ">
-            <div style="color: #666; font-size: 14px; margin-bottom: 4px;">Получатель</div>
-            <div style="font-weight: 500; color: #1A1A1A;">${userId}</div>
-          </div>
-
           <div style="
             background: #F8F9FB;
             border-radius: 16px;
@@ -2117,18 +2104,13 @@ async function confirmPayUserModal({ userId, amount, purpose }) {
       contentMaxHeight: "calc(100vh - 160px)"
     }
   );
+
   document.getElementById("confirmPayUserBtn").onclick = async () => {
     try {
       if (!currentUserId) throw new Error("Требуется авторизация");
-      const payload = {
-        fromUserId: currentUserId,
-        toUserId: userId,
-        amount: Number(amount),
-        purpose: purpose || ""
-      };
-      if (!csrfToken) {
-        await fetchCsrfToken();
-      }
+
+      if (!csrfToken) await fetchCsrfToken();
+
       const resp = await fetch(`${API_URL}/transfer`, {
         method: "POST",
         credentials: "include",
@@ -2136,17 +2118,26 @@ async function confirmPayUserModal({ userId, amount, purpose }) {
           "Content-Type": "application/json",
           "X-CSRF-Token": csrfToken
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          fromUserId: currentUserId,
+          toUserId: userId,
+          amount: Number(amount),
+          purpose: purpose || ""
+        })
       });
+
       const data = await resp.json();
+
       if (!resp.ok || !data.success) {
         throw new Error(data.error || "Ошибка сервера");
       }
+
       showNotification("✅ Перевод успешно выполнен", "success");
       document.getElementById("confirmPayUserModal")?.remove();
       await fetchUserData();
     } catch (err) {
       console.error("Transfer error:", err);
+      document.getElementById("confirmPayUserModal")?.remove();
       showNotification(`❌ ${err.message}`, "error");
     }
   };
@@ -2159,16 +2150,16 @@ function parseQRCodeData(qrString) {
   const obj = { type: null, userId: null, merchantId: null, amount: 0, purpose: "" };
   try {
     if (!qrString.startsWith("guga://")) return obj;
-    const query = qrString.replace("guga://", "");
-    const parts = query.split("&");
-    for (const part of parts) {
-      const [key, val] = part.split("=");
-      if (key === "type") obj.type = val;
-      if (key === "userId") obj.userId = val;
-      if (key === "merchantId") obj.merchantId = val;
-      if (key === "amount") obj.amount = parseFloat(val);
-      if (key === "purpose") obj.purpose = decodeURIComponent(val);
-    }
+    
+    const queryString = qrString.replace("guga://", "");
+    const searchParams = new URLSearchParams(queryString);
+
+    obj.type = searchParams.get("type") || null;
+    obj.userId = searchParams.get("userId") || searchParams.get("toUserId") || null;
+    obj.merchantId = searchParams.get("merchantId") || null;
+    obj.amount = parseFloat(searchParams.get("amount")) || 0;
+    obj.purpose = decodeURIComponent(searchParams.get("purpose") || "");
+
   } catch (err) {
     console.error("Error parsing QR code:", err);
   }
