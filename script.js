@@ -299,7 +299,6 @@ async function apiAuthRequest(endpoint, payload) {
     return data;
   } catch (err) {
     console.error(`Auth request error at ${endpoint}:`, err);
-    showNotification(err.message, "error");
     throw err;
   } finally {
     hideGlobalLoading();
@@ -331,9 +330,7 @@ async function login() {
       await fetchMerchantData();
       closeAllAuthModals();
       openMerchantUI();
-    } catch (err) {
-      showNotification("Ошибка авторизации: " + err.message, "error");
-    }
+    } 
   }
 }
 
@@ -740,6 +737,8 @@ function openAuthModal() {
         createMainUI();
         updateUI();
         document.getElementById("bottomBar").style.display = "flex";
+      } catch (err) {
+        showNotification(err.message, "error");
       } finally {
         hideGlobalLoading();
       }
