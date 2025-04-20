@@ -1465,7 +1465,7 @@ function openProfileModal() {
       <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
         <button id="saveProfileBtn" style="
           width: 100%;
-          padding: 16px;
+          padding: 14px;
           background: linear-gradient(90deg, #2F80ED, #2D9CDB);
           border: none;
           border-radius: 12px;
