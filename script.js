@@ -1349,6 +1349,8 @@ function openProfileModal() {
       display: flex;
       flex-direction: column;
       gap: 20px;
+      padding: 24px;
+      box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
     ">
       <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
         <img id="profilePhotoPreview" src="${photo}" style="
@@ -1416,10 +1418,11 @@ function openProfileModal() {
     cornerTopRadius: 0,
     hasVerticalScroll: true,
     defaultFromBottom: true,
-    noRadiusByDefault: false
+    noRadiusByDefault: false,
+    onClose: closeProfileModal
   });
 
-  // Превью изображения
+  // Превью фото
   document.getElementById("profilePhotoInput").addEventListener("change", e => {
     const file = e.target.files[0];
     if (!file) return;
@@ -1430,10 +1433,25 @@ function openProfileModal() {
     reader.readAsDataURL(file);
   });
 
-  // Сохраняем
-  document.getElementById("saveProfileBtn").addEventListener("click", saveProfileChanges);
-  // Выход
-  document.getElementById("profileLogoutBtn").addEventListener("click", logout);
+  // Кнопка "Сохранить"
+  document.getElementById("saveProfileBtn").addEventListener("click", () => {
+    saveProfileChanges();
+  });
+
+  // Кнопка "Выйти"
+  document.getElementById("profileLogoutBtn").addEventListener("click", () => {
+    logout();
+    closeProfileModal();
+  });
+}
+
+// Отдельная функция для правильного закрытия и возврата bottomBar
+function closeProfileModal() {
+  const modal = document.getElementById("profileModal");
+  if (modal) modal.remove();
+
+  const bottomBar = document.getElementById("bottomBar");
+  if (bottomBar) bottomBar.style.display = "flex";
 }
 
 /**************************************************
