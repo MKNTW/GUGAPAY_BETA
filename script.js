@@ -1631,96 +1631,110 @@ function openTransferModal() {
     }
   `;
   const styleEl = document.createElement("style");
-  styleEl.textContent = transferStyles;
-  document.head.appendChild(styleEl);
+styleEl.textContent = transferStyles;
+document.head.appendChild(styleEl);
 
-  // Current currency ("GUGA" or "RUB")
-  let currentTransferCurrency = "GUGA";
+// Валюта по умолчанию
+let currentTransferCurrency = "GUGA";
 
-  const updateTransferUI = () => {
-    const currencySymbol = document.getElementById("currencySymbol");
-    const balanceInfo = document.getElementById("transferBalanceInfo");
-    const gugaBalance = document.getElementById("gugaBalance");
-    const rubBalance = document.getElementById("rubBalance");
-    // Remove active class from all currency cards
-    document.querySelectorAll('.currency-card').forEach(card => {
-      card.classList.remove('active');
+const updateTransferUI = () => {
+  const currencySymbol = document.getElementById("currencySymbol");
+  const balanceInfo = document.getElementById("transferBalanceInfo");
+  const gugaBalance = document.getElementById("gugaBalance");
+  const rubBalance = document.getElementById("rubBalance");
+
+  // Убираем выделение со всех карточек
+  document.querySelectorAll('.currency-card').forEach(card => {
+    card.classList.remove('active');
+  });
+
+  // Активируем нужную валюту
+  const activeCard = currentTransferCurrency === "GUGA"
+    ? document.getElementById("btnCurrencyGUGA")
+    : document.getElementById("btnCurrencyRUB");
+  activeCard.classList.add("active");
+
+  // Обновляем интерфейс
+  if (currentTransferCurrency === "GUGA") {
+    const balance = parseFloat(document.getElementById("gugaBalanceValue")?.innerText || 0);
+    currencySymbol.textContent = '₲';
+    document.getElementById("transferAmountInput").step = "0.00001";
+    gugaBalance.innerHTML = `Доступно: ${formatBalance(balance, 5)} ₲`;
+    balanceInfo.textContent = `Макс: ${formatBalance(balance, 5)} ₲`;
+  } else {
+    const balance = parseFloat(document.getElementById("rubBalanceValue")?.innerText || 0);
+    currencySymbol.textContent = '₽';
+    document.getElementById("transferAmountInput").step = "0.01";
+    rubBalance.innerHTML = `Доступно: ${formatBalance(balance, 2)} ₽`;
+    balanceInfo.textContent = `Макс: ${formatBalance(balance, 2)} ₽`;
+  }
+};
+
+// Переключение валюты
+document.getElementById("btnCurrencyGUGA").addEventListener("click", () => {
+  currentTransferCurrency = "GUGA";
+  updateTransferUI();
+});
+
+document.getElementById("btnCurrencyRUB").addEventListener("click", () => {
+  currentTransferCurrency = "RUB";
+  updateTransferUI();
+});
+
+// Обработка перевода
+document.getElementById("sendTransferBtn").onclick = async () => {
+  const toUser = document.getElementById("toUserIdInput")?.value.trim();
+  const amount = parseFloat(document.getElementById("transferAmountInput")?.value);
+
+  if (!toUser || !amount || amount <= 0) {
+    return showNotification("❌ Введите корректные данные!", "error");
+  }
+
+  if (toUser === currentUserId) {
+    return showNotification("❌ Нельзя перевести самому себе", "error");
+  }
+
+  const endpoint = currentTransferCurrency === "GUGA" ? "/transfer" : "/transferRub";
+
+  try {
+    if (!csrfToken) await fetchCsrfToken();
+
+    const resp = await fetch(`${API_URL}${endpoint}`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": csrfToken
+      },
+      body: JSON.stringify({ toUserId: toUser, amount })
     });
-    // Set active on selected currency card
-    const activeCard = (currentTransferCurrency === "GUGA")
-      ? document.getElementById("btnCurrencyGUGA")
-      : document.getElementById("btnCurrencyRUB");
-    activeCard.classList.add('active');
-    // Update symbol, input step, and balance display
-    if (currentTransferCurrency === "GUGA") {
-      const balance = parseFloat(document.getElementById("gugaBalanceValue")?.innerText || 0);
-      currencySymbol.textContent = '₲';
-      document.getElementById("transferAmountInput").step = "0.00001";
-      gugaBalance.innerHTML = Доступно: ${formatBalance(balance, 5)} ₲;
-      balanceInfo.textContent = Макс: ${formatBalance(balance, 5)} ₲;
+
+    const data = await resp.json();
+
+    if (data.success) {
+      showNotification("✅ Перевод выполнен!", "success");
+      closeTransferModal();
+      fetchUserData();
     } else {
-      const balance = parseFloat(document.getElementById("rubBalanceValue")?.innerText || 0);
-      currencySymbol.textContent = '₽';
-      document.getElementById("transferAmountInput").step = "0.01";
-      rubBalance.innerHTML = Доступно: ${formatBalance(balance, 2)} ₽;
-      balanceInfo.textContent = Макс: ${formatBalance(balance, 2)} ₽;
+      showNotification("❌ " + (data.error || "Ошибка перевода"), "error");
     }
-  };
+  } catch (err) {
+    console.error("Transfer error:", err);
+    showConnectionError("Ошибка при выполнении перевода");
+  }
+};
 
-  document.getElementById("btnCurrencyGUGA").addEventListener("click", () => {
-    currentTransferCurrency = "GUGA";
-    updateTransferUI();
-  });
+// Обновляем данные при загрузке модалки
+fetchUserData().then(() => {
+  const rubBalanceElement = document.getElementById("rubBalance");
+  const rubBalanceValue = parseFloat(document.getElementById("rubBalanceValue")?.innerText || 0);
+  if (rubBalanceElement) {
+    rubBalanceElement.textContent = `Доступно: ${rubBalanceValue.toFixed(2)} ₽`;
+  }
+  updateTransferUI();
+});
 
-  document.getElementById("btnCurrencyRUB").addEventListener("click", () => {
-    currentTransferCurrency = "RUB";
-    updateTransferUI();
-  });
-
-  document.getElementById("sendTransferBtn").onclick = async () => {
-    const toUser = document.getElementById("toUserIdInput")?.value.trim();
-    const amount = parseFloat(document.getElementById("transferAmountInput")?.value);
-
-    if (!toUser || !amount || amount <= 0) return showNotification("❌ Введите корректные данные!", "error");
-    if (toUser === currentUserId) return showNotification("❌ Нельзя перевести самому себе", "error");
-
-    const endpoint = currentTransferCurrency === "GUGA" ? "/transfer" : "/transferRub";
-
-    try {
-      if (!csrfToken) await fetchCsrfToken();
-      const resp = await fetch(`${API_URL}${endpoint}`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRF-Token": csrfToken
-        },
-        body: JSON.stringify({ toUserId: toUser, amount })
-      });
-      const data = await resp.json();
-      if (data.success) {
-        showNotification("✅ Перевод выполнен!");
-        closeTransferModal();
-        fetchUserData();
-      } else {
-        showNotification("❌ " + data.error, "error");
-      }
-    } catch (err) {
-      console.error("Transfer error:", err);
-      showConnectionError("Ошибка при выполнении перевода");
-    }
-  };
-
-  fetchUserData().then(() => {
-    const rubBalanceElement = document.getElementById("rubBalance");
-    const rubBalanceValue = parseFloat(document.getElementById("rubBalanceValue")?.innerText || 0);
-    if (rubBalanceElement) {
-      rubBalanceElement.textContent = `Доступно: ${rubBalanceValue.toFixed(2)} ₽`;
-    }
-    updateTransferUI();
-  });
-}
-
+// Закрытие окна и возврат bottomBar
 function closeTransferModal() {
   const modal = document.getElementById("transferModal");
   if (modal) modal.remove();
