@@ -1677,8 +1677,8 @@ function openTransferModal() {
     const toUser = document.getElementById("toUserIdInput")?.value.trim();
     const amount = parseFloat(document.getElementById("transferAmountInput")?.value);
 
-    if (!toUser || !amount || amount <= 0) return alert("❌ Введите корректные данные!");
-    if (toUser === currentUserId) return alert("❌ Нельзя перевести самому себе");
+    if (!toUser || !amount || amount <= 0) return showNotification("❌ Введите корректные данные!");
+    if (toUser === currentUserId) return showNotification("❌ Нельзя перевести самому себе");
 
     const endpoint = currentTransferCurrency === "GUGA" ? "/transfer" : "/transferRub";
 
@@ -1695,11 +1695,11 @@ function openTransferModal() {
       });
       const data = await resp.json();
       if (data.success) {
-        alert("✅ Перевод выполнен!");
+        showNotification("✅ Перевод выполнен!");
         closeTransferModal();
         fetchUserData();
       } else {
-        alert("❌ Ошибка перевода: " + data.error);
+        showNotification("❌ Ошибка перевода: " + data.error);
       }
     } catch (err) {
       console.error("Transfer error:", err);
