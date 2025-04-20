@@ -3374,8 +3374,8 @@ async function showTransactionDetails(hash) {
     const amount = `${sign}${amountValue} ${symbol}`;
     const timestamp = new Date(tx.created_at || tx.client_time).toLocaleString("ru-RU");
 
-    const fromPhoto = tx.from_photo || 'photo/15.png';
-    const toPhoto = tx.to_photo || 'photo/15.png';
+    const fromPhoto = tx.from_photo_url || 'photo/15.png';
+    const toPhoto = tx.to_photo_url || 'photo/15.png';
     const fromName = tx.from_name || tx.from_user_id;
     const toName = tx.to_name || tx.to_user_id;
 
@@ -3389,7 +3389,7 @@ async function showTransactionDetails(hash) {
           <div class="tx-icon">
             <img src="photo/${tx.currency === "RUB" ? "92" : "67"}.png" alt="icon" width="48" height="48" />
           </div>
-          <div class="tx-amount-main ${sign === '+' ? 'positive' : 'negative'}">${amount}</div>
+          <div class="tx-amount-main ${sign === '+' ? 'positive' : 'neutral'}">${amount}</div>
           <div class="tx-status success">Операция прошла успешно</div>
 
           <div class="tx-detail-box">
@@ -3435,7 +3435,6 @@ async function showTransactionDetails(hash) {
       }
     );
 
-    // Добавить стили один раз
     if (!document.getElementById("txDetailStyles")) {
       const styleEl = document.createElement("style");
       styleEl.id = "txDetailStyles";
@@ -3453,15 +3452,18 @@ async function showTransactionDetails(hash) {
 .tx-amount-main.positive {
   color: #27AE60;
 }
-.tx-amount-main.negative {
-  color: #EB5757;
+.tx-amount-main.neutral {
+  color: #1A1A1A;
 }
 .tx-status {
   text-align: center;
   font-size: 14px;
   font-weight: 500;
   margin-bottom: 20px;
-  color: #2F80ED;
+  background: #DFF5E1;
+  padding: 6px 12px;
+  border-radius: 8px;
+  display: inline-block;
 }
 .tx-detail-box {
   background: #F8F9FB;
