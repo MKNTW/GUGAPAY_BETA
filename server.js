@@ -268,6 +268,50 @@ app.post('/register', async (req, res) => {
   }
 });
 
+const multer = require('multer');
+const upload = multer();
+
+// Middleware для проверки токена (если у тебя уже есть — пропусти)
+function verifyToken(req, res, next) {
+  const token = req.headers['authorization']?.split(' ')[1];
+  if (!token) return res.status(401).json({ success: false, error: 'Нет токена' });
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(403).json({ success: false, error: 'Недействительный токен' });
+  }
+}
+
+// Обновление профиля пользователя
+app.put('/user', verifyToken, upload.none(), async (req, res) => {
+  try {
+    if (req.user.role !== 'user') {
+      return res.status(403).json({ success: false, error: 'Доступ запрещён' });
+    }
+
+    const userId = req.user.userId;
+    const { first_name, photo_url } = req.body;
+
+    const { error } = await supabase
+      .from('users')
+      .update({
+        first_name,
+        photo_url: photo_url || null
+      })
+      .eq('user_id', userId);
+
+    if (error) throw error;
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('Ошибка при обновлении профиля:', err);
+    return res.status(500).json({ success: false, error: 'Ошибка сервера при обновлении профиля' });
+  }
+});
+
 /* ========================
    2) ЛОГИН ПОЛЬЗОВАТЕЛЯ
 ======================== */
