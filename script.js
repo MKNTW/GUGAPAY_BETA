@@ -1270,33 +1270,33 @@ async function saveProfileChanges() {
       if (parts[1]) oldPath = parts[1];
     }
 
-    // Загрузка нового фото (если выбран)
+    // Загрузка нового фото
     if (fileInput.files.length) {
       const file = fileInput.files[0];
-      const path = `${currentUserId}/${Date.now()}_${file.name}`; // без avatars/
+      const path = `${currentUserId}/${Date.now()}_${file.name}`;
 
       const { error: uploadError } = await supabase
         .storage
-        .from("avatars")
+        .from(STORAGE_BUCKET)
         .upload(path, file);
 
       if (uploadError) throw uploadError;
 
       const { data: publicData, error: urlError } = supabase
         .storage
-        .from("avatars")
+        .from(STORAGE_BUCKET)
         .getPublicUrl(path);
 
       if (urlError) throw urlError;
       photoUrl = publicData.publicUrl;
 
-      // Удаление старого фото, если это не дефолт
+      // Удаление старого фото
       if (oldPath && !oldPath.includes("15.png")) {
-        await supabase.storage.from("avatars").remove([oldPath]);
+        await supabase.storage.from(STORAGE_BUCKET).remove([oldPath]);
       }
     }
 
-    // Отправка на сервер
+    // Обновление данных на сервере
     if (!csrfToken) await fetchCsrfToken();
     const form = new FormData();
     form.append("first_name", newName);
@@ -1309,15 +1309,22 @@ async function saveProfileChanges() {
       body: form,
     });
 
-    const data = await res.json();
-    if (!data.success) throw new Error(data.error || "Ошибка при сохранении");
+    const result = await res.json();
+    if (!result.success) throw new Error(result.error || "Ошибка обновления профиля");
 
+    // Обновляем UI без перерисовки
+    const userPhoto = document.querySelector("#user-info .user-photo");
+    const userName = document.querySelector("#user-info .user-name");
+    if (photoUrl && userPhoto) userPhoto.src = photoUrl;
+    if (newName && userName) userName.textContent = newName;
+
+    // Закрываем модалку
+    document.getElementById("profileModal")?.remove();
     showNotification("Профиль обновлён", "success");
-    await fetchUserData();
-    removeAllModals();
+
   } catch (err) {
-    console.error("Ошибка сохранения профиля:", err);
-    showNotification(err.message || "Ошибка", "error");
+    console.error("Ошибка при обновлении профиля:", err);
+    showNotification(err.message || "Ошибка обновления", "error");
   }
 }
 
@@ -1328,9 +1335,11 @@ function openProfileModal() {
   const bottomBar = document.getElementById("bottomBar");
   if (bottomBar) bottomBar.style.display = "none";
 
-  const photo = document.getElementById("profileIcon")?.src || "photo/15.png";
+  // Получаем фото и имя из блока #user-info
+  const photo = document.querySelector("#user-info .user-photo")?.src || "photo/15.png";
   const name = document.querySelector("#user-info .user-name")?.textContent || "GugaUser";
 
+  // Создаём модалку профиля
   createModal("profileModal", `
     <div class="profile-modal">
       <div class="profile-avatar-section">
@@ -1355,50 +1364,70 @@ function openProfileModal() {
     onClose: () => { if (bottomBar) bottomBar.style.display = "flex"; }
   });
 
-  // Стили (можно вынести в CSS)
-  const style = document.createElement("style");
-  style.textContent = `
-    .profile-modal {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-    .profile-avatar-section {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-    }
-    .profile-avatar {
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      object-fit: cover;
-      box-shadow: 0 0 4px rgba(0,0,0,0.15);
-    }
-    .profile-field label {
-      font-weight: bold;
-      font-size: 14px;
-      margin-bottom: 4px;
-      display: block;
-    }
-    .profile-actions {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .auth-button.primary {
-      background-color: #007bff;
-      color: white;
-    }
-    .auth-button.secondary {
-      background-color: #f44336;
-      color: white;
-    }
-  `;
-  document.head.appendChild(style);
+  // Стили один раз
+  if (!document.getElementById("profileModalStyles")) {
+    const style = document.createElement("style");
+    style.id = "profileModalStyles";
+    style.textContent = `
+      .profile-modal {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .profile-avatar-section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+      }
+      .profile-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        object-fit: cover;
+        box-shadow: 0 0 4px rgba(0,0,0,0.15);
+      }
+      .profile-field label {
+        font-weight: bold;
+        font-size: 14px;
+        margin-bottom: 4px;
+        display: block;
+      }
+      .auth-input {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        font-size: 14px;
+      }
+      .profile-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .auth-button.primary {
+        background-color: #007bff;
+        color: white;
+        padding: 12px;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .auth-button.secondary {
+        background-color: #f44336;
+        color: white;
+        padding: 12px;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+    `;
+    document.head.appendChild(style);
+  }
 
-  // Превью изображения
+  // Превью фото
   document.getElementById("profilePhotoInput").addEventListener("change", e => {
     const file = e.target.files[0];
     if (!file) return;
@@ -1409,10 +1438,8 @@ function openProfileModal() {
     reader.readAsDataURL(file);
   });
 
-  // Обновление имени и фото
-  document.getElementById("saveProfileBtn").addEventListener("click", () => {
-    saveProfileChanges();
-  });
+  // Сохраняем изменения
+  document.getElementById("saveProfileBtn").addEventListener("click", saveProfileChanges);
 
   // Выход
   document.getElementById("profileLogoutBtn").addEventListener("click", logout);
