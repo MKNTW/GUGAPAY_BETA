@@ -3429,4 +3429,4 @@ window.addEventListener("beforeunload", () => {
     flushMinedCoins();
   }
 });
-    };
+};
