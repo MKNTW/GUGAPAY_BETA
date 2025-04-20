@@ -626,11 +626,8 @@ function openAuthModal() {
   removeAllModals();
 
   createModal("authModal", `
-    <div class="auth-fullscreen">
-      <div class="auth-illustration">
-        <img src="photo/15.png" alt="Welcome" />
-      </div>
-      <div class="auth-card">
+    <div class="auth-fullscreen colorful-background">
+      <div class="auth-overlay">
         <h2 class="auth-title">Добро пожаловать в <span>GUGACOIN</span></h2>
 
         <!-- Login Form -->
@@ -663,12 +660,10 @@ function openAuthModal() {
     </div>
   `, {
     showCloseBtn: false,
-    cornerTopMargin: 0,
-    cornerTopRadius: 0,
-    hasVerticalScroll: true,
-    defaultFromBottom: true,
+    hasVerticalScroll: false,
+    defaultFromBottom: false,
     noRadiusByDefault: true,
-    customStyles: { backgroundColor: "#f0f2f5" }
+    customStyles: { backgroundColor: "#000" }
   });
 
   document.getElementById("loginSubmitBtn").addEventListener("click", async () => {
@@ -759,33 +754,36 @@ function openAuthModal() {
     style.id = "authStyleSheet";
     style.textContent = `
     .auth-fullscreen {
+      position: fixed;
+      inset: 0;
       display: flex;
-      flex-direction: column;
-      align-items: center;
       justify-content: center;
-      height: 100vh;
-      background: linear-gradient(to bottom right, #eef2f3, #f5f7fa);
-      padding: 32px 16px;
+      align-items: center;
+      overflow: hidden;
+      z-index: 10000;
     }
-    .auth-illustration img {
-      max-width: 120px;
-      margin-bottom: 24px;
+    .colorful-background {
+      background: radial-gradient(circle at top left, #ffafbd, #ffc3a0),
+                  radial-gradient(circle at bottom right, #2193b0, #6dd5ed);
+      background-blend-mode: screen;
     }
-    .auth-card {
-      background: white;
+    .auth-overlay {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(10px);
       border-radius: 24px;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.1);
       padding: 32px;
       width: 100%;
       max-width: 400px;
       display: flex;
       flex-direction: column;
+      align-items: center;
       gap: 20px;
     }
     .auth-title {
-      font-size: 24px;
+      font-size: 26px;
       font-weight: 700;
       text-align: center;
+      color: #1a1a1a;
     }
     .auth-title span {
       background: linear-gradient(90deg, #2F80ED, #2D9CDB);
@@ -796,6 +794,7 @@ function openAuthModal() {
       display: flex;
       flex-direction: column;
       gap: 12px;
+      width: 100%;
     }
     .auth-input {
       padding: 14px 16px;
