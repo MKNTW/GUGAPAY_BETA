@@ -3912,8 +3912,11 @@ async function openChatWindow(chatId, partnerId) {
       scrollToBottom(true);
     }
 
-    // метка прочитано через RPC
-    await supabase.rpc('mark_as_read', { p_chat: chatId, p_reader: currentUserId });
+        // метка "прочитано" — обновляем каждый новый входящий
+    for (const m of newMsgs.filter(m => m.sender_id !== currentUserId)) {
+      const updated = Array.isArray(m.read_by) ? [...m.read_by, currentUserId] : [currentUserId];
+      await supabase.from('messages').update({ read_by: updated }).eq('id', m.id);
+    }
   };
 
   await loadMessages();
