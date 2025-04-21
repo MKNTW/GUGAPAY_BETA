@@ -3780,7 +3780,9 @@ async function openChatWindow(chatId, partnerId) {
   document.getElementById('bottomBar').style.display = 'none';
 
   // 2) Функция загрузки сообщений
-  async function loadMessages() {
+let lastRenderedMessageId = null;
+
+async function loadMessages() {
   const { data: msgs } = await supabase
     .from('messages')
     .select('*')
@@ -3797,10 +3799,8 @@ async function openChatWindow(chatId, partnerId) {
       m.sender_public_key &&
       m.sender_public_key.length > 40
     ) {
-      // Шифрованное сообщение
       text = decryptMessage(m.encrypted_message, m.nonce, m.sender_public_key);
     } else {
-      // Нешифрованное сообщение — показать как есть
       text = m.encrypted_message;
     }
 
@@ -3817,13 +3817,25 @@ async function openChatWindow(chatId, partnerId) {
   box.scrollTop = box.scrollHeight;
 }
 
-  // 3) Реал‑тайм подписка на новые сообщения
-  supabase.channel('chat:' + chatId)
-    .on('postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` },
-        loadMessages
-    )
-    .subscribe();
+await loadMessages(); // загружаем сразу при входе в чат
+
+// 3) Подписка на новые сообщения
+const chatChannel = supabase
+  .channel(`chat:${chatId}`)
+  .on(
+    'postgres_changes',
+    {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'messages',
+      filter: `chat_id=eq.${chatId}`
+    },
+    payload => {
+      // Пришло новое сообщение — перезагружаем список
+      loadMessages();
+    }
+  )
+  .subscribe();
 
   // 4) Отправка: по клику и по Enter
   const sendBtn = document.getElementById('chatSend');
