@@ -3821,24 +3821,9 @@ async function openChatWindow(chatId, partnerId) {
   let refreshInterval = null;
   let lastRenderedMessageIds = [];
 
-  const { data: blockedByMe } = await supabase
-    .from('blocked_users')
-    .select('*')
-    .eq('blocker_id', currentUserId)
-    .eq('blocked_id', partnerId)
-    .maybeSingle();
-
-  const { data: blockedMe } = await supabase
-    .from('blocked_users')
-    .select('*')
-    .eq('blocker_id', partnerId)
-    .eq('blocked_id', currentUserId)
-    .maybeSingle();
-
   createModal('chatModal', `
     <div class="chat-container" style="touch-action: manipulation;">
       <div class="chat-header" style="display: flex; align-items: center; gap: 12px;">
-        <button id="chatMoreBtn" style="background: #fff; border: none; font-size: 18px; color: #333; cursor: pointer; border-radius: 10px; padding: 6px 10px;">⋮</button>
         <img src="${partner.photo}" class="chat-avatar">
         <div class="chat-title">
           ${partner.name}
@@ -3860,20 +3845,13 @@ async function openChatWindow(chatId, partnerId) {
       </div>
     </div>
   `, {
-    cornerTopRadius: 0,
-    hasVerticalScroll: false,
     customStyles: { display: 'flex', flexDirection: 'column', height: '100%' },
     onClose: () => {
-      document.getElementById('bottomBar').style.display = 'flex';
       if (chatChannel) supabase.removeChannel(chatChannel);
       if (readStatusChannel) supabase.removeChannel(readStatusChannel);
-      if (refreshInterval) clearInterval(refreshInterval);
-      // 🔄 Сброс видео
-      document.querySelectorAll('#chatMessages video').forEach(v => v.removeAttribute('src'));
     }
   });
 
-  document.getElementById('bottomBar').style.display = 'none';
   const box = document.getElementById('chatMessages');
 
   function renderMessage(m, isLastFromMe = false) {
@@ -3892,32 +3870,23 @@ async function openChatWindow(chatId, partnerId) {
       if (m.media_type === 'image') {
         mediaPart = `<img src="${m.media_url}" style="max-width: 240px; border-radius: 12px; display: block; margin-bottom: 6px;" />`;
       } else if (m.media_type === 'video') {
-        mediaPart = `<video data-src="${m.media_url}" controls preload="none" style="max-width: 240px; border-radius: 12px; display: block; margin-bottom: 6px;" muted></video>`;
+        mediaPart = `<video controls preload="metadata" style="max-width: 240px; border-radius: 12px; display: block; margin-bottom: 6px;">
+          <source src="${m.media_url}" type="video/mp4" />
+        </video>`;
       } else {
         mediaPart = `<a href="${m.media_url}" target="_blank" style="display: block; margin-bottom: 6px;">📎 Файл</a>`;
       }
     }
 
-    let status = '';
-    if (isLastFromMe) {
-      status = m.read_by?.includes(partnerId) ? ' • Прочитано' : ' • Отправлено';
-    }
+    const status = isLastFromMe
+      ? (m.read_by?.includes(partnerId) ? ' • Прочитано' : ' • Отправлено')
+      : '';
 
     bubble.innerHTML = `
       ${mediaPart}
       ${text ? `<div>${text}</div>` : ''}
       <span class="time-label">${tm}${status}</span>
     `;
-
-    // ▶️ ленивое видео — активировать по клику
-    bubble.querySelectorAll('video').forEach(video => {
-      video.addEventListener('click', () => {
-        if (!video.src) {
-          video.src = video.dataset.src;
-          video.play();
-        }
-      });
-    });
 
     return bubble;
   }
@@ -3932,39 +3901,47 @@ async function openChatWindow(chatId, partnerId) {
     if (!msgs) return;
 
     const newIds = msgs.map(m => m.id).join(',');
-    const lastIds = lastRenderedMessageIds.join(',');
-    if (newIds === lastIds) return;
+    if (newIds === lastRenderedMessageIds.join(',')) return;
 
     box.innerHTML = '';
+    const videoPromises = [];
     msgs.forEach((m, i) => {
       const isLastFromMe = m.sender_id === currentUserId &&
         msgs.slice(i + 1).findIndex(n => n.sender_id === currentUserId) === -1;
-      box.appendChild(renderMessage(m, isLastFromMe));
+      const bubble = renderMessage(m, isLastFromMe);
+      box.appendChild(bubble);
+
+      const video = bubble.querySelector('video');
+      if (video) {
+        videoPromises.push(new Promise(resolve => {
+          video.onloadeddata = () => resolve();
+          video.onerror = () => resolve();
+        }));
+      }
     });
 
     lastRenderedMessageIds = msgs.map(m => m.id);
 
+    await Promise.all(videoPromises);
+
     if (scroll) {
       setTimeout(() => {
         box.scrollTop = box.scrollHeight;
-      }, 100);
+      }, 50);
     }
 
-    // обновляем read_by
+    // обновим read_by
     const { data: unread } = await supabase
       .from('messages')
       .select('id, read_by')
       .eq('chat_id', chatId)
       .neq('sender_id', currentUserId);
 
-    const toUpdate = unread.filter(m => !Array.isArray(m.read_by) || !m.read_by.includes(currentUserId));
-
-    for (const msg of toUpdate) {
-      const updatedReadBy = Array.isArray(msg.read_by)
-        ? [...new Set([...msg.read_by, currentUserId])]
-        : [currentUserId];
-
-      await supabase.from('messages').update({ read_by: updatedReadBy }).eq('id', msg.id);
+    for (const m of unread) {
+      if (!m.read_by?.includes(currentUserId)) {
+        const updated = Array.isArray(m.read_by) ? [...new Set([...m.read_by, currentUserId])] : [currentUserId];
+        await supabase.from('messages').update({ read_by: updated }).eq('id', m.id);
+      }
     }
   }
 
@@ -3978,6 +3955,16 @@ async function openChatWindow(chatId, partnerId) {
       table: 'messages',
       filter: `chat_id=eq.${chatId}`
     }, () => loadMessages(true))
+    .subscribe();
+
+  readStatusChannel = supabase
+    .channel(`chat-read-status-${chatId}`)
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'messages',
+      filter: `chat_id=eq.${chatId}`
+    }, () => loadMessages(false))
     .subscribe();
 
   // 🔁 обновляем статус read_by в реальном времени
