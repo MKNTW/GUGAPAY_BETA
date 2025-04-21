@@ -1503,6 +1503,25 @@ app.post('/chats/:chatId/messages', verifyToken, async (req, res) => {
   res.json({ success:true });
 });
 
+// Таблица chats: id, user1, user2
+// Таблица messages: id, chat_id, from_user_id, text, created_at
+
+// Создание чата
+app.post('/chat/create', verifyToken, async (req, res) => { /* ... */ });
+
+// Отправка сообщения
+app.post('/chat/send', verifyToken, async (req, res) => {
+  const { chatId, text } = req.body;
+  // Вставить в supabase.from('messages').insert(...)
+  // Вернуть success: true и само сообщение
+});
+
+// Получение истории
+app.get('/chat/:chatId/messages', verifyToken, async (req, res) => {
+  const { chatId } = req.params;
+  // supabase.from('messages').select(...).eq('chat_id', chatId).order('created_at')
+});
+
 /** ═══════════════════════════════════════════════════════
  *  GET  /userPublicKey/:id   (необязательный «шорткат»)
  *  Возвращает public_key конкретного пользователя
