@@ -3817,8 +3817,7 @@ function openNewChatModal() {
 async function openChatWindow(chatId, partnerId) {
   const partner = await fetchUserCard(partnerId);
   let chatChannel = null;
-  let readStatusChannel = null;
-  let lastRenderedMessageIds = [];
+  let refreshInterval = null;
 
   const { data: blockedByMe } = await supabase
     .from('blocked_users')
@@ -3837,6 +3836,7 @@ async function openChatWindow(chatId, partnerId) {
   createModal('chatModal', `
     <div class="chat-container" style="touch-action: manipulation;">
       <div class="chat-header" style="display: flex; align-items: center; gap: 12px;">
+        <button id="chatMoreBtn" style="background: #fff; border: none; font-size: 18px; color: #333; cursor: pointer; border-radius: 10px; padding: 6px 10px;">⋮</button>
         <img src="${partner.photo}" class="chat-avatar">
         <div class="chat-title">
           ${partner.name}
@@ -3845,29 +3845,41 @@ async function openChatWindow(chatId, partnerId) {
       </div>
       <div id="chatMessages" class="chat-messages" style="flex: 1 1 auto; overflow-y: auto;"></div>
       <div class="chat-inputbar" id="chatInputBar">
-        <div id="mediaPreview" style="display:none; margin-bottom: 10px; position: relative; max-height: 200px; overflow: hidden;">
-          <div id="mediaPreviewContent" style="max-height: 200px;"></div>
-          <button id="cancelPreviewBtn" style="position:absolute; top:4px; right:4px; background:#fff; border:none; border-radius:50%; cursor:pointer;">✖</button>
-        </div>
-        <div style="display: flex; gap: 10px; align-items: center; width: 100%;">
-          <input id="chatText" class="chat-input" placeholder="Сообщение…" style="font-size: 16px; padding: 12px; width: 100%;" />
-          <input type="file" id="mediaInput" accept="image/*,video/*" style="display: none;" />
-          <button id="uploadMediaBtn" style="background: none; border: none; font-size: 20px; cursor: pointer;">📎</button>
-          <button id="chatSend" class="chat-sendBtn" style="padding: 12px 16px; background: #2F80ED; color: #fff; font-weight: 600; border: none; border-radius: 12px; cursor: pointer;">Отправить</button>
-        </div>
+        ${
+          blockedByMe || blockedMe ? `
+            <div style="padding: 14px; text-align: center; color: #999; background: #f8f8f8; border-radius: 12px; margin: 10px; font-style: italic;">
+              ${blockedByMe ? 'Вы заблокировали этого пользователя' : 'Вы были заблокированы этим пользователем'}
+            </div>
+          ` : `
+            <div id="mediaPreview" style="display:none; margin-bottom: 10px; position: relative;">
+              <div id="mediaPreviewContent"></div>
+              <button id="cancelPreviewBtn" style="position:absolute; top:4px; right:4px; background:#fff; border:none; border-radius:50%; cursor:pointer;">✖</button>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center; width: 100%;">
+              <input id="chatText" class="chat-input" placeholder="Сообщение…" style="font-size: 16px; padding: 12px; width: 100%;" />
+              <input type="file" id="mediaInput" accept="image/*,video/*" style="display: none;" />
+              <button id="uploadMediaBtn" style="background: none; border: none; font-size: 20px; cursor: pointer;">📎</button>
+              <button id="chatSend" class="chat-sendBtn" style="padding: 12px 16px; background: #2F80ED; color: #fff; font-weight: 600; border: none; border-radius: 12px; cursor: pointer;">Отправить</button>
+            </div>
+          `
+        }
       </div>
     </div>
   `, {
+    cornerTopRadius: 0,
+    hasVerticalScroll: false,
     customStyles: { display: 'flex', flexDirection: 'column', height: '100%' },
     onClose: () => {
+      document.getElementById('bottomBar').style.display = 'flex';
       if (chatChannel) supabase.removeChannel(chatChannel);
-      if (readStatusChannel) supabase.removeChannel(readStatusChannel);
+      if (refreshInterval) clearInterval(refreshInterval);
     }
   });
 
+  document.getElementById('bottomBar').style.display = 'none';
   const box = document.getElementById('chatMessages');
 
-  function renderMessage(m, isLastFromMe = false) {
+  function renderMessage(m) {
     const side = m.sender_id === currentUserId ? 'out' : 'in';
     const isEncrypted = m.encrypted_message && m.nonce && m.sender_public_key;
     const text = isEncrypted
@@ -3883,28 +3895,21 @@ async function openChatWindow(chatId, partnerId) {
       if (m.media_type === 'image') {
         mediaPart = `<img src="${m.media_url}" style="max-width: 240px; border-radius: 12px; display: block; margin-bottom: 6px;" />`;
       } else if (m.media_type === 'video') {
-        mediaPart = `<video controls preload="metadata" playsinline style="max-width: 240px; border-radius: 12px; display: block; margin-bottom: 6px;">
-          <source src="${m.media_url}" type="video/mp4" />
-        </video>`;
+        mediaPart = `<video src="${m.media_url}" controls style="max-width: 240px; border-radius: 12px; display: block; margin-bottom: 6px;"></video>`;
       } else {
         mediaPart = `<a href="${m.media_url}" target="_blank" style="display: block; margin-bottom: 6px;">📎 Файл</a>`;
       }
     }
 
-    const status = isLastFromMe
-      ? (m.read_by?.includes(partnerId) ? ' • Прочитано' : ' • Отправлено')
-      : '';
-
     bubble.innerHTML = `
       ${mediaPart}
       ${text ? `<div>${text}</div>` : ''}
-      <span class="time-label">${tm}${status}</span>
+      <span class="time-label">${tm}</span>
     `;
-
     return bubble;
   }
 
-  async function loadMessages(scroll = true) {
+  async function loadMessages() {
     const { data: msgs } = await supabase
       .from('messages')
       .select('*')
@@ -3913,50 +3918,20 @@ async function openChatWindow(chatId, partnerId) {
 
     if (!msgs) return;
 
-    const newIds = msgs.map(m => m.id).join(',');
-    if (newIds === lastRenderedMessageIds.join(',')) return;
-
     box.innerHTML = '';
-    const videoPromises = [];
-    msgs.forEach((m, i) => {
-      const isLastFromMe = m.sender_id === currentUserId &&
-        msgs.slice(i + 1).findIndex(n => n.sender_id === currentUserId) === -1;
-      const bubble = renderMessage(m, isLastFromMe);
-      box.appendChild(bubble);
+    msgs.forEach(m => box.appendChild(renderMessage(m)));
+    box.scrollTop = box.scrollHeight;
 
-      const video = bubble.querySelector('video');
-      if (video) {
-        videoPromises.push(new Promise(resolve => {
-          video.onloadeddata = resolve;
-          video.onerror = resolve;
-        }));
-      }
+    await fetch(`${API_URL}/chat/read`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+      body: JSON.stringify({ chatId, userId: currentUserId })
     });
-
-    lastRenderedMessageIds = msgs.map(m => m.id);
-
-    if (scroll) {
-      await Promise.all(videoPromises);
-      requestAnimationFrame(() => {
-        box.scrollTop = box.scrollHeight;
-      });
-    }
-
-    const { data: unread } = await supabase
-      .from('messages')
-      .select('id, read_by')
-      .eq('chat_id', chatId)
-      .neq('sender_id', currentUserId);
-
-    for (const m of unread) {
-      if (!m.read_by?.includes(currentUserId)) {
-        const updated = Array.isArray(m.read_by) ? [...new Set([...m.read_by, currentUserId])] : [currentUserId];
-        await supabase.from('messages').update({ read_by: updated }).eq('id', m.id);
-      }
-    }
   }
 
   await loadMessages();
+  refreshInterval = setInterval(loadMessages, 1000);
 
   chatChannel = supabase
     .channel(`chat-${chatId}`)
@@ -3965,28 +3940,7 @@ async function openChatWindow(chatId, partnerId) {
       schema: 'public',
       table: 'messages',
       filter: `chat_id=eq.${chatId}`
-    }, () => loadMessages(true))
-    .subscribe();
-
-  readStatusChannel = supabase
-    .channel(`chat-read-status-${chatId}`)
-    .on('postgres_changes', {
-      event: 'UPDATE',
-      schema: 'public',
-      table: 'messages',
-      filter: `chat_id=eq.${chatId}`
-    }, () => loadMessages(false))
-    .subscribe();
-
-  // 🔁 обновляем статус read_by в реальном времени
-  readStatusChannel = supabase
-    .channel(`chat-read-status-${chatId}`)
-    .on('postgres_changes', {
-      event: 'UPDATE',
-      schema: 'public',
-      table: 'messages',
-      filter: `chat_id=eq.${chatId}`
-    }, () => loadMessages(false))
+    }, () => loadMessages())
     .subscribe();
 
   // Работа с медиа и отправкой
@@ -4116,10 +4070,10 @@ async function openChatWindow(chatId, partnerId) {
           return showNotification('Не удалось отправить сообщение', 'error');
         }
 
-        input.value = '';
-        setTimeout(() => {
-          box.scrollTop = box.scrollHeight;
-        }, 100);
+        if (!selectedFile) {
+          input.value = '';
+        }
+
       } catch (err) {
         console.error('Ошибка при отправке:', err);
         showNotification('Ошибка. Подробнее в консоли.', 'error');
