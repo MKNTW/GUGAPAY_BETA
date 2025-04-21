@@ -3836,17 +3836,15 @@ async function openChatWindow(chatId, partnerId) {
         width: 100vw;
         box-sizing: border-box;
         overflow: hidden;
-        position: relative;
       }
       .chat-messages {
         flex: 1 1 auto;
         overflow-y: auto;
-        padding: 12px 16px;
-        padding-bottom: 72px; /* запас под панель + отступ */
+        padding: 12px 16px 80px 16px;
         box-sizing: border-box;
       }
       .chat-inputbar {
-        position: absolute;
+        position: fixed;
         left: 0; right: 0; bottom: 0;
         display: flex;
         gap: 8px;
@@ -3856,7 +3854,6 @@ async function openChatWindow(chatId, partnerId) {
         border-top: 1px solid #E6E6EB;
         box-shadow: 0 -2px 6px rgba(0,0,0,0.06);
         z-index: 10;
-        box-sizing: border-box;
       }
       .chat-inputbar input[type="text"] {
         flex: 1;
@@ -3882,7 +3879,6 @@ async function openChatWindow(chatId, partnerId) {
         padding: 8px 12px;
         margin-bottom: 8px;
         box-sizing: border-box;
-        word-wrap: break-word;
       }
       .bubble.in {
         align-self: flex-start;
@@ -3965,9 +3961,9 @@ async function openChatWindow(chatId, partnerId) {
 
   createModal('chatModal', `
     <div class="chat-container">
-      <div class="chat-header" style="display:flex;align-items:center;gap:12px;padding:12px;border-bottom:1px solid #E6E6EB;">
-        <img src="${partner.photo}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">
-        <div style="font-size:16px;font-weight:500;">
+      <div class="chat-header" style="display:flex;align-items:center;gap:12px;padding:12px;">
+        <img src="${partner.photo}" style="width:50px;height:50px;border-radius:50%;object-fit:cover;">
+        <div style="font-size:18px;font-weight:500;">
           ${partner.name}
           <div style="font-size:12px;color:#999;margin-top:2px;">ID: ${partner.id}</div>
         </div>
