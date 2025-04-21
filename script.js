@@ -3836,10 +3836,7 @@ async function openChatWindow(chatId, partnerId) {
   createModal('chatModal', `
     <div class="chat-container" style="touch-action: manipulation;">
       <div class="chat-header" style="position: relative; display: flex; align-items: center; gap: 12px;">
-        <button id="chatMoreBtn" style="
-          background: #fff; border: none; font-size: 18px;
-          color: #333; cursor: pointer; border-radius: 10px;
-          padding: 6px 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">⋮</button>
+        <button id="chatMoreBtn" style="background: #fff; border: none; font-size: 18px; color: #333; cursor: pointer; border-radius: 10px; padding: 6px 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">⋮</button>
         <img src="${partner.photo}" class="chat-avatar">
         <div class="chat-title">
           ${partner.name}
@@ -3854,9 +3851,17 @@ async function openChatWindow(chatId, partnerId) {
             : blockedMe
             ? `<div class="chat-block-label" style="padding: 14px; text-align: center; color: #999; background: #f8f8f8; border-radius: 12px; margin: 10px; font-style: italic;">Вы были заблокированы этим пользователем</div>`
             : `
-              <input id="chatText" class="chat-input" placeholder="Сообщение…" style="ime-mode: disabled; font-size: 16px; padding: 12px; width: 100%; max-zoom: 1; touch-action: manipulation;" inputmode="text" />
-              <button id="sendPayBtn" style="margin-left: 8px; padding: 10px 14px; background: #27ae60; color: #fff; font-weight: 600; border: none; border-radius: 10px; cursor: pointer;">₿</button>
-              <button id="chatSend" class="chat-sendBtn" style="margin-left: 8px; padding: 12px 16px; background: #2F80ED; color: #fff; font-weight: 600; border: none; border-radius: 12px; cursor: pointer;">Отправить</button>`
+              <div style="display: flex; gap: 10px; align-items: center; width: 100%;">
+                <input id="chatText" class="chat-input" placeholder="Сообщение…" style="ime-mode: disabled; font-size: 16px; padding: 12px; width: 100%;" inputmode="text" />
+                <input type="file" id="mediaInput" accept="image/*,video/*" style="display: none;" />
+                <button id="uploadMediaBtn" style="background: none; border: none; font-size: 20px; cursor: pointer;">📎</button>
+                <button id="chatSend" class="chat-sendBtn" style="padding: 12px 16px; background: #2F80ED; color: #fff; font-weight: 600; border: none; border-radius: 12px; cursor: pointer;">Отправить</button>
+              </div>
+              <div id="mediaPreview" style="display:none; margin-top:10px; position:relative;">
+                <div id="mediaPreviewContent"></div>
+                <button id="cancelPreviewBtn" style="position:absolute; top:4px; right:4px; background:#fff; border:none; border-radius:50%; cursor:pointer;">✖</button>
+              </div>
+            `
         }
       </div>
     </div>
@@ -3886,36 +3891,17 @@ async function openChatWindow(chatId, partnerId) {
 
     const bubble = document.createElement('div');
     bubble.className = `bubble ${side}`;
-    bubble.innerHTML = `${text}<span class="time-label">${tm}</span>`;
 
-    if (m.is_payment && m.receiver_id === currentUserId && !m.payment_done) {
-      const payBtn = document.createElement('button');
-      payBtn.textContent = 'Оплатить';
-      payBtn.style.cssText = 'margin-top: 8px; background: #27ae60; color: #fff; border: none; border-radius: 8px; padding: 6px 12px; cursor: pointer;';
-      payBtn.onclick = async () => {
-        const { error } = await fetch(`${API_URL}/chat/pay`, {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': csrfToken
-          },
-          body: JSON.stringify({
-            messageId: m.id,
-            senderId: m.sender_id,
-            receiverId: currentUserId,
-            amount: m.amount,
-            currency: m.currency
-          })
-        });
-        if (!error) showNotification('Оплата прошла', 'success');
-      };
-      bubble.appendChild(payBtn);
-    } else if (m.is_payment && m.payment_done) {
-      const paidLabel = document.createElement('div');
-      paidLabel.textContent = '✅ Оплачено';
-      paidLabel.style.cssText = 'margin-top: 4px; font-size: 13px; color: #27ae60;';
-      bubble.appendChild(paidLabel);
+    if (m.media_url) {
+      if (m.media_type === 'image') {
+        bubble.innerHTML = `<img src="${m.media_url}" style="max-width: 200px; border-radius: 12px;" /><span class="time-label">${tm}</span>`;
+      } else if (m.media_type === 'video') {
+        bubble.innerHTML = `<video src="${m.media_url}" controls style="max-width: 240px; border-radius: 12px;"></video><span class="time-label">${tm}</span>`;
+      } else {
+        bubble.innerHTML = `<a href="${m.media_url}" target="_blank">📎 Файл</a><span class="time-label">${tm}</span>`;
+      }
+    } else {
+      bubble.innerHTML = `${text}<span class="time-label">${tm}</span>`;
     }
 
     return bubble;
@@ -3936,8 +3922,7 @@ async function openChatWindow(chatId, partnerId) {
     if (last === lastMessageId) return;
 
     box.innerHTML = '';
-    for (const m of msgs) box.appendChild(renderMessage(m));
-
+    msgs.forEach(m => box.appendChild(renderMessage(m)));
     lastMessageId = last;
     box.scrollTop = box.scrollHeight;
 
@@ -3967,73 +3952,166 @@ async function openChatWindow(chatId, partnerId) {
     })
     .subscribe();
 
-  document.getElementById('sendPayBtn')?.addEventListener('click', () => {
-    createModal('paymentRequestModal', `
-      <h3 style="text-align:center;">Запрос платежа</h3>
-      <input id="payAmount" type="number" placeholder="Сумма" style="width:100%;margin:8px 0;padding:12px;border-radius:10px;border:1px solid #ccc;">
-      <select id="payCurrency" style="width:100%;margin-bottom:8px;padding:12px;border-radius:10px;border:1px solid #ccc;">
-        <option value="RUB">₽ RUB</option>
-        <option value="GUGA">₲ GUGA</option>
-      </select>
-      <input id="payNote" placeholder="Комментарий" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ccc;">
-      <button id="sendPayRequest" style="width:100%;margin-top:12px;padding:12px;background:#2F80ED;color:white;border:none;border-radius:12px;">Отправить запрос</button>
-    `, { cornerTopRadius: 16 });
+  document.getElementById('chatMoreBtn').onclick = () => {
+    let content = '';
 
-    document.getElementById('sendPayRequest').onclick = async () => {
-      const amount = parseFloat(document.getElementById('payAmount').value);
-      const currency = document.getElementById('payCurrency').value;
-      const note = document.getElementById('payNote').value;
+    if (blockedByMe) {
+      content += `<button id="unblockBtn" class="chat-option-btn" style="padding: 12px; width: 100%; border: none; background: #27ae60; color: white; border-radius: 10px; margin-bottom: 10px;">🔓 Разблокировать</button>`;
+    } else {
+      content += `<button id="blockBtn" class="chat-option-btn" style="padding: 12px; width: 100%; border: none; background: #e74c3c; color: white; border-radius: 10px; margin-bottom: 10px;">🚫 Заблокировать</button>`;
+    }
 
-      if (!amount || amount <= 0) {
-        showNotification('Введите корректную сумму!', 'error');
-        return;
-      }
+    content += `<button id="deleteBtn" class="chat-option-btn danger" style="padding: 12px; width: 100%; border: none; background: #7c7c7c; color: white; border-radius: 10px;">🗑 Удалить чат</button>`;
 
-      await supabase.from('messages').insert([{
-        chat_id: chatId,
-        sender_id: currentUserId,
-        encrypted_message: `Запрос ${amount} ${currency}${note ? ': ' + note : ''}`,
-        is_payment: true,
-        payment_done: false,
-        amount,
-        currency,
-        receiver_id: partnerId
-      }]);
+    createModal('chatActionsModal', `<div style="padding:16px; margin-top: 30px;">${content}</div>`, {
+      cornerTopRadius: 0
+    });
 
-      showNotification('Запрос отправлен', 'success');
+    document.getElementById('blockBtn')?.addEventListener('click', async () => {
+      await supabase.from('blocked_users').insert([{ blocker_id: currentUserId, blocked_id: partnerId }]);
+      showNotification('Пользователь заблокирован', 'success');
       removeAllModals();
-    };
-  });
+      openChatWindow(chatId, partnerId);
+    });
+
+    document.getElementById('unblockBtn')?.addEventListener('click', async () => {
+      await supabase.from('blocked_users').delete()
+        .eq('blocker_id', currentUserId).eq('blocked_id', partnerId);
+      showNotification('Пользователь разблокирован', 'success');
+      removeAllModals();
+      openChatWindow(chatId, partnerId);
+    });
+
+    document.getElementById('deleteBtn')?.addEventListener('click', async () => {
+      if (!confirm('Удалить этот чат и все сообщения?')) return;
+      await supabase.from('messages').delete().eq('chat_id', chatId);
+      await supabase.from('chats').delete().eq('id', chatId);
+      showNotification('Чат удалён', 'success');
+      removeAllModals();
+      openChatListModal();
+    });
+  };
 
   if (!blockedByMe && !blockedMe) {
     const sendBtn = document.getElementById('chatSend');
     const input = document.getElementById('chatText');
+    const mediaInput = document.getElementById('mediaInput');
+    const uploadBtn = document.getElementById('uploadMediaBtn');
+    const mediaPreview = document.getElementById('mediaPreview');
+    const mediaContent = document.getElementById('mediaPreviewContent');
+    const cancelPreviewBtn = document.getElementById('cancelPreviewBtn');
+    let selectedFile = null;
+
+    uploadBtn.onclick = () => mediaInput.click();
+
+    mediaInput.onchange = () => {
+      const file = mediaInput.files[0];
+      if (file && file.type.match(/image|video/)) {
+        showPreview(file);
+      } else {
+        showNotification('Можно загрузить только фото или видео', 'error');
+      }
+    };
+
+    function showPreview(file) {
+      const isImage = file.type.startsWith('image/');
+      const isVideo = file.type.startsWith('video/');
+      mediaContent.innerHTML = '';
+
+      if (isImage) {
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        img.style.maxWidth = '200px';
+        img.style.borderRadius = '12px';
+        mediaContent.appendChild(img);
+      } else if (isVideo) {
+        const video = document.createElement('video');
+        video.src = URL.createObjectURL(file);
+        video.controls = true;
+        video.style.maxWidth = '240px';
+        video.style.borderRadius = '12px';
+        mediaContent.appendChild(video);
+      }
+
+      selectedFile = file;
+      mediaPreview.style.display = 'block';
+    }
+
+    cancelPreviewBtn.onclick = () => {
+      selectedFile = null;
+      mediaPreview.style.display = 'none';
+      mediaContent.innerHTML = '';
+    };
+
+    const chatModal = document.querySelector('.chat-container');
+    chatModal.addEventListener('dragover', e => e.preventDefault());
+    chatModal.addEventListener('drop', e => {
+      e.preventDefault();
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.match(/image|video/)) {
+        showPreview(file);
+      } else {
+        showNotification('Можно загрузить только фото или видео', 'error');
+      }
+    });
 
     sendBtn.onclick = async () => {
       const val = input.value.trim();
-      if (!val) return showNotification('Введите сообщение', 'error');
+      if (!val && !selectedFile) return showNotification('Введите сообщение или выберите файл', 'error');
 
       try {
-        if (!partner.pub) {
-          const { data } = await supabase
-            .from('users')
-            .select('public_key')
-            .eq('user_id', partnerId)
-            .single();
-          partner.pub = data?.public_key || '';
+        let messagePayload = { chat_id: chatId, sender_id: currentUserId };
+
+        if (val) {
+          if (!partner.pub) {
+            const { data } = await supabase
+              .from('users')
+              .select('public_key')
+              .eq('user_id', partnerId)
+              .single();
+            partner.pub = data?.public_key || '';
+          }
+
+          if (partner.pub) {
+            const { encrypted_message, nonce, sender_public_key } =
+              encryptMessage(val, partner.pub);
+            Object.assign(messagePayload, { encrypted_message, nonce, sender_public_key });
+          } else {
+            Object.assign(messagePayload, { encrypted_message: val });
+          }
         }
 
-        let payload = { chat_id: chatId, sender_id: currentUserId };
+        if (selectedFile) {
+          const ext = selectedFile.name.split('.').pop();
+          const filename = `${Date.now()}_${currentUserId}.${ext}`;
+          const filePath = `chat_media/${chatId}/${filename}`;
 
-        if (partner.pub) {
-          const { encrypted_message, nonce, sender_public_key } =
-            encryptMessage(val, partner.pub);
-          payload = { ...payload, encrypted_message, nonce, sender_public_key };
-        } else {
-          payload = { ...payload, encrypted_message: val };
+          const { error: uploadError } = await supabase.storage
+            .from('media')
+            .upload(filePath, selectedFile);
+
+          if (uploadError) {
+            console.error(uploadError);
+            return showNotification('Ошибка загрузки файла', 'error');
+          }
+
+          const { data } = supabase.storage.from('media').getPublicUrl(filePath);
+          const mediaUrl = data.publicUrl;
+
+          const isImage = selectedFile.type.startsWith('image/');
+          const isVideo = selectedFile.type.startsWith('video/');
+
+          Object.assign(messagePayload, {
+            media_url: mediaUrl,
+            media_type: isImage ? 'image' : isVideo ? 'video' : 'file'
+          });
+
+          selectedFile = null;
+          mediaPreview.style.display = 'none';
+          mediaContent.innerHTML = '';
         }
 
-        const { error } = await supabase.from('messages').insert([payload]);
+        const { error } = await supabase.from('messages').insert([messagePayload]);
         if (error) {
           console.error('Ошибка при отправке:', error);
           return showNotification('Не удалось отправить сообщение', 'error');
@@ -4046,7 +4124,7 @@ async function openChatWindow(chatId, partnerId) {
       }
     };
 
-    document.getElementById('chatText').addEventListener('keydown', e => {
+    input.addEventListener('keydown', e => {
       if (e.key === 'Enter') {
         e.preventDefault();
         sendBtn.click();
