@@ -1523,23 +1523,44 @@ app.get('/chat/:chatId/messages', verifyToken, async (req, res) => {
 });
 
 app.post('/chat/read', async (req, res) => {
-  const { chatId, userId } = req.body;
-
-  if (!chatId || !userId) return res.status(400).json({ error: 'Missing chatId or userId' });
-
   try {
-    const { data, error } = await supabase
+    const { chatId, userId } = req.body;
+
+    if (!chatId || !userId) {
+      return res.status(400).json({ success: false, error: 'Missing chatId or userId' });
+    }
+
+    // Получаем непрочитанные сообщения
+    const { data: unread, error: readError } = await supabase
       .from('messages')
-      .update({ read_by: supabase.raw(`array_append(read_by, '${userId}')`) })
+      .select('id, read_by')
       .eq('chat_id', chatId)
       .not('read_by', 'cs', `{${userId}}`);
 
-    if (error) throw error;
+    if (readError) {
+      console.error('Ошибка при получении непрочитанных:', readError);
+      return res.status(500).json({ success: false, error: readError.message });
+    }
 
-    return res.json({ success: true, updated: data.length });
+    if (!unread || unread.length === 0) {
+      return res.json({ success: true, updated: 0 });
+    }
+
+    // Обновляем каждое сообщение, добавляя userId в read_by
+    const updates = await Promise.all(unread.map(async msg => {
+      const updatedReadBy = Array.isArray(msg.read_by) ? [...msg.read_by, userId] : [userId];
+
+      return await supabase
+        .from('messages')
+        .update({ read_by: updatedReadBy })
+        .eq('id', msg.id);
+    }));
+
+    return res.json({ success: true, updated: unread.length });
+
   } catch (err) {
-    console.error('Ошибка при отметке прочитанного:', err);
-    res.status(500).json({ error: 'Ошибка на сервере' });
+    console.error('Ошибка в /chat/read:', err);
+    res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 });
 
