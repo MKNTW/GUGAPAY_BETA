@@ -1050,9 +1050,50 @@ body {
 }
 
 /* ——— Список чатов ——— */
-.chat-row      {display:flex;align-items:center;gap:12px;padding:12px;cursor:pointer;}
+.chat-row {
+  background: #F8F9FB;
+  border-radius: 14px;
+  padding: 12px;
+  margin: 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  position: relative;
+}
 .chat-row:hover{background:#F2F4F6;}
-.chat-avatar   {width:44px;height:44px;border-radius:12px;object-fit:cover;box-shadow:0 2px 4px rgba(0,0,0,.1);}
+.chat-avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+.chat-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.chat-name {
+  font-weight: 600;
+  font-size: 15px;
+}
+.chat-preview {
+  font-size: 13px;
+  color: #666;
+  margin-top: 4px;
+  max-width: 90%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chat-time {
+  position: absolute;
+  right: 12px;
+  top: 14px;
+  font-size: 12px;
+  color: #aaa;
+}
 
 /* ——— Окно переписки ——— */
 .chat-header   {display:flex;align-items:center;gap:12px;padding:12px 0;}
