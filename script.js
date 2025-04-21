@@ -1031,14 +1031,14 @@ if (!document.getElementById("bottomBar")) {
       <span>История</span>
     </button>
 
-    <button id="exchangeBtn" class="nav-btn">
-      <img src="photo/71.png" class="nav-icon">
-      <span>Обменять</span>
-    </button>
-
     <button id="chatBtn" class="nav-btn">
       <img src="photo/101.svg" class="nav-icon1">
       <span>Чаты</span>
+    </button>
+
+    <button id="exchangeBtn" class="nav-btn">
+      <img src="photo/71.png" class="nav-icon">
+      <span>Обменять</span>
     </button>
   `;
 
@@ -1230,7 +1230,7 @@ function injectMainUIStyles() {
     .nav-icon1 {
       width: 23px;
       height: 23px;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       margin-top: 4px;
     }
   `;
