@@ -1037,7 +1037,7 @@ if (!document.getElementById("bottomBar")) {
     </button>
 
     <button id="chatBtn" class="nav-btn">
-      <img src="photo/101.svg" class="nav-icon">
+      <img src="photo/101.svg" class="nav-icon1">
       <span>Чаты</span>
     </button>
   `;
@@ -1225,6 +1225,11 @@ function injectMainUIStyles() {
     .nav-icon {
       width: 30px;
       height: 30px;
+      margin-bottom: 4px;
+    }
+    .nav-icon1 {
+      width: 20px;
+      height: 20px;
       margin-bottom: 4px;
     }
   `;
