@@ -3695,7 +3695,7 @@ async function openChatListModal() {
       + Новый чат
     </button>`);
 
-  createModal('chatListModal', `<div style="padding-bottom:16px;">${rows.join('')}</div>`, {
+  createModal('chatListModal', `<div style="padding-bottom:16px; margin-top: 30px;">${rows.join('')}</div>`, {
     showCloseBtn:true,
     cornerTopRadius:0,
     hasVerticalScroll:true,
