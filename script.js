@@ -3815,103 +3815,98 @@ function openNewChatModal() {
 
 /* ========= 5.  Окно переписки ========== */
 async function openChatWindow(chatId, partnerId) {
+  // 1️⃣  Static data -----------------------------------------------------------
   const partner = await fetchUserCard(partnerId);
-  let chatChannel = null;
-  let refreshInterval = null;
-  let lastRenderedMessageIds = [];
 
-  const { data: blockedByMe } = await supabase
-    .from('blocked_users')
-    .select('*')
-    .eq('blocker_id', currentUserId)
-    .eq('blocked_id', partnerId)
-    .maybeSingle();
+  // 2️⃣  Helpers ---------------------------------------------------------------
+  /**
+   * Scrolls the messages container to the very bottom. Works reliably on iOS +
+   * Android + desktop because we postpone the call to the next animation frame
+   * so that new DOM nodes (especially images/videos) have finished layout.
+   */
+  const scrollToBottom = (smooth = false) => {
+    requestAnimationFrame(() => {
+      if (!box) return;
+      box.scrollTo({ top: box.scrollHeight + 256, behavior: smooth ? 'smooth' : 'auto' });
+    });
+  };
 
-  const { data: blockedMe } = await supabase
-    .from('blocked_users')
-    .select('*')
-    .eq('blocker_id', partnerId)
-    .eq('blocked_id', currentUserId)
-    .maybeSingle();
+  /** Attach on‑load listeners to media so the chat never gets stuck mid‑scroll */
+  const monitorMedia = el => {
+    el.querySelectorAll('img').forEach(img => img.addEventListener('load', () => scrollToBottom()));
+    el.querySelectorAll('video').forEach(vid => vid.addEventListener('loadedmetadata', () => scrollToBottom()));
+  };
 
+  /** Renders a single message bubble */
+  function renderMessage(m, isLastFromMe = false) {
+    const side = m.sender_id === currentUserId ? 'out' : 'in';
+    const decrypted = m.encrypted_message && m.nonce && m.sender_public_key
+      ? decryptMessage(m.encrypted_message, m.nonce, m.sender_public_key)
+      : m.encrypted_message;
+    const tm = new Date(m.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
+    let mediaPart = '';
+    if (m.media_url) {
+      if (m.media_type === 'image') {
+        mediaPart = `<img src="${m.media_url}" style="max-width:240px;border-radius:12px;display:block;margin-bottom:6px;" />`;
+      } else if (m.media_type === 'video') {
+        mediaPart = `<video src="${m.media_url}" controls preload="metadata" style="max-width:240px;border-radius:12px;display:block;margin-bottom:6px;"></video>`;
+      } else {
+        mediaPart = `<a href="${m.media_url}" target="_blank" style="display:block;margin-bottom:6px;">📎 Файл</a>`;
+      }
+    }
+
+    let status = '';
+    if (isLastFromMe) {
+      status = m.read_by?.includes(partnerId) ? ' • Прочитано' : ' • Отправлено';
+    }
+
+    const bubble = document.createElement('div');
+    bubble.className = `bubble ${side}`;
+    bubble.innerHTML = `${mediaPart}${decrypted ? `<div>${decrypted}</div>` : ''}<span class="time-label">${tm}${status}</span>`;
+
+    monitorMedia(bubble);
+    return bubble;
+  }
+
+  // 3️⃣  Modal template --------------------------------------------------------
   createModal('chatModal', `
-    <div class="chat-container" style="touch-action: manipulation;">
-      <div class="chat-header" style="display: flex; align-items: center; gap: 12px;">
-        <button id="chatMoreBtn" style="background: #fff; border: none; font-size: 18px; color: #333; cursor: pointer; border-radius: 10px; padding: 6px 10px;">⋮</button>
-        <img src="${partner.photo}" class="chat-avatar">
-        <div class="chat-title">
-          ${partner.name}
-          <div style="font-size:12px;color:#999;margin-top:2px;">ID: ${partner.id}</div>
-        </div>
+    <div class="chat-container" style="touch-action:manipulation;">
+      <div class="chat-header" style="display:flex;align-items:center;gap:12px;">
+        <button id="chatMoreBtn" style="background:#fff;border:none;font-size:18px;color:#333;cursor:pointer;border-radius:10px;padding:6px 10px;">⋮</button>
+        <img src="${partner.photo}" class="chat-avatar"/>
+        <div class="chat-title">${partner.name}<div style="font-size:12px;color:#999;margin-top:2px;">ID: ${partner.id}</div></div>
       </div>
-      <div id="chatMessages" class="chat-messages" style="flex: 1 1 auto; overflow-y: auto;"></div>
+      <div id="chatMessages" class="chat-messages" style="flex:1 1 auto;overflow-y:auto;"></div>
       <div class="chat-inputbar" id="chatInputBar">
-        <div id="mediaPreview" style="display:none; margin-bottom: 10px; position: relative; max-height: 200px; overflow: hidden;">
-          <div id="mediaPreviewContent" style="max-height: 200px;"></div>
-          <button id="cancelPreviewBtn" style="position:absolute; top:4px; right:4px; background:#fff; border:none; border-radius:50%; cursor:pointer;">✖</button>
+        <div id="mediaPreview" style="display:none;margin-bottom:10px;position:relative;max-height:200px;overflow:hidden;">
+          <div id="mediaPreviewContent" style="max-height:200px;"></div>
+          <button id="cancelPreviewBtn" style="position:absolute;top:4px;right:4px;background:#fff;border:none;border-radius:50%;cursor:pointer;">✖</button>
         </div>
-        <div style="display: flex; gap: 10px; align-items: center; width: 100%;">
-          <input id="chatText" class="chat-input" placeholder="Сообщение…" style="font-size: 16px; padding: 12px; width: 100%;" />
-          <input type="file" id="mediaInput" accept="image/*,video/*" style="display: none;" />
-          <button id="uploadMediaBtn" style="background: none; border: none; font-size: 20px; cursor: pointer;">📎</button>
-          <button id="chatSend" class="chat-sendBtn" style="padding: 12px 16px; background: #2F80ED; color: #fff; font-weight: 600; border: none; border-radius: 12px; cursor: pointer;">Отправить</button>
+        <div style="display:flex;gap:10px;align-items:center;width:100%;">
+          <input id="chatText" class="chat-input" placeholder="Сообщение…" style="font-size:16px;padding:12px;width:100%;" />
+          <input type="file" id="mediaInput" accept="image/*,video/*" style="display:none;" />
+          <button id="uploadMediaBtn" style="background:none;border:none;font-size:20px;cursor:pointer;">📎</button>
+          <button id="chatSend" class="chat-sendBtn" style="padding:12px 16px;background:#2F80ED;color:#fff;font-weight:600;border:none;border-radius:12px;cursor:pointer;">Отправить</button>
         </div>
       </div>
-    </div>
-  `, {
+    </div>`, {
     cornerTopRadius: 0,
     hasVerticalScroll: false,
     customStyles: { display: 'flex', flexDirection: 'column', height: '100%' },
     onClose: () => {
       document.getElementById('bottomBar').style.display = 'flex';
       if (chatChannel) supabase.removeChannel(chatChannel);
-      if (refreshInterval) clearInterval(refreshInterval);
     }
   });
 
   document.getElementById('bottomBar').style.display = 'none';
   const box = document.getElementById('chatMessages');
 
-  function renderMessage(m, isLastFromMe = false) {
-    const side = m.sender_id === currentUserId ? 'out' : 'in';
-    const isEncrypted = m.encrypted_message && m.nonce && m.sender_public_key;
-    const text = isEncrypted
-      ? decryptMessage(m.encrypted_message, m.nonce, m.sender_public_key)
-      : m.encrypted_message;
-    const tm = new Date(m.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  // 4️⃣  Data fetching & rendering -------------------------------------------
+  let lastRenderedIds = [];
 
-    const bubble = document.createElement('div');
-    bubble.className = `bubble ${side}`;
-
-    let mediaPart = '';
-    if (m.media_url) {
-      if (m.media_type === 'image') {
-        mediaPart = `<img src="${m.media_url}" style="max-width: 240px; border-radius: 12px; display: block; margin-bottom: 6px;" />`;
-      } else if (m.media_type === 'video') {
-        mediaPart = `<video src="${m.media_url}" controls preload="metadata" style="max-width: 240px; border-radius: 12px; display: block; margin-bottom: 6px;"></video>`;
-      } else {
-        mediaPart = `<a href="${m.media_url}" target="_blank" style="display: block; margin-bottom: 6px;">📎 Файл</a>`;
-      }
-    }
-
-    let status = '';
-    if (isLastFromMe) {
-      if (m.read_by?.includes(partnerId)) {
-        status = ' • Прочитано';
-      } else {
-        status = ' • Отправлено';
-      }
-    }
-
-    bubble.innerHTML = `
-      ${mediaPart}
-      ${text ? `<div>${text}</div>` : ''}
-      <span class="time-label">${tm}${status}</span>
-    `;
-    return bubble;
-  }
-
-  async function loadMessages() {
+  const loadMessages = async (initial = false) => {
     const { data: msgs } = await supabase
       .from('messages')
       .select('*')
@@ -3920,199 +3915,140 @@ async function openChatWindow(chatId, partnerId) {
 
     if (!msgs) return;
 
-    const newIds = msgs.map(m => m.id).join(',');
-    const lastIds = lastRenderedMessageIds.join(',');
-    if (newIds === lastIds) return;
+    const ids = msgs.map(m => m.id).join(',');
+    if (ids === lastRenderedIds.join(',')) return; // nothing new
 
     box.innerHTML = '';
     msgs.forEach((m, i) => {
-      const isLastFromMe =
-        m.sender_id === currentUserId &&
-        msgs.slice(i + 1).findIndex(n => n.sender_id === currentUserId) === -1;
+      const isLastFromMe = m.sender_id === currentUserId && !msgs.slice(i + 1).some(n => n.sender_id === currentUserId);
       box.appendChild(renderMessage(m, isLastFromMe));
     });
 
-    lastRenderedMessageIds = msgs.map(m => m.id);
+    lastRenderedIds = msgs.map(m => m.id);
+    scrollToBottom(!initial);
 
-    setTimeout(() => {
-      box.scrollTop = box.scrollHeight;
-    }, 100);
+    // Bulk mark as read (single RPC)
+    await supabase.rpc('mark_as_read', { p_chat: chatId, p_reader: currentUserId });
+  };
 
-    // обновить прочитанные
-    const { data: unreadMessages } = await supabase
-  .from('messages')
-  .select('id, read_by')
-  .eq('chat_id', chatId)
-  .neq('sender_id', currentUserId);
+  await loadMessages(true);
 
-const toUpdate = unreadMessages.filter(m => !Array.isArray(m.read_by) || !m.read_by.includes(currentUserId));
-
-for (const msg of toUpdate) {
-  const updatedReadBy = Array.isArray(msg.read_by) ? [...msg.read_by, currentUserId] : [currentUserId];
-  await supabase
-    .from('messages')
-    .update({ read_by: updatedReadBy })
-    .eq('id', msg.id);
-}
-  }
-
-  await loadMessages();
-  refreshInterval = setInterval(loadMessages, 1000);
-
-  chatChannel = supabase
+  // 5️⃣  Real‑time channel – no polling --------------------------------------
+  const chatChannel = supabase
     .channel(`chat-${chatId}`)
-    .on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'messages',
-      filter: `chat_id=eq.${chatId}`
-    }, () => loadMessages())
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` }, loadMessages)
     .subscribe();
 
-  // Работа с медиа и отправкой
-  if (!blockedByMe && !blockedMe) {
-    const input = document.getElementById('chatText');
-    const sendBtn = document.getElementById('chatSend');
-    const mediaInput = document.getElementById('mediaInput');
-    const uploadBtn = document.getElementById('uploadMediaBtn');
-    const mediaPreview = document.getElementById('mediaPreview');
-    const mediaContent = document.getElementById('mediaPreviewContent');
-    const cancelPreviewBtn = document.getElementById('cancelPreviewBtn');
-    let selectedFile = null;
+  // 6️⃣  Composer -------------------------------------------------------------
+  const input = document.getElementById('chatText');
+  const sendBtn = document.getElementById('chatSend');
+  const mediaInput = document.getElementById('mediaInput');
+  const uploadBtn = document.getElementById('uploadMediaBtn');
+  const mediaPreview = document.getElementById('mediaPreview');
+  const mediaContent = document.getElementById('mediaPreviewContent');
+  const cancelPreviewBtn = document.getElementById('cancelPreviewBtn');
+  let selectedFile = null;
 
-    uploadBtn.onclick = () => mediaInput.click();
+  const showPreview = file => {
+    mediaContent.innerHTML = '';
+    const isImg = file.type.startsWith('image/');
+    const isVid = file.type.startsWith('video/');
 
-    mediaInput.onchange = () => {
-      const file = mediaInput.files[0];
-      if (file && file.type.match(/image|video/)) {
-        showPreview(file);
-      } else {
-        showNotification('Можно загрузить только фото или видео', 'error');
-      }
-    };
-
-    function showPreview(file) {
-      mediaContent.innerHTML = '';
-      const isImage = file.type.startsWith('image/');
-      const isVideo = file.type.startsWith('video/');
-
-      if (isImage) {
-        const img = document.createElement('img');
-        img.src = URL.createObjectURL(file);
-        img.style.maxWidth = '240px';
-        img.style.borderRadius = '12px';
-        mediaContent.appendChild(img);
-      } else if (isVideo) {
-        const video = document.createElement('video');
-        video.src = URL.createObjectURL(file);
-        video.controls = true;
-        video.style.maxWidth = '240px';
-        video.style.borderRadius = '12px';
-        mediaContent.appendChild(video);
-      }
-
-      selectedFile = file;
-      mediaPreview.style.display = 'block';
+    if (isImg) {
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(file);
+      img.style.cssText = 'max-width:240px;border-radius:12px;';
+      mediaContent.appendChild(img);
+    } else if (isVid) {
+      const vid = document.createElement('video');
+      vid.src = URL.createObjectURL(file);
+      vid.controls = true;
+      vid.style.cssText = 'max-width:240px;border-radius:12px;';
+      mediaContent.appendChild(vid);
     }
 
-    cancelPreviewBtn.onclick = () => {
-      selectedFile = null;
-      mediaPreview.style.display = 'none';
-      mediaContent.innerHTML = '';
-    };
+    selectedFile = file;
+    mediaPreview.style.display = 'block';
+  };
 
-    const chatModal = document.querySelector('.chat-container');
-    chatModal.addEventListener('dragover', e => e.preventDefault());
-    chatModal.addEventListener('drop', e => {
-      e.preventDefault();
-      const file = e.dataTransfer.files[0];
-      if (file && file.type.match(/image|video/)) {
-        showPreview(file);
+  uploadBtn.onclick = () => mediaInput.click();
+  mediaInput.onchange = () => {
+    const file = mediaInput.files[0];
+    if (file && file.type.match(/image|video/)) showPreview(file);
+    else showNotification('Можно загрузить только фото или видео', 'error');
+  };
+  cancelPreviewBtn.onclick = () => {
+    selectedFile = null;
+    mediaPreview.style.display = 'none';
+    mediaContent.innerHTML = '';
+  };
+
+  // Drag‑and‑drop support
+  const modalBox = document.querySelector('.chat-container');
+  modalBox.addEventListener('dragover', e => e.preventDefault());
+  modalBox.addEventListener('drop', e => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.match(/image|video/)) showPreview(file);
+    else showNotification('Можно загрузить только фото или видео', 'error');
+  });
+
+  // Message send -------------------------------------------------------------
+  const sendMessage = async () => {
+    const textVal = input.value.trim();
+    if (!textVal && !selectedFile) return showNotification('Введите сообщение или прикрепите файл', 'error');
+
+    const payload = { chat_id: chatId, sender_id: currentUserId };
+
+    // Encrypt text if partner has key
+    if (textVal) {
+      if (!partner.pub) {
+        const { data } = await supabase.from('users').select('public_key').eq('user_id', partnerId).single();
+        partner.pub = data?.public_key || '';
+      }
+      if (partner.pub) {
+        Object.assign(payload, encryptMessage(textVal, partner.pub));
       } else {
-        showNotification('Можно загрузить только фото или видео', 'error');
+        payload.encrypted_message = textVal;
       }
-    });
+    }
 
-    sendBtn.onclick = async () => {
-      const val = input.value.trim();
-      if (!val && !selectedFile) {
-        return showNotification('Введите сообщение или прикрепите файл', 'error');
+    // Upload file if exists
+    if (selectedFile) {
+      const ext = selectedFile.name.split('.').pop();
+      const filename = `${Date.now()}_${currentUserId}.${ext}`;
+      const path = `chat_media/${chatId}/${filename}`;
+      const { error: upErr } = await supabase.storage.from('media').upload(path, selectedFile);
+      if (upErr) {
+        console.error(upErr);
+        return showNotification('Ошибка загрузки файла', 'error');
       }
+      const { data } = supabase.storage.from('media').getPublicUrl(path);
+      payload.media_url = data.publicUrl;
+      payload.media_type = selectedFile.type.startsWith('image/') ? 'image' : 'video';
+    }
 
-      try {
-        let messagePayload = { chat_id: chatId, sender_id: currentUserId };
+    const { error } = await supabase.from('messages').insert([payload]);
+    if (error) {
+      console.error('Ошибка при отправке:', error);
+      return showNotification('Не удалось отправить сообщение', 'error');
+    }
 
-        if (val) {
-          if (!partner.pub) {
-            const { data } = await supabase
-              .from('users')
-              .select('public_key')
-              .eq('user_id', partnerId)
-              .single();
-            partner.pub = data?.public_key || '';
-          }
+    // Local UI reset ---------------------------------------------------------
+    input.value = '';
+    selectedFile = null;
+    mediaPreview.style.display = 'none';
+    mediaContent.innerHTML = '';
+    scrollToBottom(true);
+  };
 
-          if (partner.pub) {
-            const { encrypted_message, nonce, sender_public_key } = encryptMessage(val, partner.pub);
-            Object.assign(messagePayload, { encrypted_message, nonce, sender_public_key });
-          } else {
-            Object.assign(messagePayload, { encrypted_message: val });
-          }
-        }
-
-        if (selectedFile) {
-          const ext = selectedFile.name.split('.').pop();
-          const filename = `${Date.now()}_${currentUserId}.${ext}`;
-          const filePath = `chat_media/${chatId}/${filename}`;
-
-          const { error: uploadError } = await supabase.storage
-            .from('media')
-            .upload(filePath, selectedFile);
-
-          if (uploadError) {
-            console.error(uploadError);
-            return showNotification('Ошибка загрузки файла', 'error');
-          }
-
-          const { data } = supabase.storage.from('media').getPublicUrl(filePath);
-          const mediaUrl = data.publicUrl;
-
-          const isImage = selectedFile.type.startsWith('image/');
-          const isVideo = selectedFile.type.startsWith('video/');
-
-          Object.assign(messagePayload, {
-            media_url: mediaUrl,
-            media_type: isImage ? 'image' : isVideo ? 'video' : 'file'
-          });
-
-          selectedFile = null;
-          mediaPreview.style.display = 'none';
-          mediaContent.innerHTML = '';
-        }
-
-        const { error } = await supabase.from('messages').insert([messagePayload]);
-        if (error) {
-          console.error('Ошибка при отправке:', error);
-          return showNotification('Не удалось отправить сообщение', 'error');
-        }
-
-        input.value = '';
-        setTimeout(() => {
-          box.scrollTop = box.scrollHeight;
-        }, 100);
-      } catch (err) {
-        console.error('Ошибка при отправке:', err);
-        showNotification('Ошибка. Подробнее в консоли.', 'error');
-      }
-    };
-
-    input.addEventListener('keydown', e => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        sendBtn.click();
-      }
-    });
-  }
+  sendBtn.onclick = sendMessage;
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
 }
 
 /* ========= 6.  Вызвать ensureKeyPair сразу после успешного логина ========= */
