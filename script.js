@@ -3814,7 +3814,7 @@ function openNewChatModal() {
 }
 
 async function openChatWindow(chatId, partnerId) {
-  // 1) Внедряем глобальные стили (один раз)
+  // Вставляем глобальные стили, если ещё не вставлены
   if (!document.getElementById('chatGlobalStyles')) {
     const style = document.createElement('style');
     style.id = 'chatGlobalStyles';
@@ -3826,99 +3826,92 @@ async function openChatWindow(chatId, partnerId) {
         touch-action: manipulation;
         -webkit-text-size-adjust: 100%;
       }
-      /* Контейнер чата */
+      input, textarea, button {
+        font-size: 16px !important;
+      }
       .chat-container {
-        position: relative;
-        display: flex; flex-direction: column;
-        height: 100vh; width: 100vw;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        width: 100vw;
         box-sizing: border-box;
         overflow: hidden;
       }
-      /* Область сообщений */
       .chat-messages {
         flex: 1 1 auto;
         overflow-y: auto;
-        padding: 12px;
-        /* запас снизу = высота панели ввода + отступы */
-        padding-bottom: calc(12px + 56px + env(safe-area-inset-bottom));
+        padding: 12px 16px 60px 16px;
         box-sizing: border-box;
       }
-      /* Панель ввода */
       .chat-inputbar {
         position: fixed;
         left: 0; right: 0; bottom: 0;
-        display: flex; align-items: center; gap: 8px;
-        padding: 12px 16px env(safe-area-inset-bottom) 16px;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        padding: 8px 12px calc(8px + env(safe-area-inset-bottom)) 12px;
         background: #F8F9FB;
         border-top: 1px solid #E6E6EB;
-        box-shadow: 0 -1px 4px rgba(0,0,0,0.1);
+        box-shadow: 0 -2px 6px rgba(0,0,0,0.06);
         z-index: 10;
-        box-sizing: border-box;
       }
-      /* Инпут и кнопки */
       .chat-inputbar input[type="text"] {
         flex: 1;
-        padding: 12px;
+        padding: 10px;
         border: 1px solid #E6E6EB;
         border-radius: 12px;
         background: #fff;
-        font-size: 16px;
-        outline: none;
-        box-sizing: border-box;
       }
       .chat-inputbar button {
-        flex-shrink: 0;
         font-size: 18px;
-        background: none; border: none;
+        background: none;
+        border: none;
         cursor: pointer;
       }
-      .chat-inputbar button#chatSend {
-        padding: 12px 16px;
+      #chatSend {
         background: #2F80ED;
         color: #fff;
-        border: 1px solid #2F80ED;
         border-radius: 12px;
+        padding: 10px 14px;
       }
-      /* Пузырьки сообщений */
-      .bubble.in {
-        align-self: flex-start;
-        background: #F1F0F0; color: #000;
-        border-radius: 12px 12px 12px 0;
+      .bubble {
+        max-width: 78%;
         padding: 8px 12px;
         margin-bottom: 8px;
-        max-width: 85%;
         box-sizing: border-box;
+      }
+      .bubble.in {
+        align-self: flex-start;
+        background: #F1F0F0;
+        color: #000;
+        border-radius: 12px 12px 12px 0;
       }
       .bubble.out {
         align-self: flex-end;
-        background: #2F80ED; color: #fff;
+        background: #2F80ED;
+        color: #fff;
         border-radius: 12px 12px 0 12px;
-        padding: 8px 12px;
-        margin-bottom: 8px;
-        max-width: 85%;
-        box-sizing: border-box;
       }
       .time-label {
         display: block;
         margin-top: 4px;
-        font-size: 12px;
-        color: rgba(0,0,0,0.45);
+        font-size: 11px;
+        opacity: 0.6;
         text-align: right;
       }
-      /* Единообразие медиа */
       .bubble img,
       .bubble video {
         display: block;
         margin: 0 auto 6px;
-        max-width: 200px;
-        max-height: 200px;
+        max-width: 180px;
+        max-height: 220px;
         border-radius: 12px;
         object-fit: cover;
       }
     `;
     document.head.appendChild(style);
   }
-
+  
   // 2) Обычная логика инициализации и рендера (как раньше)…
   const partner = await fetchUserCard(partnerId);
   let chatChannel, refreshInterval, box;
