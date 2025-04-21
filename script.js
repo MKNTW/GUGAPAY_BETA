@@ -1030,6 +1030,14 @@ function createMainUI() {
         <img src="photo/71.png" class="nav-icon">
         <span>Обменять</span>
       </button>
+            <button id="exchangeBtn" class="nav-btn">
+        <img src="photo/71.png" class="nav-icon">
+        <span>Обменять</span>
+      </button>
+     <button id="chatBtn" class="nav-btn">
+       <img src="photo/72.png" class="nav-icon">
+       <span>Чаты</span>
+     </button>
     `;
     document.body.appendChild(bottomBar);
     bottomBar.querySelector("#btnMain").addEventListener("click", () => {
@@ -1042,6 +1050,10 @@ function createMainUI() {
     bottomBar.querySelector("#exchangeBtn").addEventListener("click", () => {
       removeAllModals();
       openExchangeModal();
+    });
+    bottomBar.querySelector("#chatBtn").addEventListener("click", () => {
+      removeAllModals();
+      openChatListModal();                       // функция ниже
     });
   }
 
@@ -3579,6 +3591,218 @@ async function loginWithTelegramWebApp() {
     showNotification("Ошибка Telegram входа: " + err.message, "error");
   }
 }
+
+/************************************************************
+ *  🟦  CLIENT‑SIDE E2EE CHATS  (добавить в конец script.js)
+ ************************************************************/
+
+/* ========= 1.  Крипто‑утилиты ========== */
+async function ensureKeyPair(userId) {
+  if (localStorage.getItem('privateKey')) return;               // уже есть
+  const kp   = nacl.box.keyPair();
+  const pub  = nacl.util.encodeBase64(kp.publicKey);
+  const priv = nacl.util.encodeBase64(kp.secretKey);
+  localStorage.setItem('privateKey', priv);
+  await supabase.from('users').update({ public_key: pub }).eq('user_id', userId);
+}
+
+function encryptMessage(plain, recipientPubB64) {
+  const nonce  = nacl.randomBytes(24);
+  const shared = nacl.box.before(
+      nacl.util.decodeBase64(recipientPubB64),
+      nacl.util.decodeBase64(localStorage.getItem('privateKey'))
+  );
+  const enc = nacl.box.after(nacl.util.decodeUTF8(plain), nonce, shared);
+  return {
+    encrypted_message: nacl.util.encodeBase64(enc),
+    nonce            : nacl.util.encodeBase64(nonce),
+    sender_public_key: recipientPubB64
+  };
+}
+
+function decryptMessage(encB64, nonceB64, senderPubB64) {
+  const shared = nacl.box.before(
+      nacl.util.decodeBase64(senderPubB64),
+      nacl.util.decodeBase64(localStorage.getItem('privateKey'))
+  );
+  const plain = nacl.box.open.after(
+      nacl.util.decodeBase64(encB64),
+      nacl.util.decodeBase64(nonceB64),
+      shared
+  );
+  return nacl.util.encodeUTF8(plain);
+}
+
+/* ========= 2.  Вспомогательная карточка пользователя ========== */
+async function fetchUserCard(id) {
+  const { data } = await supabase.from('users')
+        .select('first_name, photo_url, public_key')
+        .eq('user_id', id).maybeSingle();
+  return {
+    id,
+    name : data?.first_name || `ID: ${id}`,
+    photo: data?.photo_url  || 'photo/default.png',
+    pub  : data?.public_key || ''
+  };
+}
+
+/* ========= 3.  Список чатов ========== */
+async function openChatListModal() {
+  const bottomBar = document.getElementById('bottomBar');
+  if (bottomBar) bottomBar.style.display = 'none';
+  showGlobalLoading();
+
+  const { data: chats } = await supabase
+        .from('chats')
+        .select('*')
+        .or(`user1_id.eq.${currentUserId},user2_id.eq.${currentUserId}`)
+        .order('created_at',{ascending:false});
+
+  // HTML‑строки списка
+  const rows = await Promise.all(chats.map(async ch => {
+    const otherId = ch.user1_id === currentUserId ? ch.user2_id : ch.user1_id;
+    const u = await fetchUserCard(otherId);
+    return `<div class="chat-row" data-chat="${ch.id}" data-partner="${otherId}">
+              <img src="${u.photo}" class="chat-avatar">
+              <div>
+                <div style="font-weight:500;">${u.name}</div>
+                <div style="font-size:12px;color:#888;">ID: ${u.id}</div>
+              </div>
+            </div>`;
+  }));
+
+  rows.unshift(`
+    <button id="newChatBtn" style="
+      width:100%;margin:8px 0;padding:12px;border:none;background:#2F80ED;
+      color:#fff;border-radius:12px;font-weight:600;cursor:pointer;">
+      + Новый чат
+    </button>`);
+
+  createModal('chatListModal', `<div style="padding-bottom:16px;">${rows.join('')}</div>`, {
+    showCloseBtn:true,
+    cornerTopRadius:20,
+    hasVerticalScroll:true,
+    onClose:()=>{ if(bottomBar) bottomBar.style.display='flex'; }
+  });
+  hideGlobalLoading();
+
+  // события
+  document.querySelectorAll('.chat-row').forEach(r=>{
+    r.onclick = ()=> openChatWindow(r.dataset.chat, r.dataset.partner);
+  });
+  document.getElementById('newChatBtn').onclick = openNewChatModal;
+}
+
+/* ========= 4.  Создание нового чата ========== */
+function openNewChatModal() {
+  createModal('newChatModal', `
+    <h3 style="text-align:center;margin-bottom:16px;">Новый чат</h3>
+    <input id="partnerIdInput" placeholder="ID пользователя"
+           style="width:100%;padding:14px;border:1px solid #E6E6EB;
+                  border-radius:12px;font-size:16px;margin-bottom:16px;">
+    <button id="startChatBtn" style="
+       width:100%;padding:14px;background:#2F80ED;color:#fff;
+       border:none;border-radius:12px;font-weight:600;cursor:pointer;">
+       Начать чат
+    </button>
+  `,{cornerTopRadius:20});
+
+  document.getElementById('startChatBtn').onclick = async()=>{
+    const partnerId = document.getElementById('partnerIdInput').value.trim();
+    if(!partnerId){ showNotification('Введите ID','error'); return; }
+    try{
+      showGlobalLoading();
+      const ids = [currentUserId, partnerId].sort();
+      let { data: chat } = await supabase
+            .from('chats')
+            .select('*')
+            .eq('user1_id', ids[0])
+            .eq('user2_id', ids[1]).maybeSingle();
+      if(!chat){
+        ({ data: chat } = await supabase
+           .from('chats')
+           .insert([{ user1_id: ids[0], user2_id: ids[1] }])
+           .select().single());
+      }
+      removeAllModals();
+      openChatWindow(chat.id, partnerId);
+    }catch(err){ showNotification('Ошибка','error'); }
+    finally{ hideGlobalLoading(); }
+  };
+}
+
+/* ========= 5.  Окно переписки ========== */
+async function openChatWindow(chatId, partnerId) {
+  const partner = await fetchUserCard(partnerId);
+
+  createModal('chatModal', `
+    <div class="chat-header">
+      <img src="${partner.photo}" class="chat-avatar">
+      <div class="chat-title">${partner.name} · ID: ${partner.id}</div>
+    </div>
+    <div id="chatMessages" class="chat-messages"></div>
+    <div class="chat-inputbar">
+      <input id="chatText" class="chat-input" placeholder="Сообщение">
+      <button id="chatSend" class="chat-sendBtn">Отправить</button>
+    </div>
+  `,{cornerTopRadius:20, hasVerticalScroll:false,
+     onClose:()=> document.getElementById('bottomBar').style.display='flex'});
+
+  document.getElementById('bottomBar').style.display='none';
+
+  // подгрузка истории
+  async function loadMessages() {
+    const { data: msgs } = await supabase
+          .from('messages')
+          .select('*')
+          .eq('chat_id', chatId)
+          .order('created_at',{ascending:true});
+    const html = msgs.map(m=>{
+      const side = m.sender_id === currentUserId ? 'out' : 'in';
+      const text = decryptMessage(m.encrypted_message, m.nonce, m.sender_public_key);
+      const tm   = new Date(m.created_at).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+      return `<div class="bubble ${side}">${text}<span class="time-label">${tm}</span></div>`;
+    }).join('');
+    const box = document.getElementById('chatMessages');
+    box.innerHTML = html;
+    box.scrollTop = box.scrollHeight;
+  }
+  await loadMessages();
+
+  // realtime channel
+  supabase.channel('chat:'+chatId)
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:`chat_id=eq.${chatId}`},
+       loadMessages)
+    .subscribe();
+
+  // отправка
+  document.getElementById('chatSend').onclick = async ()=>{
+    const val = document.getElementById('chatText').value.trim();
+    if(!val) return;
+    // гарантируем наличие ключа собеседника
+    if(!partner.pub){
+      const p = await supabase.from('users').select('public_key').eq('user_id',partnerId).single();
+      partner.pub = p.data?.public_key || '';
+    }
+    const { encrypted_message, nonce, sender_public_key } = encryptMessage(val, partner.pub);
+    await supabase.from('messages').insert([{
+      chat_id: chatId,
+      sender_id: currentUserId,
+      encrypted_message, nonce, sender_public_key
+    }]);
+    document.getElementById('chatText').value='';
+    await loadMessages();
+  };
+}
+
+/* ========= 6.  Вызвать ensureKeyPair сразу после успешного логина ========= */
+(async()=>{ if(currentUserId) await ensureKeyPair(currentUserId); })();
+
+/* ========= 7.  Кнопка «Чаты» уже добавлена в bottomBar  ========= */
+document.getElementById('chatBtn')?.addEventListener('click',()=>{
+  removeAllModals();
+  openChatListModal();
+});
 
 /**************************************************
  * WINDOW EVENTS
