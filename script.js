@@ -3844,25 +3844,31 @@ async function openChatWindow(chatId, partnerId) {
   let lastMessageId = null;
 
   async function loadMessages() {
-    const { data: msgs } = await supabase
-      .from('messages')
-      .select('*')
-      .eq('chat_id', chatId)
-      .order('created_at', { ascending: true });
+  const { data: msgs } = await supabase
+    .from('messages')
+    .select('*')
+    .eq('chat_id', chatId)
+    .order('created_at', { ascending: true });
 
-    if (!msgs) return;
+  if (!msgs) return;
 
-    const last = msgs[msgs.length - 1]?.id;
-    if (last === lastMessageId) return; // ничего не изменилось
+  const last = msgs[msgs.length - 1]?.id;
+  if (last === lastMessageId) return; // ничего не изменилось
 
-    box.innerHTML = '';
-    msgs.forEach(m => {
-      box.appendChild(renderMessage(m));
-    });
+  box.innerHTML = '';
+  msgs.forEach(m => {
+    box.appendChild(renderMessage(m));
+  });
 
-    lastMessageId = last;
-    box.scrollTop = box.scrollHeight;
-  }
+  lastMessageId = last;
+  box.scrollTop = box.scrollHeight;
+
+  // ⬇️ ⬇️ ПОМЕТИТЬ КАК ПРОЧИТАННЫЕ
+  await supabase.rpc('mark_messages_as_read', {
+    chat_id_input: chatId,
+    user_id_input: currentUserId
+  });
+}
 
   await loadMessages();
 
@@ -3880,11 +3886,6 @@ async function openChatWindow(chatId, partnerId) {
       }
     )
     .subscribe();
-
-  await supabase.rpc('mark_messages_as_read', {
-  chat_id_input: chatId,
-  user_id_input: currentUserId
-  });
 
   // 📤 Отправка сообщений
   const sendBtn = document.getElementById('chatSend');
