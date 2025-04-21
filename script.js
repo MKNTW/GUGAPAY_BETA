@@ -3960,10 +3960,6 @@ async function openChatWindow(chatId, partnerId) {
     }, () => loadMessages())
     .subscribe();
 
-  // обработка интерфейса отправки...
-  // (оставь свой текущий блок sendBtn.onclick, preview и т.д.)
-}
-
   // Работа с медиа и отправкой
   if (!blockedByMe && !blockedMe) {
     const input = document.getElementById('chatText');
