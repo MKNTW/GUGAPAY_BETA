@@ -3749,16 +3749,11 @@ function openNewChatModal() {
 }
 
 /* ========= 5.  Окно переписки ========== */
-/* ========= 5.  Окно переписки ========== */
 async function openChatWindow(chatId, partnerId) {
-  // 1) Получаем данные партнёра
   const partner = await fetchUserCard(partnerId);
-
-  // 2) Переменная для хранения канала
   let chatChannel = null;
 
-  // 3) Собираем HTML для модалки
-  const modalContent = `
+  createModal('chatModal', `
     <div class="chat-container">
       <div class="chat-header">
         <img src="${partner.photo}" class="chat-avatar">
@@ -3770,26 +3765,36 @@ async function openChatWindow(chatId, partnerId) {
         <button id="chatSend" class="chat-sendBtn">Отправить</button>
       </div>
     </div>
-  `;
-
-  // 4) Открываем модалку и настраиваем отписку при закрытии
-  createModal('chatModal', modalContent, {
+  `, {
     cornerTopRadius: 0,
     hasVerticalScroll: false,
     customStyles: { display: 'flex', flexDirection: 'column', height: '100%' },
     onClose: () => {
       document.getElementById('bottomBar').style.display = 'flex';
-      if (chatChannel) {
-        supabase.removeChannel(chatChannel);
-        chatChannel = null;
-      }
+      if (chatChannel) supabase.removeChannel(chatChannel);
     }
   });
 
-  // 5) Скрываем нижнюю панель
   document.getElementById('bottomBar').style.display = 'none';
 
-  // 6) Функция для загрузки истории
+  const box = document.getElementById('chatMessages');
+
+  function renderMessage(m) {
+    const side = m.sender_id === currentUserId ? 'out' : 'in';
+    const isEncrypted = m.encrypted_message && m.nonce && m.sender_public_key;
+    const text = isEncrypted
+      ? decryptMessage(m.encrypted_message, m.nonce, m.sender_public_key)
+      : m.encrypted_message;
+    const tm = new Date(m.created_at)
+      .toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
+    const bubble = document.createElement('div');
+    bubble.className = `bubble ${side}`;
+    bubble.innerHTML = `${text}<span class="time-label">${tm}</span>`;
+    box.appendChild(bubble);
+    box.scrollTop = box.scrollHeight;
+  }
+
   async function loadMessages() {
     const { data: msgs } = await supabase
       .from('messages')
@@ -3797,70 +3802,38 @@ async function openChatWindow(chatId, partnerId) {
       .eq('chat_id', chatId)
       .order('created_at', { ascending: true });
 
-    const box = document.getElementById('chatMessages');
     box.innerHTML = '';
-
-    msgs.forEach(m => {
-      const side = m.sender_id === currentUserId ? 'out' : 'in';
-      const isEncrypted = m.encrypted_message && m.nonce && m.sender_public_key;
-      const text = isEncrypted
-        ? decryptMessage(m.encrypted_message, m.nonce, m.sender_public_key)
-        : m.encrypted_message;
-      const tm = new Date(m.created_at)
-        .toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-
-      box.insertAdjacentHTML('beforeend', `
-        <div class="bubble ${side}">
-          ${text}<span class="time-label">${tm}</span>
-        </div>
-      `);
-    });
-
-    box.scrollTop = box.scrollHeight;
+    msgs.forEach(renderMessage);
   }
 
   await loadMessages();
 
-  // 7) Подписка на новые сообщения через канал
+  // Подписка на новые сообщения
   chatChannel = supabase
     .channel(`chat-${chatId}`)
     .on(
       'postgres_changes',
-      { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` },
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `chat_id=eq.${chatId}`
+      },
       payload => {
-        const m = payload.new;
-        const side = m.sender_id === currentUserId ? 'out' : 'in';
-        const isEncrypted = m.encrypted_message && m.nonce && m.sender_public_key;
-        const text = isEncrypted
-          ? decryptMessage(m.encrypted_message, m.nonce, m.sender_public_key)
-          : m.encrypted_message;
-        const tm = new Date(m.created_at)
-          .toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-
-        const box = document.getElementById('chatMessages');
-        const bubble = document.createElement('div');
-        bubble.className = `bubble ${side}`;
-        bubble.innerHTML = `${text}<span class="time-label">${tm}</span>`;
-        box.appendChild(bubble);
-        box.scrollTop = box.scrollHeight;
+        renderMessage(payload.new);
       }
     )
-    .subscribe(); // подписаться на канал
+    .subscribe();
 
-  // 8) Логика отправки
+  // Отправка
   const sendBtn = document.getElementById('chatSend');
-  const input   = document.getElementById('chatText');
+  const input = document.getElementById('chatText');
 
   sendBtn.onclick = async () => {
     const val = input.value.trim();
     if (!val) return;
 
     try {
-      if (!currentUserId) {
-        alert('Вы не авторизованы');
-        return;
-      }
-
       if (!partner.pub) {
         const { data } = await supabase
           .from('users')
@@ -3877,15 +3850,24 @@ async function openChatWindow(chatId, partnerId) {
           encryptMessage(val, partner.pub);
         payload = { ...payload, encrypted_message, nonce, sender_public_key };
       } else {
-        payload = { ...payload, encrypted_message: val, nonce: null, sender_public_key: null };
+        payload = { ...payload, encrypted_message: val };
       }
 
-      const { error } = await supabase.from('messages').insert([payload]);
-      if (error) throw error;
+      const { data, error } = await supabase.from('messages').insert([payload]).select().single();
+
+      if (error) {
+        console.error('Ошибка при отправке:', error);
+        alert('Не удалось отправить сообщение');
+        return;
+      }
+
       input.value = '';
+      // Отображаем отправленное сообщение сразу
+      renderMessage(data);
+
     } catch (err) {
       console.error('Ошибка при отправке:', err);
-      alert('Не удалось отправить сообщение');
+      alert('Ошибка. Подробнее в консоли.');
     }
   };
 
