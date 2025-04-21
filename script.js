@@ -1108,7 +1108,7 @@ function injectMainUIStyles() {
     }
     .action-container {
       display: flex;
-      gap: 16px;
+      gap: 8px;
       justify-content: center;
       margin-bottom: 16px;
       margin-top: 175px;
@@ -1123,7 +1123,7 @@ function injectMainUIStyles() {
       color: #fff;
       font-size: 14px;
       font-weight: 600;
-      text-transform: uppercase;
+      // text-transform: uppercase;
     }
     .action-btn:hover {
       opacity: 0.9;
