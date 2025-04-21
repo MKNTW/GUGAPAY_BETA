@@ -3633,8 +3633,6 @@ function encryptMessage(plain, recipientPubB64) {
 
 function decryptMessage(encB64, nonceB64, senderPubB64) {
   try {
-    if (!senderPubB64 || senderPubB64.length < 40) return '[нешифрованное сообщение]';
-
     const shared = nacl.box.before(
       nacl.util.decodeBase64(senderPubB64),
       nacl.util.decodeBase64(localStorage.getItem('privateKey'))
@@ -3644,7 +3642,6 @@ function decryptMessage(encB64, nonceB64, senderPubB64) {
       nacl.util.decodeBase64(nonceB64),
       shared
     );
-
     if (!plain) return '[не удалось расшифровать]';
     return nacl.util.encodeUTF8(plain);
   } catch (err) {
@@ -3784,27 +3781,41 @@ async function openChatWindow(chatId, partnerId) {
 
   // 2) Функция загрузки сообщений
   async function loadMessages() {
-    const { data: msgs } = await supabase
-      .from('messages')
-      .select('*')
-      .eq('chat_id', chatId)
-      .order('created_at', { ascending: true });
+  const { data: msgs } = await supabase
+    .from('messages')
+    .select('*')
+    .eq('chat_id', chatId)
+    .order('created_at', { ascending: true });
 
-    const html = msgs.map(m => {
-      const side = m.sender_id === currentUserId ? 'out' : 'in';
-      const text = decryptMessage(m.encrypted_message, m.nonce, m.sender_public_key);
-      const tm   = new Date(m.created_at)
-                    .toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-      return `<div class="bubble ${side}">
-                ${text}<span class="time-label">${tm}</span>
-              </div>`;
-    }).join('');
+  const html = msgs.map(m => {
+    const side = m.sender_id === currentUserId ? 'out' : 'in';
 
-    const box = document.getElementById('chatMessages');
-    box.innerHTML = html;
-    box.scrollTop = box.scrollHeight;
-  }
-  await loadMessages();
+    let text;
+    if (
+      m.encrypted_message &&
+      m.nonce &&
+      m.sender_public_key &&
+      m.sender_public_key.length > 40
+    ) {
+      // Шифрованное сообщение
+      text = decryptMessage(m.encrypted_message, m.nonce, m.sender_public_key);
+    } else {
+      // Нешифрованное сообщение — показать как есть
+      text = m.encrypted_message;
+    }
+
+    const tm = new Date(m.created_at)
+      .toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
+    return `<div class="bubble ${side}">
+              ${text}<span class="time-label">${tm}</span>
+            </div>`;
+  }).join('');
+
+  const box = document.getElementById('chatMessages');
+  box.innerHTML = html;
+  box.scrollTop = box.scrollHeight;
+}
 
   // 3) Реал‑тайм подписка на новые сообщения
   supabase.channel('chat:' + chatId)
