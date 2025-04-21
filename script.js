@@ -3814,7 +3814,12 @@ async function openChatWindow(chatId, partnerId) {
   if (!val) return;
 
   try {
-    // 1. Убедимся, что есть публичный ключ
+    if (!currentUserId) {
+      alert('Вы не авторизованы');
+      return;
+    }
+
+    // Загружаем публичный ключ, если ещё не получен
     if (!partner.pub) {
       const { data } = await supabase
         .from('users')
@@ -3824,26 +3829,35 @@ async function openChatWindow(chatId, partnerId) {
       partner.pub = data?.public_key || '';
     }
 
-    if (!partner.pub) {
-      alert('У собеседника нет публичного ключа — он ещё не заходил.');
-      return;
+    let payload = {
+      chat_id: chatId,
+      sender_id: currentUserId,
+    };
+
+    // Если есть ключ — шифруем
+    if (partner.pub) {
+      const { encrypted_message, nonce, sender_public_key } =
+        encryptMessage(val, partner.pub);
+      payload = {
+        ...payload,
+        encrypted_message,
+        nonce,
+        sender_public_key
+      };
+    } else {
+      // Иначе сохраняем как обычный текст
+      payload = {
+        ...payload,
+        encrypted_message: val,
+        nonce: null,
+        sender_public_key: null
+      };
     }
 
-    // 2. Шифруем
-    const { encrypted_message, nonce, sender_public_key } =
-          encryptMessage(val, partner.pub);
-
-    // 3. Отправляем
-    const { error } = await supabase.from('messages').insert([{
-      chat_id          : chatId,
-      sender_id        : currentUserId,
-      encrypted_message,
-      nonce,
-      sender_public_key
-    }]);
+    const { error } = await supabase.from('messages').insert([payload]);
 
     if (error) {
-      console.error('Ошибка отправки в Supabase:', error);
+      console.error('Ошибка при отправке:', error);
       alert('Не удалось отправить сообщение');
       return;
     }
@@ -3852,8 +3866,8 @@ async function openChatWindow(chatId, partnerId) {
     await loadMessages();
 
   } catch (err) {
-    console.error('Ошибка при отправке сообщения:', err);
-    alert('Ошибка отправки сообщения. Подробности в консоли.');
+    console.error('Ошибка при отправке:', err);
+    alert('Ошибка. Подробнее в консоли.');
   }
 };
 
