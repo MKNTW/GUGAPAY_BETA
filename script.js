@@ -3752,7 +3752,6 @@ function openNewChatModal() {
 async function openChatWindow(chatId, partnerId) {
   const partner = await fetchUserCard(partnerId);
 
-  // 1) Создаём модалку с flex‑контейнером
   createModal('chatModal', `
     <div class="chat-container">
       <div class="chat-header">
@@ -3767,73 +3766,24 @@ async function openChatWindow(chatId, partnerId) {
     </div>
   `, {
     cornerTopRadius: 0,
-    // блок ввода НЕ должен скроллиться вместе с сообщениями
     hasVerticalScroll: false,
-    // делаем модалку флекс‑контейнером
     customStyles: { display: 'flex', flexDirection: 'column', height: '100%' },
     onClose: () => {
       document.getElementById('bottomBar').style.display = 'flex';
+      supabase.removeChannel(chatChannel);
     }
   });
 
-  // прячем bottomBar под клавиатуру
   document.getElementById('bottomBar').style.display = 'none';
 
-  // 2) Функция загрузки сообщений
-let lastRenderedMessageId = null;
+  async function loadMessages() {
+    const { data: msgs } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('chat_id', chatId)
+      .order('created_at', { ascending: true });
 
-async function loadMessages() {
-  const { data: msgs } = await supabase
-    .from('messages')
-    .select('*')
-    .eq('chat_id', chatId)
-    .order('created_at', { ascending: true });
-
-  const html = msgs.map(m => {
-    const side = m.sender_id === currentUserId ? 'out' : 'in';
-
-    let text;
-    if (
-      m.encrypted_message &&
-      m.nonce &&
-      m.sender_public_key &&
-      m.sender_public_key.length > 40
-    ) {
-      text = decryptMessage(m.encrypted_message, m.nonce, m.sender_public_key);
-    } else {
-      text = m.encrypted_message;
-    }
-
-    const tm = new Date(m.created_at)
-      .toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-
-    return `<div class="bubble ${side}">
-              ${text}<span class="time-label">${tm}</span>
-            </div>`;
-  }).join('');
-
-  const box = document.getElementById('chatMessages');
-  box.innerHTML = html;
-  box.scrollTop = box.scrollHeight;
-}
-
-await loadMessages(); // загружаем сразу при входе в чат
-
-// 3) Подписка на новые сообщения
-const chatChannel = supabase.channel(`chat:${chatId}`);
-
-await chatChannel
-  .on(
-    'postgres_changes',
-    {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'messages',
-      filter: `chat_id=eq.${chatId}`
-    },
-    payload => {
-      // Обработка нового входящего сообщения
-      const m = payload.new;
+    const html = msgs.map(m => {
       const side = m.sender_id === currentUserId ? 'out' : 'in';
 
       let text;
@@ -3851,84 +3801,119 @@ await chatChannel
       const tm = new Date(m.created_at)
         .toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
-      const bubble = document.createElement('div');
-      bubble.className = `bubble ${side}`;
-      bubble.innerHTML = `${text}<span class="time-label">${tm}</span>`;
+      return `<div class="bubble ${side}">
+                ${text}<span class="time-label">${tm}</span>
+              </div>`;
+    }).join('');
 
-      const box = document.getElementById('chatMessages');
-      box.appendChild(bubble);
-      box.scrollTop = box.scrollHeight;
-    }
-  )
-  .subscribe();
+    const box = document.getElementById('chatMessages');
+    box.innerHTML = html;
+    box.scrollTop = box.scrollHeight;
+  }
 
-  // 4) Отправка: по клику и по Enter
+  await loadMessages();
+
+  const chatChannel = supabase.channel(`chat:${chatId}`);
+
+  await chatChannel
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `chat_id=eq.${chatId}`
+      },
+      payload => {
+        const m = payload.new;
+        const side = m.sender_id === currentUserId ? 'out' : 'in';
+
+        let text;
+        if (
+          m.encrypted_message &&
+          m.nonce &&
+          m.sender_public_key &&
+          m.sender_public_key.length > 40
+        ) {
+          text = decryptMessage(m.encrypted_message, m.nonce, m.sender_public_key);
+        } else {
+          text = m.encrypted_message;
+        }
+
+        const tm = new Date(m.created_at)
+          .toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
+        const bubble = document.createElement('div');
+        bubble.className = `bubble ${side}`;
+        bubble.innerHTML = `${text}<span class="time-label">${tm}</span>`;
+
+        const box = document.getElementById('chatMessages');
+        box.appendChild(bubble);
+        box.scrollTop = box.scrollHeight;
+      }
+    )
+    .subscribe();
+
   const sendBtn = document.getElementById('chatSend');
-  const input   = document.getElementById('chatText');
+  const input = document.getElementById('chatText');
 
   sendBtn.onclick = async () => {
-  const val = input.value.trim();
-  if (!val) return;
+    const val = input.value.trim();
+    if (!val) return;
 
-  try {
-    if (!currentUserId) {
-      alert('Вы не авторизованы');
-      return;
-    }
+    try {
+      if (!currentUserId) {
+        alert('Вы не авторизованы');
+        return;
+      }
 
-    // Загружаем публичный ключ, если ещё не получен
-    if (!partner.pub) {
-      const { data } = await supabase
-        .from('users')
-        .select('public_key')
-        .eq('user_id', partnerId)
-        .single();
-      partner.pub = data?.public_key || '';
-    }
+      if (!partner.pub) {
+        const { data } = await supabase
+          .from('users')
+          .select('public_key')
+          .eq('user_id', partnerId)
+          .single();
+        partner.pub = data?.public_key || '';
+      }
 
-    let payload = {
-      chat_id: chatId,
-      sender_id: currentUserId,
-    };
-
-    // Если есть ключ — шифруем
-    if (partner.pub) {
-      const { encrypted_message, nonce, sender_public_key } =
-        encryptMessage(val, partner.pub);
-      payload = {
-        ...payload,
-        encrypted_message,
-        nonce,
-        sender_public_key
+      let payload = {
+        chat_id: chatId,
+        sender_id: currentUserId
       };
-    } else {
-      // Иначе сохраняем как обычный текст
-      payload = {
-        ...payload,
-        encrypted_message: val,
-        nonce: null,
-        sender_public_key: null
-      };
+
+      if (partner.pub) {
+        const { encrypted_message, nonce, sender_public_key } =
+          encryptMessage(val, partner.pub);
+        payload = {
+          ...payload,
+          encrypted_message,
+          nonce,
+          sender_public_key
+        };
+      } else {
+        payload = {
+          ...payload,
+          encrypted_message: val,
+          nonce: null,
+          sender_public_key: null
+        };
+      }
+
+      const { error } = await supabase.from('messages').insert([payload]);
+
+      if (error) {
+        console.error('Ошибка при отправке:', error);
+        alert('Не удалось отправить сообщение');
+        return;
+      }
+
+      input.value = '';
+    } catch (err) {
+      console.error('Ошибка при отправке:', err);
+      alert('Ошибка. Подробнее в консоли.');
     }
+  };
 
-    const { error } = await supabase.from('messages').insert([payload]);
-
-    if (error) {
-      console.error('Ошибка при отправке:', error);
-      alert('Не удалось отправить сообщение');
-      return;
-    }
-
-    input.value = '';
-    await loadMessages();
-
-  } catch (err) {
-    console.error('Ошибка при отправке:', err);
-    alert('Ошибка. Подробнее в консоли.');
-  }
-};
-
-  // Отправка по Enter
   input.addEventListener('keydown', e => {
     if (e.key === 'Enter') {
       e.preventDefault();
