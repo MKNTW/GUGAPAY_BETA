@@ -3731,18 +3731,22 @@ async function openChatListModal() {
       unreadCount = unreadMessages?.length || 0;
 
       return `
-        <div class="chat-row" data-chat="${ch.id}" data-partner="${otherId}">
-          <div style="position: relative;">
-            <img src="${u.photo}" class="chat-avatar">
-            ${unreadCount > 0 ? `<div class="unread-dot">${unreadCount}</div>` : ''}
-          </div>
-          <div class="chat-info">
-            <div class="chat-name">${u.name}</div>
-            <div class="chat-preview">${previewText || 'нет сообщений'}</div>
-          </div>
-          <div class="chat-time">${previewTime}</div>
-        </div>
-      `;
+  <div class="chat-row" data-chat="${ch.id}" data-partner="${otherId}">
+    <div style="position: relative;">
+      <img src="${u.photo}" class="chat-avatar">
+      ${unreadCount > 0 ? `<div class="unread-dot">${unreadCount}</div>` : ''}
+    </div>
+    <div class="chat-info">
+      <div class="chat-name">
+        ${u.name}
+        <div style="font-size:12px;color:#999;">ID: ${u.id}</div>
+      </div>
+      <div class="chat-preview">${previewText || 'нет сообщений'}</div>
+    </div>
+    <div class="chat-time">${previewTime}</div>
+  </div>
+`;
+
     }));
 
     const html = `
