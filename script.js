@@ -3813,16 +3813,44 @@ async function openChatWindow(chatId, partnerId) {
   let chatChannel = null;
   let refreshInterval = null;
 
+  const { data: blockedByMe } = await supabase
+    .from('blocked_users')
+    .select('*')
+    .eq('blocker_id', currentUserId)
+    .eq('blocked_id', partnerId)
+    .maybeSingle();
+
+  const { data: blockedMe } = await supabase
+    .from('blocked_users')
+    .select('*')
+    .eq('blocker_id', partnerId)
+    .eq('blocked_id', currentUserId)
+    .maybeSingle();
+
   createModal('chatModal', `
     <div class="chat-container">
       <div class="chat-header">
         <img src="${partner.photo}" class="chat-avatar">
-        <div class="chat-title">${partner.name} · ID: ${partner.id}</div>
+        <div class="chat-title">
+          ${partner.name}
+          <div style="font-size:12px;color:#999;margin-top:2px;">ID: ${partner.id}</div>
+        </div>
+        <button id="chatMoreBtn" style="
+          position: absolute; right: 16px; top: 16px;
+          background: transparent; border: none; font-size: 20px;
+          color: #888; cursor: pointer;">⋮</button>
       </div>
       <div id="chatMessages" class="chat-messages"></div>
-      <div class="chat-inputbar">
-        <input id="chatText" class="chat-input" placeholder="Сообщение…" />
-        <button id="chatSend" class="chat-sendBtn">Отправить</button>
+      <div class="chat-inputbar" id="chatInputBar">
+        ${
+          blockedByMe
+            ? `<div class="chat-block-label">Вы заблокировали этого пользователя</div>`
+            : blockedMe
+            ? `<div class="chat-block-label">Вы были заблокированы этим пользователем</div>`
+            : `
+              <input id="chatText" class="chat-input" placeholder="Сообщение…" />
+              <button id="chatSend" class="chat-sendBtn">Отправить</button>`
+        }
       </div>
     </div>
   `, {
@@ -3858,107 +3886,148 @@ async function openChatWindow(chatId, partnerId) {
   let lastMessageId = null;
 
   async function loadMessages() {
-  const { data: msgs } = await supabase
-    .from('messages')
-    .select('*')
-    .eq('chat_id', chatId)
-    .order('created_at', { ascending: true });
+    const { data: msgs } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('chat_id', chatId)
+      .order('created_at', { ascending: true });
 
-  if (!msgs) return;
+    if (!msgs) return;
 
-  const last = msgs[msgs.length - 1]?.id;
-  if (last === lastMessageId) return; // ничего не изменилось
+    const last = msgs[msgs.length - 1]?.id;
+    if (last === lastMessageId) return;
 
-  box.innerHTML = '';
-  msgs.forEach(m => {
-    box.appendChild(renderMessage(m));
-  });
+    box.innerHTML = '';
+    msgs.forEach(m => {
+      box.appendChild(renderMessage(m));
+    });
 
-  lastMessageId = last;
-  box.scrollTop = box.scrollHeight;
+    lastMessageId = last;
+    box.scrollTop = box.scrollHeight;
 
-  // ⬇️ ⬇️ ПОМЕТИТЬ КАК ПРОЧИТАННЫЕ
-  await fetch(`${API_URL}/chat/read`, {
-  method: 'POST',
-  credentials: 'include',
-  headers: {
-    'Content-Type': 'application/json',
-    'X-CSRF-Token': csrfToken
-  },
-  body: JSON.stringify({
-    chatId: chatId,
-    userId: currentUserId
-  })
-});
-}
+    await fetch(`${API_URL}/chat/read`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': csrfToken
+      },
+      body: JSON.stringify({ chatId: chatId, userId: currentUserId })
+    });
+  }
 
   await loadMessages();
-
-  // 🔁 Обновление раз в секунду
   refreshInterval = setInterval(loadMessages, 1000);
 
-  // 🔔 Подписка (оставим — вдруг заработает правильно)
   chatChannel = supabase
     .channel(`chat-${chatId}`)
-    .on(
-      'postgres_changes',
-      { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` },
-      payload => {
-        loadMessages(); // можно вызывать или просто append
-      }
-    )
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'messages',
+      filter: `chat_id=eq.${chatId}`
+    }, payload => {
+      loadMessages();
+    })
     .subscribe();
 
-  // 📤 Отправка сообщений
-  const sendBtn = document.getElementById('chatSend');
-  const input = document.getElementById('chatText');
+  document.getElementById('chatMoreBtn').onclick = () => {
+    let content = '';
 
-  sendBtn.onclick = async () => {
-    const val = input.value.trim();
-    if (!val) return;
-
-    try {
-      if (!partner.pub) {
-        const { data } = await supabase
-          .from('users')
-          .select('public_key')
-          .eq('user_id', partnerId)
-          .single();
-        partner.pub = data?.public_key || '';
-      }
-
-      let payload = { chat_id: chatId, sender_id: currentUserId };
-
-      if (partner.pub) {
-        const { encrypted_message, nonce, sender_public_key } =
-          encryptMessage(val, partner.pub);
-        payload = { ...payload, encrypted_message, nonce, sender_public_key };
-      } else {
-        payload = { ...payload, encrypted_message: val };
-      }
-
-      const { error } = await supabase.from('messages').insert([payload]);
-      if (error) {
-        console.error('Ошибка при отправке:', error);
-        alert('Не удалось отправить сообщение');
-        return;
-      }
-
-      input.value = '';
-      // Сообщение появится через секунду при следующем refresh
-
-    } catch (err) {
-      console.error('Ошибка при отправке:', err);
-      alert('Ошибка. Подробнее в консоли.');
+    if (blockedByMe) {
+      content += `<button id="unblockBtn" class="chat-option-btn">🔓 Разблокировать</button>`;
+    } else {
+      content += `<button id="blockBtn" class="chat-option-btn">🚫 Заблокировать</button>`;
     }
+
+    content += `
+      <br><br>
+      <button id="deleteBtn" class="chat-option-btn danger">🗑 Удалить чат</button>
+    `;
+
+    createModal('chatActionsModal', `<div style="padding:16px;">${content}</div>`, {
+      cornerTopRadius: 16
+    });
+
+    document.getElementById('blockBtn')?.addEventListener('click', async () => {
+      await supabase.from('blocked_users').insert([
+        { blocker_id: currentUserId, blocked_id: partnerId }
+      ]);
+      alert('Пользователь заблокирован');
+      removeAllModals();
+      openChatWindow(chatId, partnerId);
+    });
+
+    document.getElementById('unblockBtn')?.addEventListener('click', async () => {
+      await supabase.from('blocked_users')
+        .delete()
+        .eq('blocker_id', currentUserId)
+        .eq('blocked_id', partnerId);
+      alert('Пользователь разблокирован');
+      removeAllModals();
+      openChatWindow(chatId, partnerId);
+    });
+
+    document.getElementById('deleteBtn')?.addEventListener('click', async () => {
+      if (!confirm('Удалить этот чат и все сообщения?')) return;
+
+      await supabase.from('messages').delete().eq('chat_id', chatId);
+      await supabase.from('chats').delete().eq('id', chatId);
+
+      removeAllModals();
+      openChatListModal();
+    });
   };
 
-  input.addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      sendBtn.click();
-    }
-  });
+  if (!blockedByMe && !blockedMe) {
+    const sendBtn = document.getElementById('chatSend');
+    const input = document.getElementById('chatText');
+
+    sendBtn.onclick = async () => {
+      const val = input.value.trim();
+      if (!val) return;
+
+      try {
+        if (!partner.pub) {
+          const { data } = await supabase
+            .from('users')
+            .select('public_key')
+            .eq('user_id', partnerId)
+            .single();
+          partner.pub = data?.public_key || '';
+        }
+
+        let payload = { chat_id: chatId, sender_id: currentUserId };
+
+        if (partner.pub) {
+          const { encrypted_message, nonce, sender_public_key } =
+            encryptMessage(val, partner.pub);
+          payload = { ...payload, encrypted_message, nonce, sender_public_key };
+        } else {
+          payload = { ...payload, encrypted_message: val };
+        }
+
+        const { error } = await supabase.from('messages').insert([payload]);
+        if (error) {
+          console.error('Ошибка при отправке:', error);
+          alert('Не удалось отправить сообщение');
+          return;
+        }
+
+        input.value = '';
+      } catch (err) {
+        console.error('Ошибка при отправке:', err);
+        alert('Ошибка. Подробнее в консоли.');
+      }
+    };
+
+    document.getElementById('chatText').addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        sendBtn.click();
+      }
+    });
+  }
 }
 
 /* ========= 6.  Вызвать ensureKeyPair сразу после успешного логина ========= */
