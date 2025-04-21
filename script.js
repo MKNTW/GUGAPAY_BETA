@@ -3820,8 +3820,9 @@ async function loadMessages() {
 await loadMessages(); // загружаем сразу при входе в чат
 
 // 3) Подписка на новые сообщения
-const chatChannel = supabase
-  .channel(`chat:${chatId}`)
+const chatChannel = supabase.channel(`chat:${chatId}`);
+
+await chatChannel
   .on(
     'postgres_changes',
     {
@@ -3831,8 +3832,32 @@ const chatChannel = supabase
       filter: `chat_id=eq.${chatId}`
     },
     payload => {
-      // Пришло новое сообщение — перезагружаем список
-      loadMessages();
+      // Обработка нового входящего сообщения
+      const m = payload.new;
+      const side = m.sender_id === currentUserId ? 'out' : 'in';
+
+      let text;
+      if (
+        m.encrypted_message &&
+        m.nonce &&
+        m.sender_public_key &&
+        m.sender_public_key.length > 40
+      ) {
+        text = decryptMessage(m.encrypted_message, m.nonce, m.sender_public_key);
+      } else {
+        text = m.encrypted_message;
+      }
+
+      const tm = new Date(m.created_at)
+        .toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
+      const bubble = document.createElement('div');
+      bubble.className = `bubble ${side}`;
+      bubble.innerHTML = `${text}<span class="time-label">${tm}</span>`;
+
+      const box = document.getElementById('chatMessages');
+      box.appendChild(bubble);
+      box.scrollTop = box.scrollHeight;
     }
   )
   .subscribe();
