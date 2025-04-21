@@ -3928,8 +3928,13 @@ async function openChatWindow(chatId, partnerId) {
     scrollToBottom(!initial);
 
     // Bulk mark as read (single RPC)
-    await supabase.rpc('mark_as_read', { p_chat: chatId, p_reader: currentUserId });
-  };
+    await supabase
+  .from('messages')
+  .update({
+    read_by: supabase.raw('array_append(COALESCE(read_by, ARRAY[]::uuid[]), ?)', [currentUserId])
+  })
+  .eq('chat_id', chatId)
+  .neq('sender_id', currentUserId);
 
   await loadMessages(true);
 
