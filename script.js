@@ -3817,6 +3817,7 @@ function openNewChatModal() {
 async function openChatWindow(chatId, partnerId) {
   const partner = await fetchUserCard(partnerId);
   let chatChannel = null;
+  let readStatusChannel = null;
   let refreshInterval = null;
   let lastRenderedMessageIds = [];
 
@@ -3865,7 +3866,10 @@ async function openChatWindow(chatId, partnerId) {
     onClose: () => {
       document.getElementById('bottomBar').style.display = 'flex';
       if (chatChannel) supabase.removeChannel(chatChannel);
+      if (readStatusChannel) supabase.removeChannel(readStatusChannel);
       if (refreshInterval) clearInterval(refreshInterval);
+      // 🔄 Сброс видео
+      document.querySelectorAll('#chatMessages video').forEach(v => v.removeAttribute('src'));
     }
   });
 
@@ -3888,7 +3892,7 @@ async function openChatWindow(chatId, partnerId) {
       if (m.media_type === 'image') {
         mediaPart = `<img src="${m.media_url}" style="max-width: 240px; border-radius: 12px; display: block; margin-bottom: 6px;" />`;
       } else if (m.media_type === 'video') {
-        mediaPart = `<video src="${m.media_url}" controls preload="metadata" style="max-width: 240px; border-radius: 12px; display: block; margin-bottom: 6px;"></video>`;
+        mediaPart = `<video data-src="${m.media_url}" controls preload="none" style="max-width: 240px; border-radius: 12px; display: block; margin-bottom: 6px;" muted></video>`;
       } else {
         mediaPart = `<a href="${m.media_url}" target="_blank" style="display: block; margin-bottom: 6px;">📎 Файл</a>`;
       }
@@ -3896,11 +3900,7 @@ async function openChatWindow(chatId, partnerId) {
 
     let status = '';
     if (isLastFromMe) {
-      if (m.read_by?.includes(partnerId)) {
-        status = ' • Прочитано';
-      } else {
-        status = ' • Отправлено';
-      }
+      status = m.read_by?.includes(partnerId) ? ' • Прочитано' : ' • Отправлено';
     }
 
     bubble.innerHTML = `
@@ -3908,10 +3908,21 @@ async function openChatWindow(chatId, partnerId) {
       ${text ? `<div>${text}</div>` : ''}
       <span class="time-label">${tm}${status}</span>
     `;
+
+    // ▶️ ленивое видео — активировать по клику
+    bubble.querySelectorAll('video').forEach(video => {
+      video.addEventListener('click', () => {
+        if (!video.src) {
+          video.src = video.dataset.src;
+          video.play();
+        }
+      });
+    });
+
     return bubble;
   }
 
-  async function loadMessages() {
+  async function loadMessages(scroll = true) {
     const { data: msgs } = await supabase
       .from('messages')
       .select('*')
@@ -3926,38 +3937,38 @@ async function openChatWindow(chatId, partnerId) {
 
     box.innerHTML = '';
     msgs.forEach((m, i) => {
-      const isLastFromMe =
-        m.sender_id === currentUserId &&
+      const isLastFromMe = m.sender_id === currentUserId &&
         msgs.slice(i + 1).findIndex(n => n.sender_id === currentUserId) === -1;
       box.appendChild(renderMessage(m, isLastFromMe));
     });
 
     lastRenderedMessageIds = msgs.map(m => m.id);
 
-    setTimeout(() => {
-      box.scrollTop = box.scrollHeight;
-    }, 100);
+    if (scroll) {
+      setTimeout(() => {
+        box.scrollTop = box.scrollHeight;
+      }, 100);
+    }
 
-    // обновить прочитанные
-    const { data: unreadMessages } = await supabase
-  .from('messages')
-  .select('id, read_by')
-  .eq('chat_id', chatId)
-  .neq('sender_id', currentUserId);
+    // обновляем read_by
+    const { data: unread } = await supabase
+      .from('messages')
+      .select('id, read_by')
+      .eq('chat_id', chatId)
+      .neq('sender_id', currentUserId);
 
-const toUpdate = unreadMessages.filter(m => !Array.isArray(m.read_by) || !m.read_by.includes(currentUserId));
+    const toUpdate = unread.filter(m => !Array.isArray(m.read_by) || !m.read_by.includes(currentUserId));
 
-for (const msg of toUpdate) {
-  const updatedReadBy = Array.isArray(msg.read_by) ? [...msg.read_by, currentUserId] : [currentUserId];
-  await supabase
-    .from('messages')
-    .update({ read_by: updatedReadBy })
-    .eq('id', msg.id);
-}
+    for (const msg of toUpdate) {
+      const updatedReadBy = Array.isArray(msg.read_by)
+        ? [...new Set([...msg.read_by, currentUserId])]
+        : [currentUserId];
+
+      await supabase.from('messages').update({ read_by: updatedReadBy }).eq('id', msg.id);
+    }
   }
 
   await loadMessages();
-  refreshInterval = setInterval(loadMessages, 1000);
 
   chatChannel = supabase
     .channel(`chat-${chatId}`)
@@ -3966,7 +3977,18 @@ for (const msg of toUpdate) {
       schema: 'public',
       table: 'messages',
       filter: `chat_id=eq.${chatId}`
-    }, () => loadMessages())
+    }, () => loadMessages(true))
+    .subscribe();
+
+  // 🔁 обновляем статус read_by в реальном времени
+  readStatusChannel = supabase
+    .channel(`chat-read-status-${chatId}`)
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'messages',
+      filter: `chat_id=eq.${chatId}`
+    }, () => loadMessages(false))
     .subscribe();
 
   // Работа с медиа и отправкой
