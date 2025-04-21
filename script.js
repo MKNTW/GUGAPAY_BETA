@@ -1230,8 +1230,8 @@ function injectMainUIStyles() {
     .nav-icon1 {
       width: 23px;
       height: 23px;
-      margin-bottom: 6px;
-      margin-top: 4px;
+      margin-bottom: 8px;
+      margin-top: 3px;
     }
   `;
   document.head.appendChild(style);
