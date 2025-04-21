@@ -3874,7 +3874,7 @@ async function openChatWindow(chatId, partnerId) {
 
   const box = document.getElementById('chatMessages');
 
-  function renderMessage(m) {
+  async function renderMessage(m) {
     const side = m.sender_id === currentUserId ? 'out' : 'in';
     const isEncrypted = m.encrypted_message && m.nonce && m.sender_public_key;
     const text = isEncrypted
@@ -3885,7 +3885,67 @@ async function openChatWindow(chatId, partnerId) {
 
     const bubble = document.createElement('div');
     bubble.className = `bubble ${side}`;
-    bubble.innerHTML = `${text}<span class="time-label">${tm}</span>`;
+    bubble.innerHTML = `
+      <div class="bubble-content">
+        ${text}
+        <span class="time-label">${tm}</span>
+        <div class="reaction-btn" style="cursor:pointer;font-size:14px;position:absolute;bottom:6px;right:6px;">❤️</div>
+        <div class="reaction-picker" style="display:none;position:absolute;bottom:30px;right:0;background:#fff;border:1px solid #ccc;border-radius:8px;padding:6px;z-index:10;gap:6px;">
+          <span class="emoji">😍</span>
+          <span class="emoji">😂</span>
+          <span class="emoji">🔥</span>
+          <span class="emoji">😢</span>
+          <span class="emoji">👍</span>
+        </div>
+      </div>
+    `;
+    bubble.style.position = 'relative';
+
+    // реакция кнопка
+    const reactionBtn = bubble.querySelector('.reaction-btn');
+    const picker = bubble.querySelector('.reaction-picker');
+
+    reactionBtn?.addEventListener('click', () => {
+      picker.style.display = picker.style.display === 'none' ? 'flex' : 'none';
+    });
+
+    picker?.querySelectorAll('.emoji').forEach(span => {
+      span.addEventListener('click', async () => {
+        const emoji = span.textContent;
+        picker.style.display = 'none';
+
+        await supabase.from('message_reactions').insert({
+          message_id: m.id,
+          user_id: currentUserId,
+          emoji
+        });
+
+        showNotification('Реакция добавлена', 'success');
+      });
+    });
+
+    // показать уже существующие реакции
+    const { data: reactions } = await supabase
+      .from('message_reactions')
+      .select('emoji, user_id')
+      .eq('message_id', m.id);
+
+    if (reactions?.length) {
+      const counts = {};
+      reactions.forEach(r => {
+        counts[r.emoji] = (counts[r.emoji] || 0) + 1;
+      });
+
+      const reactionBlock = document.createElement('div');
+      reactionBlock.className = 'reaction-display';
+      reactionBlock.style.cssText = 'margin-top: 4px; font-size: 14px; opacity: 0.8;';
+
+      reactionBlock.innerHTML = Object.entries(counts)
+        .map(([emoji, count]) => `${emoji} ${count}`).join('  ');
+
+      bubble.appendChild(reactionBlock);
+    }
+
     return bubble;
   }
 
@@ -3904,9 +3964,9 @@ async function openChatWindow(chatId, partnerId) {
     if (last === lastMessageId) return;
 
     box.innerHTML = '';
-    msgs.forEach(m => {
-      box.appendChild(renderMessage(m));
-    });
+    for (const m of msgs) {
+      box.appendChild(await renderMessage(m));
+    }
 
     lastMessageId = last;
     box.scrollTop = box.scrollHeight;
