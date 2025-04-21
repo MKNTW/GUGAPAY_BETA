@@ -1228,9 +1228,10 @@ function injectMainUIStyles() {
       margin-bottom: 4px;
     }
     .nav-icon1 {
-      width: 20px;
-      height: 20px;
-      margin-bottom: 4px;
+      width: 23px;
+      height: 23px;
+      margin-bottom: 8px;
+      margin-top: 4px;
     }
   `;
   document.head.appendChild(style);
