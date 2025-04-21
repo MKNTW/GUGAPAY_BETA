@@ -977,6 +977,10 @@ function createMainUI() {
       removeAllModals();
       openPayQRModal();
     });
+    actionContainer.querySelector("#exchangeBtn").addEventListener("click", () => {
+    removeAllModals();
+    openExchangeModal(); // открывает окно обмена
+    });
     // Divider (or spacing at bottom of header)
     const headerDivider = document.createElement("div");
     headerDivider.className = "header-divider";
@@ -1055,11 +1059,6 @@ if (!document.getElementById("bottomBar")) {
     removeAllModals();
     openHistoryModal();
   });
-
-  actionContainer.querySelector("#exchangeBtn").addEventListener("click", () => {
-  removeAllModals();
-  openExchangeModal(); // открывает окно обмена
-});
 
   /* ——— кнопка «Чаты» ——— */
   bottomBar.querySelector("#chatBtn").addEventListener("click", () => {
