@@ -3818,6 +3818,7 @@ async function openChatWindow(chatId, partnerId) {
   const partner = await fetchUserCard(partnerId);
   let chatChannel = null;
   let refreshInterval = null;
+  let lastRenderedMessageIds = [];
 
   const { data: blockedByMe } = await supabase
     .from('blocked_users')
@@ -3834,7 +3835,7 @@ async function openChatWindow(chatId, partnerId) {
     .maybeSingle();
 
   createModal('chatModal', `
-    <div class="chat-container" style="touch-action: manipulation; display: flex; flex-direction: column; height: 100%;">
+    <div class="chat-container" style="touch-action: manipulation;">
       <div class="chat-header" style="display: flex; align-items: center; gap: 12px;">
         <button id="chatMoreBtn" style="background: #fff; border: none; font-size: 18px; color: #333; cursor: pointer; border-radius: 10px; padding: 6px 10px;">⋮</button>
         <img src="${partner.photo}" class="chat-avatar">
@@ -3845,27 +3846,30 @@ async function openChatWindow(chatId, partnerId) {
       </div>
       <div id="chatMessages" class="chat-messages" style="flex: 1 1 auto; overflow-y: auto;"></div>
       <div class="chat-inputbar" id="chatInputBar">
-        ${blockedByMe || blockedMe ? `
-          <div style="padding: 14px; text-align: center; color: #999; background: #f8f8f8; border-radius: 12px; margin: 10px; font-style: italic;">
-            ${blockedByMe ? 'Вы заблокировали этого пользователя' : 'Вы были заблокированы этим пользователем'}
-          </div>
-        ` : `
-          <div id="mediaPreview" style="display:none; margin-bottom: 10px; position: relative;">
-            <div id="mediaPreviewContent"></div>
-            <button id="cancelPreviewBtn" style="position:absolute; top:4px; right:4px; background:#fff; border:none; border-radius:50%; cursor:pointer;">✖</button>
-          </div>
-          <div style="display: flex; gap: 10px; align-items: center; width: 100%;">
-            <input id="chatText" class="chat-input" placeholder="Сообщение…" style="font-size: 16px; padding: 12px; width: 100%;" />
-            <input type="file" id="mediaInput" accept="image/*,video/*" style="display: none;" />
-            <button id="uploadMediaBtn" style="background: none; border: none; font-size: 20px; cursor: pointer;">📎</button>
-            <button id="chatSend" class="chat-sendBtn" style="padding: 12px 16px; background: #2F80ED; color: #fff; font-weight: 600; border: none; border-radius: 12px; cursor: pointer;">Отправить</button>
-          </div>
-        `}
+        ${
+          blockedByMe || blockedMe ? `
+            <div style="padding: 14px; text-align: center; color: #999; background: #f8f8f8; border-radius: 12px; margin: 10px; font-style: italic;">
+              ${blockedByMe ? 'Вы заблокировали этого пользователя' : 'Вы были заблокированы этим пользователем'}
+            </div>
+          ` : `
+            <div id="mediaPreview" style="display:none; margin-bottom: 10px; position: relative; max-height: 200px; overflow: hidden;">
+              <div id="mediaPreviewContent" style="max-height: 200px;"></div>
+              <button id="cancelPreviewBtn" style="position:absolute; top:4px; right:4px; background:#fff; border:none; border-radius:50%; cursor:pointer;">✖</button>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center; width: 100%;">
+              <input id="chatText" class="chat-input" placeholder="Сообщение…" style="font-size: 16px; padding: 12px; width: 100%;" />
+              <input type="file" id="mediaInput" accept="image/*,video/*" style="display: none;" />
+              <button id="uploadMediaBtn" style="background: none; border: none; font-size: 20px; cursor: pointer;">📎</button>
+              <button id="chatSend" class="chat-sendBtn" style="padding: 12px 16px; background: #2F80ED; color: #fff; font-weight: 600; border: none; border-radius: 12px; cursor: pointer;">Отправить</button>
+            </div>
+          `
+        }
       </div>
     </div>
   `, {
     cornerTopRadius: 0,
     hasVerticalScroll: false,
+    customStyles: { display: 'flex', flexDirection: 'column', height: '100%' },
     onClose: () => {
       document.getElementById('bottomBar').style.display = 'flex';
       if (chatChannel) supabase.removeChannel(chatChannel);
@@ -3879,7 +3883,9 @@ async function openChatWindow(chatId, partnerId) {
   function renderMessage(m) {
     const side = m.sender_id === currentUserId ? 'out' : 'in';
     const isEncrypted = m.encrypted_message && m.nonce && m.sender_public_key;
-    const text = isEncrypted ? decryptMessage(m.encrypted_message, m.nonce, m.sender_public_key) : m.encrypted_message;
+    const text = isEncrypted
+      ? decryptMessage(m.encrypted_message, m.nonce, m.sender_public_key)
+      : m.encrypted_message;
     const tm = new Date(m.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
     const bubble = document.createElement('div');
@@ -3896,7 +3902,11 @@ async function openChatWindow(chatId, partnerId) {
       }
     }
 
-    bubble.innerHTML = `${mediaPart}${text ? `<div>${text}</div>` : ''}<span class="time-label">${tm}</span>`;
+    bubble.innerHTML = `
+      ${mediaPart}
+      ${text ? `<div>${text}</div>` : ''}
+      <span class="time-label">${tm}</span>
+    `;
     return bubble;
   }
 
@@ -3909,8 +3919,13 @@ async function openChatWindow(chatId, partnerId) {
 
     if (!msgs) return;
 
+    const newIds = msgs.map(m => m.id).join(',');
+    const lastIds = lastRenderedMessageIds.join(',');
+    if (newIds === lastIds) return; // не обновляем, если ничего не изменилось
+
     box.innerHTML = '';
     msgs.forEach(m => box.appendChild(renderMessage(m)));
+    lastRenderedMessageIds = msgs.map(m => m.id);
 
     setTimeout(() => {
       box.scrollTop = box.scrollHeight;
@@ -3929,9 +3944,15 @@ async function openChatWindow(chatId, partnerId) {
 
   chatChannel = supabase
     .channel(`chat-${chatId}`)
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` }, loadMessages)
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'messages',
+      filter: `chat_id=eq.${chatId}`
+    }, () => loadMessages())
     .subscribe();
 
+  // Работа с медиа и отправкой
   if (!blockedByMe && !blockedMe) {
     const input = document.getElementById('chatText');
     const sendBtn = document.getElementById('chatSend');
@@ -4058,12 +4079,10 @@ async function openChatWindow(chatId, partnerId) {
           return showNotification('Не удалось отправить сообщение', 'error');
         }
 
-        if (!selectedFile) input.value = '';
-
+        input.value = '';
         setTimeout(() => {
           box.scrollTop = box.scrollHeight;
         }, 100);
-
       } catch (err) {
         console.error('Ошибка при отправке:', err);
         showNotification('Ошибка. Подробнее в консоли.', 'error');
