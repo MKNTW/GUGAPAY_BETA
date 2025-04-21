@@ -3831,8 +3831,9 @@ async function openChatWindow(chatId, partnerId) {
     <div class="chat-container" style="touch-action: manipulation;">
       <div class="chat-header" style="position: relative; display: flex; align-items: center; gap: 12px;">
         <button id="chatMoreBtn" style="
-          background: transparent; border: none; font-size: 20px;
-          color: #888; cursor: pointer;">⋮</button>
+          background: #fff; border: none; font-size: 18px;
+          color: #333; cursor: pointer; border-radius: 10px;
+          padding: 6px 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">⋮</button>
         <img src="${partner.photo}" class="chat-avatar">
         <div class="chat-title">
           ${partner.name}
@@ -3843,12 +3844,12 @@ async function openChatWindow(chatId, partnerId) {
       <div class="chat-inputbar" id="chatInputBar">
         ${
           blockedByMe
-            ? `<div class="chat-block-label">Вы заблокировали этого пользователя</div>`
+            ? `<div class="chat-block-label" style="padding: 14px; text-align: center; color: #999; background: #f8f8f8; border-radius: 12px; margin: 10px; font-style: italic;">Вы заблокировали этого пользователя</div>`
             : blockedMe
-            ? `<div class="chat-block-label">Вы были заблокированы этим пользователем</div>`
+            ? `<div class="chat-block-label" style="padding: 14px; text-align: center; color: #999; background: #f8f8f8; border-radius: 12px; margin: 10px; font-style: italic;">Вы были заблокированы этим пользователем</div>`
             : `
-              <input id="chatText" class="chat-input" placeholder="Сообщение…" style="ime-mode: disabled;" />
-              <button id="chatSend" class="chat-sendBtn">Отправить</button>`
+              <input id="chatText" class="chat-input" placeholder="Сообщение…" style="ime-mode: disabled; font-size: 16px; padding: 12px; width: 100%; max-zoom: 1; touch-action: manipulation;" inputmode="text" />
+              <button id="chatSend" class="chat-sendBtn" style="margin-left: 10px; padding: 12px 16px; background: #2F80ED; color: #fff; font-weight: 600; border: none; border-radius: 12px; cursor: pointer;">Отправить</button>`
         }
       </div>
     </div>
@@ -3934,14 +3935,13 @@ async function openChatWindow(chatId, partnerId) {
     let content = '';
 
     if (blockedByMe) {
-      content += `<button id="unblockBtn" class="chat-option-btn">🔓 Разблокировать</button>`;
+      content += `<button id="unblockBtn" class="chat-option-btn" style="padding: 12px; width: 100%; border: none; background: #27ae60; color: white; border-radius: 10px; margin-bottom: 10px;">🔓 Разблокировать</button>`;
     } else {
-      content += `<button id="blockBtn" class="chat-option-btn">🚫 Заблокировать</button>`;
+      content += `<button id="blockBtn" class="chat-option-btn" style="padding: 12px; width: 100%; border: none; background: #e74c3c; color: white; border-radius: 10px; margin-bottom: 10px;">🚫 Заблокировать</button>`;
     }
 
     content += `
-      <br><br>
-      <button id="deleteBtn" class="chat-option-btn danger">🗑 Удалить чат</button>
+      <button id="deleteBtn" class="chat-option-btn danger" style="padding: 12px; width: 100%; border: none; background: #f39c12; color: white; border-radius: 10px;">🗑 Удалить чат</button>
     `;
 
     createModal('chatActionsModal', `<div style="padding:16px;">${content}</div>`, {
@@ -3952,7 +3952,7 @@ async function openChatWindow(chatId, partnerId) {
       await supabase.from('blocked_users').insert([
         { blocker_id: currentUserId, blocked_id: partnerId }
       ]);
-      alert('Пользователь заблокирован');
+      showNotification('Пользователь заблокирован', 'success');
       removeAllModals();
       openChatWindow(chatId, partnerId);
     });
@@ -3962,7 +3962,7 @@ async function openChatWindow(chatId, partnerId) {
         .delete()
         .eq('blocker_id', currentUserId)
         .eq('blocked_id', partnerId);
-      alert('Пользователь разблокирован');
+      showNotification('Пользователь разблокирован', 'success');
       removeAllModals();
       openChatWindow(chatId, partnerId);
     });
@@ -3973,6 +3973,7 @@ async function openChatWindow(chatId, partnerId) {
       await supabase.from('messages').delete().eq('chat_id', chatId);
       await supabase.from('chats').delete().eq('id', chatId);
 
+      showNotification('Чат удалён', 'success');
       removeAllModals();
       openChatListModal();
     });
@@ -3984,7 +3985,7 @@ async function openChatWindow(chatId, partnerId) {
 
     sendBtn.onclick = async () => {
       const val = input.value.trim();
-      if (!val) return;
+      if (!val) return showNotification('Введите сообщение', 'error');
 
       try {
         if (!partner.pub) {
@@ -4009,14 +4010,13 @@ async function openChatWindow(chatId, partnerId) {
         const { error } = await supabase.from('messages').insert([payload]);
         if (error) {
           console.error('Ошибка при отправке:', error);
-          alert('Не удалось отправить сообщение');
-          return;
+          return showNotification('Не удалось отправить сообщение', 'error');
         }
 
         input.value = '';
       } catch (err) {
         console.error('Ошибка при отправке:', err);
-        alert('Ошибка. Подробнее в консоли.');
+        showNotification('Ошибка. Подробнее в консоли.', 'error');
       }
     };
 
