@@ -3941,11 +3941,11 @@ async function openChatWindow(chatId, partnerId) {
     }
 
     content += `
-      <button id="deleteBtn" class="chat-option-btn danger" style="padding: 12px; width: 100%; border: none; background: #f39c12; color: white; border-radius: 10px;">🗑 Удалить чат</button>
+      <button id="deleteBtn" class="chat-option-btn danger" style="padding: 12px; width: 100%; border: none; background: #7c7c7c; color: white; border-radius: 10px;">🗑 Удалить чат</button>
     `;
 
-    createModal('chatActionsModal', `<div style="padding:16px;">${content}</div>`, {
-      cornerTopRadius: 16
+    createModal('chatActionsModal', `<div style="padding:16px; margin-top: 30px;">${content}</div>`, {
+      cornerTopRadius: 0
     });
 
     document.getElementById('blockBtn')?.addEventListener('click', async () => {
