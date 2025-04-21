@@ -1366,3 +1366,156 @@ app.get('/auth/telegram-widget', async (req, res) => {
 
   res.redirect('https://beta.gugapay.ru');
 });
+
+/* =========================================================
+ *  CHAT API
+ *  (все данные уже шифруются/расшифровываются на клиенте)
+ *  Требует verifyToken (JWT‑cookie) ‑‑ как и остальные ваши эндпоинты
+ * =======================================================*/
+
+/** ═══════════════════════════════════════════════════════
+ *  GET  /chats
+ *  Вернуть список чатов текущего пользователя
+ *  Ответ:  [{ id, user1_id, user2_id, created_at }]
+ *  (UI сам решит, кто «собеседник»: сравнивает user1_id / user2_id)
+ * ══════════════════════════════════════════════════════ */
+app.get('/chats', verifyToken, async (req, res) => {
+  const uid = req.user.userId;
+
+  const { data, error } = await supabase
+        .from('chats')
+        .select('*')
+        .or(`user1_id.eq.${uid},user2_id.eq.${uid}`)
+        .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('[GET /chats]', error);
+    return res.status(500).json({ success: false, error: 'DB error' });
+  }
+  res.json({ success: true, chats: data });
+});
+
+/** ═══════════════════════════════════════════════════════
+ *  POST /chats
+ *  Создать (или получить) чат c пользователем partnerId
+ *  Body: { partnerId: '123456' }
+ * ══════════════════════════════════════════════════════ */
+app.post('/chats', verifyToken, async (req, res) => {
+  const userId    = req.user.userId;
+  const partnerId = (req.body.partnerId || '').trim();
+
+  if (!partnerId || partnerId === userId)
+    return res.status(400).json({ success:false, error:'Некорректный partnerId' });
+
+  const ids = [userId, partnerId].sort();              // !! ВАЖНО: фиксируем порядок
+  // 1) ищем существующий
+  const { data: chat } = await supabase
+        .from('chats')
+        .select('*')
+        .eq('user1_id', ids[0])
+        .eq('user2_id', ids[1])
+        .maybeSingle();
+
+  if (chat) return res.json({ success: true, chat });
+
+  // 2) создаём новый
+  const { data: newChat, error } = await supabase
+        .from('chats')
+        .insert([{ user1_id: ids[0], user2_id: ids[1] }])
+        .select()
+        .single();
+
+  if (error) {
+    console.error('[POST /chats]', error);
+    return res.status(500).json({ success:false, error:'DB error' });
+  }
+  res.json({ success:true, chat:newChat });
+});
+
+/** ═══════════════════════════════════════════════════════
+ *  GET /chats/:chatId/messages
+ *  C пагинацией «с конца» (limit/offset по желанию)
+ * ══════════════════════════════════════════════════════ */
+app.get('/chats/:chatId/messages', verifyToken, async (req, res) => {
+  const uid    = req.user.userId;
+  const chatId = req.params.chatId;
+  const { limit = 100, offset = 0 } = req.query;
+
+  // Проверим, действительно ли пользователь состоит в чате
+  const { data: chat } = await supabase
+        .from('chats')
+        .select('user1_id, user2_id')
+        .eq('id', chatId).maybeSingle();
+
+  if (!chat || (chat.user1_id !== uid && chat.user2_id !== uid))
+    return res.status(403).json({ success:false, error:'Нет доступа' });
+
+  const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('chat_id', chatId)
+        .order('created_at', { ascending:true })
+        .range(+offset, +offset + +limit - 1);
+
+  if (error) {
+    console.error('[GET /messages]', error);
+    return res.status(500).json({ success:false, error:'DB error' });
+  }
+  res.json({ success:true, messages:data });
+});
+
+/** ═══════════════════════════════════════════════════════
+ *  POST /chats/:chatId/messages
+ *  Body: { encrypted_message, nonce, sender_public_key }
+ *  (всё это приходит из клиента уже в base64)
+ * ══════════════════════════════════════════════════════ */
+app.post('/chats/:chatId/messages', verifyToken, async (req, res) => {
+  const uid      = req.user.userId;
+  const chatId   = req.params.chatId;
+  const { encrypted_message, nonce, sender_public_key } = req.body || {};
+
+  if (!encrypted_message || !nonce || !sender_public_key)
+    return res.status(400).json({ success:false, error:'Пустое тело запроса' });
+
+  // убедимся, что пользователь участник чата
+  const { data: chat } = await supabase
+        .from('chats')
+        .select('user1_id, user2_id')
+        .eq('id', chatId).maybeSingle();
+
+  if (!chat || (chat.user1_id !== uid && chat.user2_id !== uid))
+    return res.status(403).json({ success:false, error:'Нет доступа' });
+
+  const { error } = await supabase
+        .from('messages')
+        .insert([{
+          chat_id: chatId,
+          sender_id: uid,
+          encrypted_message,
+          nonce,
+          sender_public_key
+        }]);
+
+  if (error) {
+    console.error('[POST /messages]', error);
+    return res.status(500).json({ success:false, error:'DB error' });
+  }
+  res.json({ success:true });
+});
+
+/** ═══════════════════════════════════════════════════════
+ *  GET  /userPublicKey/:id   (необязательный «шорткат»)
+ *  Возвращает public_key конкретного пользователя
+ * ══════════════════════════════════════════════════════ */
+app.get('/userPublicKey/:id', verifyToken, async (req, res) => {
+  const { data, error } = await supabase
+        .from('users')
+        .select('public_key')
+        .eq('user_id', req.params.id)
+        .maybeSingle();
+
+  if (error || !data || !data.public_key)
+    return res.status(404).json({ success:false, error:'not found' });
+
+  res.json({ success:true, public_key:data.public_key });
+});
