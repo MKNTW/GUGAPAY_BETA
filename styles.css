@@ -1065,3 +1065,51 @@ body {
 .chat-inputbar {display:flex;gap:8px;padding-top:8px;}
 .chat-input    {flex:1;border:1px solid #E6E6EB;border-radius:10px;padding:10px;font-size:14px;}
 .chat-sendBtn  {padding:0 18px;background:#2F80ED;color:#fff;border:none;border-radius:10px;font-weight:600;cursor:pointer;}
+   
+/* Контейнер переписки */
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Окно сообщений */
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+/* Фиксированное поле ввода «прилипает» к низу */
+.chat-inputbar {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  border-top: 1px solid #E6E6EB;
+  background: #FFF;
+  /* для плавного перекрытия клавиатуры на мобильных */
+  position: sticky;
+  bottom: 0;
+  z-index: 1000;
+}
+
+/* Поле ввода */
+.chat-input {
+  flex: 1;
+  border: 1px solid #E6E6EB;
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 14px;
+  outline: none;
+}
+
+/* Кнопка «Отправить» */
+.chat-sendBtn {
+  padding: 0 18px;
+  background: #2F80ED;
+  color: #FFF;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
