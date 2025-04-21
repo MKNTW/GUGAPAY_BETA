@@ -3752,6 +3752,7 @@ function openNewChatModal() {
 async function openChatWindow(chatId, partnerId) {
   const partner = await fetchUserCard(partnerId);
   let chatChannel = null;
+  let refreshInterval = null;
 
   createModal('chatModal', `
     <div class="chat-container">
@@ -3772,6 +3773,7 @@ async function openChatWindow(chatId, partnerId) {
     onClose: () => {
       document.getElementById('bottomBar').style.display = 'flex';
       if (chatChannel) supabase.removeChannel(chatChannel);
+      if (refreshInterval) clearInterval(refreshInterval);
     }
   });
 
@@ -3791,9 +3793,10 @@ async function openChatWindow(chatId, partnerId) {
     const bubble = document.createElement('div');
     bubble.className = `bubble ${side}`;
     bubble.innerHTML = `${text}<span class="time-label">${tm}</span>`;
-    box.appendChild(bubble);
-    box.scrollTop = box.scrollHeight;
+    return bubble;
   }
+
+  let lastMessageId = null;
 
   async function loadMessages() {
     const { data: msgs } = await supabase
@@ -3802,30 +3805,38 @@ async function openChatWindow(chatId, partnerId) {
       .eq('chat_id', chatId)
       .order('created_at', { ascending: true });
 
+    if (!msgs) return;
+
+    const last = msgs[msgs.length - 1]?.id;
+    if (last === lastMessageId) return; // ничего не изменилось
+
     box.innerHTML = '';
-    msgs.forEach(renderMessage);
+    msgs.forEach(m => {
+      box.appendChild(renderMessage(m));
+    });
+
+    lastMessageId = last;
+    box.scrollTop = box.scrollHeight;
   }
 
   await loadMessages();
 
-  // Подписка на новые сообщения
+  // 🔁 Обновление раз в секунду
+  refreshInterval = setInterval(loadMessages, 1000);
+
+  // 🔔 Подписка (оставим — вдруг заработает правильно)
   chatChannel = supabase
     .channel(`chat-${chatId}`)
     .on(
       'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages',
-        filter: `chat_id=eq.${chatId}`
-      },
+      { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` },
       payload => {
-        renderMessage(payload.new);
+        loadMessages(); // можно вызывать или просто append
       }
     )
     .subscribe();
 
-  // Отправка
+  // 📤 Отправка сообщений
   const sendBtn = document.getElementById('chatSend');
   const input = document.getElementById('chatText');
 
@@ -3853,8 +3864,7 @@ async function openChatWindow(chatId, partnerId) {
         payload = { ...payload, encrypted_message: val };
       }
 
-      const { data, error } = await supabase.from('messages').insert([payload]).select().single();
-
+      const { error } = await supabase.from('messages').insert([payload]);
       if (error) {
         console.error('Ошибка при отправке:', error);
         alert('Не удалось отправить сообщение');
@@ -3862,8 +3872,7 @@ async function openChatWindow(chatId, partnerId) {
       }
 
       input.value = '';
-      // Отображаем отправленное сообщение сразу
-      renderMessage(data);
+      // Сообщение появится через секунду при следующем refresh
 
     } catch (err) {
       console.error('Ошибка при отправке:', err);
