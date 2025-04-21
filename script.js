@@ -3939,12 +3939,21 @@ async function openChatWindow(chatId, partnerId) {
     }, 100);
 
     // обновить прочитанные
-    await supabase
-      .from('messages')
-      .update({ read_by: supabase.fn.array_append('read_by', currentUserId) })
-      .eq('chat_id', chatId)
-      .neq('sender_id', currentUserId)
-      .or('read_by.is.null,not.read_by.cs.{' + currentUserId + '}');
+    const { data: unreadMessages } = await supabase
+  .from('messages')
+  .select('id, read_by')
+  .eq('chat_id', chatId)
+  .neq('sender_id', currentUserId);
+
+const toUpdate = unreadMessages.filter(m => !Array.isArray(m.read_by) || !m.read_by.includes(currentUserId));
+
+for (const msg of toUpdate) {
+  const updatedReadBy = Array.isArray(msg.read_by) ? [...msg.read_by, currentUserId] : [currentUserId];
+  await supabase
+    .from('messages')
+    .update({ read_by: updatedReadBy })
+    .eq('id', msg.id);
+}
   }
 
   await loadMessages();
