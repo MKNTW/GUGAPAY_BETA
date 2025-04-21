@@ -3632,16 +3632,25 @@ function encryptMessage(plain, recipientPubB64) {
 }
 
 function decryptMessage(encB64, nonceB64, senderPubB64) {
-  const shared = nacl.box.before(
+  try {
+    if (!senderPubB64 || senderPubB64.length < 40) return '[нешифрованное сообщение]';
+
+    const shared = nacl.box.before(
       nacl.util.decodeBase64(senderPubB64),
       nacl.util.decodeBase64(localStorage.getItem('privateKey'))
-  );
-  const plain = nacl.box.open.after(
+    );
+    const plain = nacl.box.open.after(
       nacl.util.decodeBase64(encB64),
       nacl.util.decodeBase64(nonceB64),
       shared
-  );
-  return nacl.util.encodeUTF8(plain);
+    );
+
+    if (!plain) return '[не удалось расшифровать]';
+    return nacl.util.encodeUTF8(plain);
+  } catch (err) {
+    console.error('Ошибка при расшифровке:', err);
+    return '[ошибка]';
+  }
 }
 
 /* ========= 2.  Вспомогательная карточка пользователя ========== */
