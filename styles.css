@@ -1062,9 +1062,6 @@ body {
 .bubble.out    {align-self:flex-end;background:#2F80ED;color:#fff;border-bottom-right-radius:2px;}
 .bubble.in     {align-self:flex-start;background:#F0F0F0;color:#000;border-bottom-left-radius:2px;}
 .time-label    {display:block;font-size:11px;margin-top:2px;opacity:.6;text-align:right;}
-.chat-inputbar {display:flex;gap:8px;padding-top:8px;}
-.chat-input    {flex:1;border:1px solid #E6E6EB;border-radius:10px;padding:10px;font-size:14px;}
-.chat-sendBtn  {padding:0 18px;background:#2F80ED;color:#fff;border:none;border-radius:10px;font-weight:600;cursor:pointer;}
    
 /* Контейнер переписки */
 .chat-container {
