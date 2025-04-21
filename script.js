@@ -1012,50 +1012,61 @@ function createMainUI() {
     balanceContainer.appendChild(gugaCard);
   }
 
-  // Bottom navigation bar
-  if (!document.getElementById("bottomBar")) {
-    const bottomBar = document.createElement("div");
-    bottomBar.id = "bottomBar";
-    bottomBar.className = "bottom-bar";
-    bottomBar.innerHTML = `
-      <button id="btnMain" class="nav-btn">
-        <img src="photo/69.png" class="nav-icon">
-        <span>Главная</span>
-      </button>
-      <button id="historyBtn" class="nav-btn">
-        <img src="photo/70.png" class="nav-icon">
-        <span>История</span>
-      </button>
-      <button id="exchangeBtn" class="nav-btn">
-        <img src="photo/71.png" class="nav-icon">
-        <span>Обменять</span>
-      </button>
-            <button id="exchangeBtn" class="nav-btn">
-        <img src="photo/71.png" class="nav-icon">
-        <span>Обменять</span>
-      </button>
-     <button id="chatBtn" class="nav-btn">
-       <img src="photo/72.png" class="nav-icon">
-       <span>Чаты</span>
-     </button>
-    `;
-    document.body.appendChild(bottomBar);
-    bottomBar.querySelector("#btnMain").addEventListener("click", () => {
-      removeAllModals();
-    });
-    bottomBar.querySelector("#historyBtn").addEventListener("click", () => {
-      removeAllModals();
-      openHistoryModal();
-    });
-    bottomBar.querySelector("#exchangeBtn").addEventListener("click", () => {
-      removeAllModals();
-      openExchangeModal();
-    });
-    bottomBar.querySelector("#chatBtn").addEventListener("click", () => {
-      removeAllModals();
-      openChatListModal();                       // функция ниже
-    });
-  }
+  // ──────────────────────────────────────────────────────────
+// Bottom navigation bar (создаётся один раз)
+// ──────────────────────────────────────────────────────────
+if (!document.getElementById("bottomBar")) {
+  const bottomBar = document.createElement("div");
+  bottomBar.id = "bottomBar";
+  bottomBar.className = "bottom-bar";
+
+  bottomBar.innerHTML = `
+    <button id="btnMain" class="nav-btn">
+      <img src="photo/69.png" class="nav-icon">
+      <span>Главная</span>
+    </button>
+
+    <button id="historyBtn" class="nav-btn">
+      <img src="photo/70.png" class="nav-icon">
+      <span>История</span>
+    </button>
+
+    <button id="exchangeBtn" class="nav-btn">
+      <img src="photo/71.png" class="nav-icon">
+      <span>Обменять</span>
+    </button>
+
+    <button id="chatBtn" class="nav-btn">
+      <img src="photo/72.png" class="nav-icon">
+      <span>Чаты</span>
+    </button>
+  `;
+
+  document.body.appendChild(bottomBar);
+
+  /* ——— кнопка «Главная» ——— */
+  bottomBar.querySelector("#btnMain").addEventListener("click", () => {
+    removeAllModals();
+  });
+
+  /* ——— кнопка «История» ——— */
+  bottomBar.querySelector("#historyBtn").addEventListener("click", () => {
+    removeAllModals();
+    openHistoryModal();
+  });
+
+  /* ——— кнопка «Обменять» ——— */
+  bottomBar.querySelector("#exchangeBtn").addEventListener("click", () => {
+    removeAllModals();
+    openExchangeModal();
+  });
+
+  /* ——— кнопка «Чаты» ——— */
+  bottomBar.querySelector("#chatBtn").addEventListener("click", () => {
+    removeAllModals();
+    openChatListModal();   // функция из блока чатов
+  });
+}
 
   // Show main balance display if present
   const balanceDisplay = document.getElementById("balanceDisplay");
