@@ -3691,7 +3691,7 @@ async function openChatListModal() {
 
   createModal('chatListModal', `<div style="padding-bottom:16px;">${rows.join('')}</div>`, {
     showCloseBtn:true,
-    cornerTopRadius:20,
+    cornerTopRadius:0,
     hasVerticalScroll:true,
     onClose:()=>{ if(bottomBar) bottomBar.style.display='flex'; }
   });
