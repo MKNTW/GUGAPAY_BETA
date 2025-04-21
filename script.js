@@ -3866,11 +3866,6 @@ async function openChatWindow(chatId, partnerId) {
 
   await loadMessages();
 
-  await supabase.rpc('mark_messages_as_read', {
-  chat_id_input: chatId,
-  user_id_input: currentUserId
-  });
-
   // 🔁 Обновление раз в секунду
   refreshInterval = setInterval(loadMessages, 1000);
 
@@ -3885,6 +3880,11 @@ async function openChatWindow(chatId, partnerId) {
       }
     )
     .subscribe();
+
+  await supabase.rpc('mark_messages_as_read', {
+  chat_id_input: chatId,
+  user_id_input: currentUserId
+  });
 
   // 📤 Отправка сообщений
   const sendBtn = document.getElementById('chatSend');
