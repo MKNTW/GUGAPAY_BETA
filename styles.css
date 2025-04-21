@@ -107,7 +107,7 @@ body {
 }
 
 #bottomBar button {
-  // flex: 0 0 28%;
+  flex: 0 0 28%;
   padding: 8px;
   background-color: transparent;
   color: #000;
