@@ -3813,70 +3813,77 @@ function openNewChatModal() {
   };
 }
 
+// openChatWindow – v2 (правки по замечаниям)
+// -----------------------------------------------------------------------------
+// Изменения:
+// 1. ⚡️ Плавное появление новых сообщений без перерисовки всего списка.
+// 2. 🖼 Предпросмотр медиа выводится сверху над строкой ввода (flex-column).
+// 3. ➖ Удалена кнопка «⋮» (chatMoreBtn).
+// 4. TODO: статус "Прочитано/Непрочитано" для входящих сообщений – уточнить логику.
+// -----------------------------------------------------------------------------
+/* global currentUserId, fetchUserCard, createModal, supabase, showNotification,
+          decryptMessage, encryptMessage */
+
 async function openChatWindow(chatId, partnerId) {
-  // -------------------------------------------------------------------------
-  // 0️⃣  Переменные состояния
-  // -------------------------------------------------------------------------
-  const partner         = await fetchUserCard(partnerId);
-  let   chatChannel     = null;
-  let   refreshInterval = null;
+  const partner = await fetchUserCard(partnerId);
+  let chatChannel = null;
+  let refreshInterval = null;
+  let box;                      // контейнер сообщений
+  const renderedIdSet = new Set();
 
   // -------------------------------------------------------------------------
-  // 1️⃣  Вспомогательные функции
+  // helpers
   // -------------------------------------------------------------------------
-  let box; // определим позже, но переменная нужна сейчас
-  const scrollToBottom = (smooth = false) => {
-    requestAnimationFrame(() => {
-      if (!box) return;
-      box.scrollTo({ top: box.scrollHeight + 256, behavior: smooth ? 'smooth' : 'auto' });
-    });
-  };
+  const scrollToBottom = (smooth = false) => requestAnimationFrame(() => {
+    if (!box) return;
+    box.scrollTo({ top: box.scrollHeight + 256, behavior: smooth ? 'smooth' : 'auto' });
+  });
 
   const monitorMedia = el => {
-    el.querySelectorAll('img').forEach(img   => img .addEventListener('load',            () => scrollToBottom()));
-    el.querySelectorAll('video').forEach(vid => vid.addEventListener('loadedmetadata', () => scrollToBottom()));
+    el.querySelectorAll('img').forEach(img => img.addEventListener('load', () => scrollToBottom()));
+    el.querySelectorAll('video').forEach(v  => v .addEventListener('loadedmetadata', () => scrollToBottom()));
   };
 
   const renderMessage = (m, isLastFromMe = false) => {
-    const side   = m.sender_id === currentUserId ? 'out' : 'in';
-    const text   = m.encrypted_message && m.nonce && m.sender_public_key
+    const side = m.sender_id === currentUserId ? 'out' : 'in';
+    const text = m.encrypted_message && m.nonce && m.sender_public_key
       ? decryptMessage(m.encrypted_message, m.nonce, m.sender_public_key)
       : m.encrypted_message;
-    const tm     = new Date(m.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    const tm   = new Date(m.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
-    let media    = '';
+    let media = '';
     if (m.media_url) {
-      if (m.media_type === 'image') media = `<img src="${m.media_url}" style="max-width:240px;border-radius:12px;display:block;margin-bottom:6px;"/>`;
-      else if (m.media_type === 'video') media = `<video src="${m.media_url}" controls preload="metadata" style="max-width:240px;border-radius:12px;display:block;margin-bottom:6px;"></video>`;
-      else media = `<a href="${m.media_url}" target="_blank" style="display:block;margin-bottom:6px;">📎 Файл</a>`;
+      media = m.media_type === 'image'
+        ? `<img src="${m.media_url}" style="max-width:240px;border-radius:12px;display:block;margin-bottom:6px;" />`
+        : m.media_type === 'video'
+          ? `<video src="${m.media_url}" controls preload="metadata" style="max-width:240px;border-radius:12px;display:block;margin-bottom:6px;"></video>`
+          : `<a href="${m.media_url}" target="_blank" style="display:block;margin-bottom:6px;">📎 Файл</a>`;
     }
 
-    const status = isLastFromMe ? (m.read_by?.includes(partnerId) ? ' • Прочитано' : ' • Отправлено') : '';
+    // статус временно оставляем для исходящих (TODO‑4)
+    const status = isLastFromMe
+      ? (m.read_by?.includes(partnerId) ? ' • Прочитано' : ' • Отправлено')
+      : '';
 
     const bubble = document.createElement('div');
     bubble.className = `bubble ${side}`;
     bubble.innerHTML = `${media}${text ? `<div>${text}</div>` : ''}<span class="time-label">${tm}${status}</span>`;
-
     monitorMedia(bubble);
     return bubble;
   };
 
   // -------------------------------------------------------------------------
-  // 2️⃣  Создаём модальное окно
+  // modal markup
   // -------------------------------------------------------------------------
   createModal('chatModal', `
     <div class="chat-container" style="touch-action:manipulation;display:flex;flex-direction:column;height:100%;">
       <div class="chat-header" style="display:flex;align-items:center;gap:12px;">
-        <button id="chatMoreBtn" style="background:#fff;border:none;font-size:18px;color:#333;cursor:pointer;border-radius:10px;padding:6px 10px;">⋮</button>
         <img src="${partner.photo}" class="chat-avatar" />
         <div class="chat-title">${partner.name}<div style="font-size:12px;color:#999;margin-top:2px;">ID: ${partner.id}</div></div>
       </div>
       <div id="chatMessages" class="chat-messages" style="flex:1 1 auto;overflow-y:auto;"></div>
-      <div class="chat-inputbar" id="chatInputBar">
-        <div id="mediaPreview" style="display:none;margin-bottom:10px;position:relative;max-height:200px;overflow:hidden;">
-          <div id="mediaPreviewContent" style="max-height:200px;"></div>
-          <button id="cancelPreviewBtn" style="position:absolute;top:4px;right:4px;background:#fff;border:none;border-radius:50%;cursor:pointer;">✖</button>
-        </div>
+      <div class="chat-inputbar" id="chatInputBar" style="display:flex;flex-direction:column;gap:8px;">
+        <div id="mediaPreview" style="display:none;max-height:200px;overflow:hidden;border-radius:12px;"></div>
         <div style="display:flex;gap:10px;align-items:center;width:100%;">
           <input id="chatText" class="chat-input" placeholder="Сообщение…" style="font-size:16px;padding:12px;width:100%;" />
           <input type="file" id="mediaInput" accept="image/*,video/*" style="display:none;" />
@@ -3899,80 +3906,70 @@ async function openChatWindow(chatId, partnerId) {
   box = document.getElementById('chatMessages');
 
   // -------------------------------------------------------------------------
-  // 3️⃣  Загрузка и рендеринг сообщений
+  // loading / polling / realtime
   // -------------------------------------------------------------------------
-  let lastRenderedIds = [];
-
-  const loadMessages = async (initial = false) => {
+  const loadMessages = async () => {
     const { data: msgs, error } = await supabase
       .from('messages')
       .select('*')
       .eq('chat_id', chatId)
       .order('created_at', { ascending: true });
+    if (error || !msgs) return;
 
-    if (error) { console.error(error); return; }
-    if (!msgs)  return;
+    // 1) добавляем только новые
+    const newMsgs = msgs.filter(m => !renderedIdSet.has(m.id));
+    if (newMsgs.length) {
+      newMsgs.forEach((m, idx) => {
+        const isLastFromMe = m.sender_id === currentUserId &&
+          !msgs.slice(msgs.findIndex(x => x.id === m.id) + 1).some(n => n.sender_id === currentUserId);
+        box.appendChild(renderMessage(m, isLastFromMe));
+        renderedIdSet.add(m.id);
+      });
+      scrollToBottom(true);
+    }
 
-    const idStr = msgs.map(m => m.id).join(',');
-    if (!initial && idStr === lastRenderedIds.join(',')) return; // без изменений
-
-    // рендер
-    box.innerHTML = '';
-    msgs.forEach((m, i) => {
-      const isLastFromMe = m.sender_id === currentUserId &&
-                           !msgs.slice(i + 1).some(n => n.sender_id === currentUserId);
-      box.appendChild(renderMessage(m, isLastFromMe));
-    });
-    lastRenderedIds = msgs.map(m => m.id);
-    scrollToBottom(!initial);
-
-    // обновление read_by
-    const toMark = msgs.filter(m => m.sender_id !== currentUserId &&
-                                    (!Array.isArray(m.read_by) || !m.read_by.includes(currentUserId)));
-    for (const row of toMark) {
-      const updated = Array.isArray(row.read_by) ? [...row.read_by, currentUserId] : [currentUserId];
-      await supabase.from('messages').update({ read_by: updated }).eq('id', row.id);
+    // 2) mark read (bulk, no RPC)
+    const unreadIds = newMsgs
+      .filter(m => m.sender_id !== currentUserId)
+      .map(m => m.id);
+    if (unreadIds.length) {
+      await supabase
+        .from('messages')
+        .update({ read_by: supabase.raw('array_append(COALESCE(read_by, ARRAY[]::uuid[]), ?)', [currentUserId]) })
+        .in('id', unreadIds);
     }
   };
 
-  await loadMessages(true);
-
-  // «Жёсткое» обновление раз в секунду (fallback + гарантия свежести)
-  refreshInterval = setInterval(() => loadMessages(false), 1000);
-
-  // -------------------------------------------------------------------------
-  // 4️⃣  Realtime канал (можно убрать, но вместе с polling работает быстрее)
-  // -------------------------------------------------------------------------
+  await loadMessages();
+  refreshInterval = setInterval(loadMessages, 1000);
   chatChannel = supabase
     .channel(`chat-${chatId}`)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` }, () => loadMessages(false))
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` }, loadMessages)
     .subscribe();
 
   // -------------------------------------------------------------------------
-  // 5️⃣  Компоненты ввода (отправка, прикрепление файлов)
+  // composer + preview
   // -------------------------------------------------------------------------
-  const input           = document.getElementById('chatText');
-  const sendBtn         = document.getElementById('chatSend');
-  const mediaInput      = document.getElementById('mediaInput');
-  const uploadBtn       = document.getElementById('uploadMediaBtn');
-  const mediaPreview    = document.getElementById('mediaPreview');
-  const mediaContent    = document.getElementById('mediaPreviewContent');
-  const cancelPreviewBtn= document.getElementById('cancelPreviewBtn');
-  let   selectedFile    = null;
+  const input        = document.getElementById('chatText');
+  const sendBtn      = document.getElementById('chatSend');
+  const mediaInput   = document.getElementById('mediaInput');
+  const uploadBtn    = document.getElementById('uploadMediaBtn');
+  const mediaPreview = document.getElementById('mediaPreview');
+  let   selectedFile = null;
 
   const showPreview = file => {
-    mediaContent.innerHTML = '';
+    mediaPreview.innerHTML = '';
     if (file.type.startsWith('image/')) {
       const img = document.createElement('img');
       img.src = URL.createObjectURL(file);
-      img.style.cssText = 'max-width:240px;border-radius:12px;';
-      mediaContent.appendChild(img);
+      img.style.cssText = 'width:100%;max-height:200px;object-fit:contain;';
+      mediaPreview.appendChild(img);
     } else if (file.type.startsWith('video/')) {
       const vid = document.createElement('video');
       vid.src = URL.createObjectURL(file);
       vid.controls = true;
-      vid.style.cssText = 'max-width:240px;border-radius:12px;';
-      mediaContent.appendChild(vid);
+      vid.style.cssText = 'width:100%;max-height:200px;object-fit:contain;';
+      mediaPreview.appendChild(vid);
     }
     selectedFile = file;
     mediaPreview.style.display = 'block';
@@ -3984,67 +3981,53 @@ async function openChatWindow(chatId, partnerId) {
     if (file && file.type.match(/image|video/)) showPreview(file);
     else showNotification('Можно загрузить только фото или видео', 'error');
   };
-  cancelPreviewBtn.onclick = () => {
-    selectedFile = null;
-    mediaPreview.style.display = 'none';
-    mediaContent.innerHTML = '';
-  };
 
-  // Drag‑&‑drop
   document.querySelector('.chat-container').addEventListener('dragover', e => e.preventDefault());
-  document.querySelector('.chat-container').addEventListener('drop',      e => {
+  document.querySelector('.chat-container').addEventListener('drop', e => {
     e.preventDefault();
     const file = e.dataTransfer.files[0];
     if (file && file.type.match(/image|video/)) showPreview(file);
     else showNotification('Можно загрузить только фото или видео', 'error');
   });
 
-  // -------------------------------------------------------------------------
-  // 6️⃣  Отправка сообщения
-  // -------------------------------------------------------------------------
   const sendMessage = async () => {
     const textVal = input.value.trim();
     if (!textVal && !selectedFile) return showNotification('Введите сообщение или прикрепите файл', 'error');
 
     const payload = { chat_id: chatId, sender_id: currentUserId };
 
-    // шифруем текст
     if (textVal) {
       if (!partner.pub) {
         const { data } = await supabase.from('users').select('public_key').eq('user_id', partnerId).single();
         partner.pub = data?.public_key || '';
       }
-      if (partner.pub) Object.assign(payload, encryptMessage(textVal, partner.pub));
-      else              payload.encrypted_message = textVal;
+      partner.pub ? Object.assign(payload, encryptMessage(textVal, partner.pub)) : payload.encrypted_message = textVal;
     }
 
-    // аплоад файла
     if (selectedFile) {
-      const ext  = selectedFile.name.split('.').pop();
-      const name = `${Date.now()}_${currentUserId}.${ext}`;
-      const path = `chat_media/${chatId}/${name}`;
+      const ext = selectedFile.name.split('.').pop();
+      const filename = `${Date.now()}_${currentUserId}.${ext}`;
+      const path = `chat_media/${chatId}/${filename}`;
       const { error: upErr } = await supabase.storage.from('media').upload(path, selectedFile);
       if (upErr) { console.error(upErr); return showNotification('Ошибка загрузки файла', 'error'); }
       const { data } = supabase.storage.from('media').getPublicUrl(path);
-      payload.media_url  = data.publicUrl;
+      payload.media_url = data.publicUrl;
       payload.media_type = selectedFile.type.startsWith('image/') ? 'image' : 'video';
     }
 
     const { error } = await supabase.from('messages').insert([payload]);
     if (error) { console.error(error); return showNotification('Не удалось отправить сообщение', 'error'); }
 
-    // мгновенная очистка UI
+    // clear composer
     input.value = '';
     selectedFile = null;
     mediaPreview.style.display = 'none';
-    mediaContent.innerHTML = '';
+    mediaPreview.innerHTML = '';
     scrollToBottom(true);
   };
 
   sendBtn.onclick = sendMessage;
-  input.addEventListener('keydown', e => {
-    if (e.key === 'Enter') { e.preventDefault(); sendMessage(); }
-  });
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); sendMessage(); } });
 }
 
 /* ========= 6.  Вызвать ensureKeyPair сразу после успешного логина ========= */
