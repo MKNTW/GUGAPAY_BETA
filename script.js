@@ -3855,7 +3855,8 @@ async function openChatWindow(chatId, partnerId) {
             ? `<div class="chat-block-label" style="padding: 14px; text-align: center; color: #999; background: #f8f8f8; border-radius: 12px; margin: 10px; font-style: italic;">Вы были заблокированы этим пользователем</div>`
             : `
               <input id="chatText" class="chat-input" placeholder="Сообщение…" style="ime-mode: disabled; font-size: 16px; padding: 12px; width: 100%; max-zoom: 1; touch-action: manipulation;" inputmode="text" />
-              <button id="chatSend" class="chat-sendBtn" style="margin-left: 10px; padding: 12px 16px; background: #2F80ED; color: #fff; font-weight: 600; border: none; border-radius: 12px; cursor: pointer;">Отправить</button>`
+              <button id="sendPayBtn" style="margin-left: 8px; padding: 10px 14px; background: #27ae60; color: #fff; font-weight: 600; border: none; border-radius: 10px; cursor: pointer;">₿</button>
+              <button id="chatSend" class="chat-sendBtn" style="margin-left: 8px; padding: 12px 16px; background: #2F80ED; color: #fff; font-weight: 600; border: none; border-radius: 12px; cursor: pointer;">Отправить</button>`
         }
       </div>
     </div>
@@ -3886,6 +3887,37 @@ async function openChatWindow(chatId, partnerId) {
     const bubble = document.createElement('div');
     bubble.className = `bubble ${side}`;
     bubble.innerHTML = `${text}<span class="time-label">${tm}</span>`;
+
+    if (m.is_payment && m.receiver_id === currentUserId && !m.payment_done) {
+      const payBtn = document.createElement('button');
+      payBtn.textContent = 'Оплатить';
+      payBtn.style.cssText = 'margin-top: 8px; background: #27ae60; color: #fff; border: none; border-radius: 8px; padding: 6px 12px; cursor: pointer;';
+      payBtn.onclick = async () => {
+        const { error } = await fetch(`${API_URL}/chat/pay`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken
+          },
+          body: JSON.stringify({
+            messageId: m.id,
+            senderId: m.sender_id,
+            receiverId: currentUserId,
+            amount: m.amount,
+            currency: m.currency
+          })
+        });
+        if (!error) showNotification('Оплата прошла', 'success');
+      };
+      bubble.appendChild(payBtn);
+    } else if (m.is_payment && m.payment_done) {
+      const paidLabel = document.createElement('div');
+      paidLabel.textContent = '✅ Оплачено';
+      paidLabel.style.cssText = 'margin-top: 4px; font-size: 13px; color: #27ae60;';
+      bubble.appendChild(paidLabel);
+    }
+
     return bubble;
   }
 
@@ -3904,9 +3936,7 @@ async function openChatWindow(chatId, partnerId) {
     if (last === lastMessageId) return;
 
     box.innerHTML = '';
-    msgs.forEach(m => {
-      box.appendChild(renderMessage(m));
-    });
+    for (const m of msgs) box.appendChild(renderMessage(m));
 
     lastMessageId = last;
     box.scrollTop = box.scrollHeight;
@@ -3937,53 +3967,43 @@ async function openChatWindow(chatId, partnerId) {
     })
     .subscribe();
 
-  document.getElementById('chatMoreBtn').onclick = () => {
-    let content = '';
+  document.getElementById('sendPayBtn')?.addEventListener('click', () => {
+    createModal('paymentRequestModal', `
+      <h3 style="text-align:center;">Запрос платежа</h3>
+      <input id="payAmount" type="number" placeholder="Сумма" style="width:100%;margin:8px 0;padding:12px;border-radius:10px;border:1px solid #ccc;">
+      <select id="payCurrency" style="width:100%;margin-bottom:8px;padding:12px;border-radius:10px;border:1px solid #ccc;">
+        <option value="RUB">₽ RUB</option>
+        <option value="GUGA">₲ GUGA</option>
+      </select>
+      <input id="payNote" placeholder="Комментарий" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ccc;">
+      <button id="sendPayRequest" style="width:100%;margin-top:12px;padding:12px;background:#2F80ED;color:white;border:none;border-radius:12px;">Отправить запрос</button>
+    `, { cornerTopRadius: 16 });
 
-    if (blockedByMe) {
-      content += `<button id="unblockBtn" class="chat-option-btn" style="padding: 12px; width: 100%; border: none; background: #27ae60; color: white; border-radius: 10px; margin-bottom: 10px;">🔓 Разблокировать</button>`;
-    } else {
-      content += `<button id="blockBtn" class="chat-option-btn" style="padding: 12px; width: 100%; border: none; background: #e74c3c; color: white; border-radius: 10px; margin-bottom: 10px;">🚫 Заблокировать</button>`;
-    }
+    document.getElementById('sendPayRequest').onclick = async () => {
+      const amount = parseFloat(document.getElementById('payAmount').value);
+      const currency = document.getElementById('payCurrency').value;
+      const note = document.getElementById('payNote').value;
 
-    content += `
-      <button id="deleteBtn" class="chat-option-btn danger" style="padding: 12px; width: 100%; border: none; background: #7c7c7c; color: white; border-radius: 10px;">🗑 Удалить чат</button>
-    `;
+      if (!amount || amount <= 0) {
+        showNotification('Введите корректную сумму!', 'error');
+        return;
+      }
 
-    createModal('chatActionsModal', `<div style="padding:16px; margin-top: 30px;">${content}</div>`, {
-      cornerTopRadius: 0
-    });
+      await supabase.from('messages').insert([{
+        chat_id: chatId,
+        sender_id: currentUserId,
+        encrypted_message: `Запрос ${amount} ${currency}${note ? ': ' + note : ''}`,
+        is_payment: true,
+        payment_done: false,
+        amount,
+        currency,
+        receiver_id: partnerId
+      }]);
 
-    document.getElementById('blockBtn')?.addEventListener('click', async () => {
-      await supabase.from('blocked_users').insert([
-        { blocker_id: currentUserId, blocked_id: partnerId }
-      ]);
-      showNotification('Пользователь заблокирован', 'success');
+      showNotification('Запрос отправлен', 'success');
       removeAllModals();
-      openChatWindow(chatId, partnerId);
-    });
-
-    document.getElementById('unblockBtn')?.addEventListener('click', async () => {
-      await supabase.from('blocked_users')
-        .delete()
-        .eq('blocker_id', currentUserId)
-        .eq('blocked_id', partnerId);
-      showNotification('Пользователь разблокирован', 'success');
-      removeAllModals();
-      openChatWindow(chatId, partnerId);
-    });
-
-    document.getElementById('deleteBtn')?.addEventListener('click', async () => {
-      if (!confirm('Удалить этот чат и все сообщения?')) return;
-
-      await supabase.from('messages').delete().eq('chat_id', chatId);
-      await supabase.from('chats').delete().eq('id', chatId);
-
-      showNotification('Чат удалён', 'success');
-      removeAllModals();
-      openChatListModal();
-    });
-  };
+    };
+  });
 
   if (!blockedByMe && !blockedMe) {
     const sendBtn = document.getElementById('chatSend');
