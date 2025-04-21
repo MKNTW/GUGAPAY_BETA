@@ -1122,8 +1122,8 @@ body {
 /* Фиксированное поле ввода «прилипает» к низу */
 .chat-inputbar {
   display: flex;
-  gap: 8px;
-  padding: 8px;
+  gap: 0px;
+  padding-top: 8px;
   border-top: 1px solid #E6E6EB;
   background: #FFF;
   /* для плавного перекрытия клавиатуры на мобильных */
