@@ -3669,6 +3669,8 @@ async function fetchUserCard(id) {
 }
 
 /* ========= 3.  Список чатов ========== */
+let chatListInterval = null;
+
 async function openChatListModal() {
   const bottomBar = document.getElementById('bottomBar');
   if (bottomBar) bottomBar.style.display = 'none';
@@ -3864,10 +3866,18 @@ async function openChatWindow(chatId, partnerId) {
   box.scrollTop = box.scrollHeight;
 
   // ⬇️ ⬇️ ПОМЕТИТЬ КАК ПРОЧИТАННЫЕ
-  await supabase.rpc('mark_messages_as_read', {
-    chat_id_input: chatId,
-    user_id_input: currentUserId
-  });
+  await fetch(`${API_URL}/chat/read`, {
+  method: 'POST',
+  credentials: 'include',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-CSRF-Token': csrfToken
+  },
+  body: JSON.stringify({
+    chatId: chatId,
+    userId: currentUserId
+  })
+});
 }
 
   await loadMessages();
