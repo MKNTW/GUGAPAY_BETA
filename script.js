@@ -3893,7 +3893,7 @@ async function openChatWindow(chatId, partnerId) {
           <button id="cancelPreviewBtn" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.5);border:none;color:#fff;border-radius:50%;width:24px;height:24px;cursor:pointer;">✖</button>
         </div>
         <div style="display:flex;gap:10px;align-items:center;width:100%;">
-          <input id="chatText" placeholder="Сообщение…" style="flex:1;background:#F8F9FB;border-radius:12px;padding:12px;display:flex;align-items:center;border:1px solid #E6E6EB;font-size:16px;outline:none;width:100%;box-sizing:border-box;" />
+          <input id="chatText" placeholder="Сообщение…" style="background:#F8F9FB; border-radius:12px; padding:12px; display:flex; align-items:center; border:1px solid #E6E6EB; flex:1; outline:none; font-size:16px;" />
           <input type="file" id="mediaInput" accept="image/*,video/*" style="display:none;" />
           <button id="uploadMediaBtn" style="background:none;border:none;font-size:20px;cursor:pointer;">📎</button>
           <button id="chatSend" style="padding:12px 16px;background:#2F80ED;color:#fff;cursor:pointer;border-radius:12px;display:flex;align-items:center;border:1px solid #E6E6EB;font-size:16px;">Отправить</button>
