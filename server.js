@@ -1522,6 +1522,27 @@ app.get('/chat/:chatId/messages', verifyToken, async (req, res) => {
   // supabase.from('messages').select(...).eq('chat_id', chatId).order('created_at')
 });
 
+app.post('/chat/read', async (req, res) => {
+  const { chatId, userId } = req.body;
+
+  if (!chatId || !userId) return res.status(400).json({ error: 'Missing chatId or userId' });
+
+  try {
+    const { data, error } = await supabase
+      .from('messages')
+      .update({ read_by: supabase.raw(`array_append(read_by, '${userId}')`) })
+      .eq('chat_id', chatId)
+      .not('read_by', 'cs', `{${userId}}`);
+
+    if (error) throw error;
+
+    return res.json({ success: true, updated: data.length });
+  } catch (err) {
+    console.error('Ошибка при отметке прочитанного:', err);
+    res.status(500).json({ error: 'Ошибка на сервере' });
+  }
+});
+
 /** ═══════════════════════════════════════════════════════
  *  GET  /userPublicKey/:id   (необязательный «шорткат»)
  *  Возвращает public_key конкретного пользователя
