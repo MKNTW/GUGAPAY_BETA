@@ -3847,6 +3847,26 @@ async function openChatWindow(chatId, partnerId) {
   });
 }
 
+async function sendChat(chatId, text) {
+  try {
+    const res = await fetch(`${API_URL}/chat/send`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': csrfToken
+      },
+      body: JSON.stringify({ chatId, text })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    // Обновить окно чата — добавить новое сообщение в DOM
+  } catch (err) {
+    console.error('Ошибка отправки сообщения:', err);
+    showNotification('Не удалось отправить сообщение', 'error');
+  }
+}
+
 /* ========= 6.  Вызвать ensureKeyPair сразу после успешного логина ========= */
 (async()=>{ if(currentUserId) await ensureKeyPair(currentUserId); })();
 
