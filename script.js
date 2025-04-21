@@ -3708,14 +3708,29 @@ async function openChatListModal() {
     });
   }
 
-  return `<div class="chat-row" data-chat="${ch.id}" data-partner="${otherId}">
-            <img src="${u.photo}" class="chat-avatar">
-            <div class="chat-info">
-              <div class="chat-name">${u.name}</div>
-              <div class="chat-preview">${previewText || 'нет сообщений'}</div>
-            </div>
-            <div class="chat-time">${previewTime}</div>
-          </div>`;
+  let unreadCount = 0;
+
+const { data: unreadMessages } = await supabase
+  .from('messages')
+  .select('id')
+  .eq('chat_id', ch.id)
+  .not('read_by', 'cs', `{${currentUserId}}`);
+
+unreadCount = unreadMessages?.length || 0;
+
+  return `
+  <div class="chat-row" data-chat="${ch.id}" data-partner="${otherId}">
+    <div style="position: relative;">
+      <img src="${u.photo}" class="chat-avatar">
+      ${unreadCount > 0 ? `<div class="unread-dot">${unreadCount}</div>` : ''}
+    </div>
+    <div class="chat-info">
+      <div class="chat-name">${u.name}</div>
+      <div class="chat-preview">${previewText || 'нет сообщений'}</div>
+    </div>
+    <div class="chat-time">${previewTime}</div>
+  </div>
+`;
 }));
 
   rows.unshift(`
@@ -3850,6 +3865,11 @@ async function openChatWindow(chatId, partnerId) {
   }
 
   await loadMessages();
+
+  await supabase.rpc('mark_messages_as_read', {
+  chat_id_input: chatId,
+  user_id_input: currentUserId
+  });
 
   // 🔁 Обновление раз в секунду
   refreshInterval = setInterval(loadMessages, 1000);
