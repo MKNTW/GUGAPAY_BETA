@@ -3818,8 +3818,21 @@ async function openChatWindow(chatId, partnerId) {
   const partner = await fetchUserCard(partnerId);
   let chatChannel = null;
   let readStatusChannel = null;
-  let refreshInterval = null;
   let lastRenderedMessageIds = [];
+
+  const { data: blockedByMe } = await supabase
+    .from('blocked_users')
+    .select('*')
+    .eq('blocker_id', currentUserId)
+    .eq('blocked_id', partnerId)
+    .maybeSingle();
+
+  const { data: blockedMe } = await supabase
+    .from('blocked_users')
+    .select('*')
+    .eq('blocker_id', partnerId)
+    .eq('blocked_id', currentUserId)
+    .maybeSingle();
 
   createModal('chatModal', `
     <div class="chat-container" style="touch-action: manipulation;">
@@ -3870,7 +3883,7 @@ async function openChatWindow(chatId, partnerId) {
       if (m.media_type === 'image') {
         mediaPart = `<img src="${m.media_url}" style="max-width: 240px; border-radius: 12px; display: block; margin-bottom: 6px;" />`;
       } else if (m.media_type === 'video') {
-        mediaPart = `<video controls preload="metadata" style="max-width: 240px; border-radius: 12px; display: block; margin-bottom: 6px;">
+        mediaPart = `<video controls preload="metadata" playsinline style="max-width: 240px; border-radius: 12px; display: block; margin-bottom: 6px;">
           <source src="${m.media_url}" type="video/mp4" />
         </video>`;
       } else {
@@ -3914,23 +3927,21 @@ async function openChatWindow(chatId, partnerId) {
       const video = bubble.querySelector('video');
       if (video) {
         videoPromises.push(new Promise(resolve => {
-          video.onloadeddata = () => resolve();
-          video.onerror = () => resolve();
+          video.onloadeddata = resolve;
+          video.onerror = resolve;
         }));
       }
     });
 
     lastRenderedMessageIds = msgs.map(m => m.id);
 
-    await Promise.all(videoPromises);
-
     if (scroll) {
-      setTimeout(() => {
+      await Promise.all(videoPromises);
+      requestAnimationFrame(() => {
         box.scrollTop = box.scrollHeight;
-      }, 50);
+      });
     }
 
-    // обновим read_by
     const { data: unread } = await supabase
       .from('messages')
       .select('id, read_by')
