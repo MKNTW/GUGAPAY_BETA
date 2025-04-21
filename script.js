@@ -3682,16 +3682,41 @@ async function openChatListModal() {
 
   // HTML‑строки списка
   const rows = await Promise.all(chats.map(async ch => {
-    const otherId = ch.user1_id === currentUserId ? ch.user2_id : ch.user1_id;
-    const u = await fetchUserCard(otherId);
-    return `<div class="chat-row" data-chat="${ch.id}" data-partner="${otherId}">
-              <img src="${u.photo}" class="chat-avatar">
-              <div>
-                <div style="font-weight:500;">${u.name}</div>
-                <div style="font-size:12px;color:#888;">ID: ${u.id}</div>
-              </div>
-            </div>`;
-  }));
+  const otherId = ch.user1_id === currentUserId ? ch.user2_id : ch.user1_id;
+  const u = await fetchUserCard(otherId);
+
+  // Получаем последнее сообщение
+  const { data: lastMsg } = await supabase
+    .from('messages')
+    .select('encrypted_message, sender_id, sender_public_key, nonce, created_at')
+    .eq('chat_id', ch.id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  let previewText = '';
+  let previewTime = '';
+
+  if (lastMsg) {
+    const isEncrypted = lastMsg.encrypted_message && lastMsg.nonce && lastMsg.sender_public_key;
+    previewText = isEncrypted
+      ? decryptMessage(lastMsg.encrypted_message, lastMsg.nonce, lastMsg.sender_public_key)
+      : lastMsg.encrypted_message;
+    previewTime = new Date(lastMsg.created_at).toLocaleTimeString('ru-RU', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  return `<div class="chat-row" data-chat="${ch.id}" data-partner="${otherId}">
+            <img src="${u.photo}" class="chat-avatar">
+            <div class="chat-info">
+              <div class="chat-name">${u.name}</div>
+              <div class="chat-preview">${previewText || 'нет сообщений'}</div>
+            </div>
+            <div class="chat-time">${previewTime}</div>
+          </div>`;
+}));
 
   rows.unshift(`
     <button id="newChatBtn" style="
