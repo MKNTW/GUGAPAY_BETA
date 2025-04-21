@@ -3716,7 +3716,7 @@ function openNewChatModal() {
        border:none;border-radius:12px;font-weight:600;cursor:pointer;">
        Начать чат
     </button>
-  `,{cornerTopRadius:20});
+  `,{cornerTopRadius:0});
 
   document.getElementById('startChatBtn').onclick = async()=>{
     const partnerId = document.getElementById('partnerIdInput').value.trim();
@@ -3760,7 +3760,7 @@ async function openChatWindow(chatId, partnerId) {
       </div>
     </div>
   `, {
-    cornerTopRadius: 20,
+    cornerTopRadius: 0,
     // блок ввода НЕ должен скроллиться вместе с сообщениями
     hasVerticalScroll: false,
     // делаем модалку флекс‑контейнером
