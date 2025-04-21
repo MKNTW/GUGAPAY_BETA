@@ -3813,10 +3813,10 @@ function openNewChatModal() {
   };
 }
 
-// openChatWindow – v4 (UI стили + удаление предпросмотра)
-// • стили для поля ввода и кнопки отправки
-// • у предпросмотра фото/видео — кнопка × для удаления
-// • все входящие сразу помечаются прочитанными при отображении
+// openChatWindow – финальная версия (v4)
+// • стили поля ввода и кнопки отправки по ТЗ
+// • кропка удаления предпросмотра фото/видео
+// • мгновенная пометка прочитанных входящих
 /* global currentUserId, fetchUserCard, createModal, supabase, showNotification, decryptMessage, encryptMessage */
 
 async function openChatWindow(chatId, partnerId) {
@@ -3826,16 +3826,19 @@ async function openChatWindow(chatId, partnerId) {
   let box;
   const renderedIdSet = new Set();
 
+  // Автоскролл
   const scrollToBottom = (smooth = false) => requestAnimationFrame(() => {
     if (!box) return;
     box.scrollTo({ top: box.scrollHeight + 256, behavior: smooth ? 'smooth' : 'auto' });
   });
 
+  // Мониторинг загрузки медиа
   const monitorMedia = el => {
     el.querySelectorAll('img').forEach(img => img.addEventListener('load', () => scrollToBottom()));
     el.querySelectorAll('video').forEach(v => v.addEventListener('loadedmetadata', () => scrollToBottom()));
   };
 
+  // Рендер сообщения
   const renderMessage = (m, isLastFromMe = false) => {
     const side = m.sender_id === currentUserId ? 'out' : 'in';
     const text = m.encrypted_message && m.nonce && m.sender_public_key
@@ -3863,19 +3866,22 @@ async function openChatWindow(chatId, partnerId) {
     return bubble;
   };
 
+  // Создаем модалку
   createModal('chatModal', `
     <div class="chat-container" style="touch-action:manipulation;display:flex;flex-direction:column;height:100%;">
       <div class="chat-header" style="display:flex;align-items:center;gap:12px;">
         <img src="${partner.photo}" class="chat-avatar"/>
-        <div class="chat-title">${partner.name}<div style="font-size:12px;color:#999;margin-top:2px;">ID: ${partner.id}</div></div>
+        <div class="chat-title">${partner.name}
+          <div style="font-size:12px;color:#999;margin-top:2px;">ID: ${partner.id}</div>
+        </div>
       </div>
       <div id="chatMessages" class="chat-messages" style="flex:1 1 auto;overflow-y:auto;"></div>
-      <div class="chat-inputbar" id="chatInputBar" style="display:flex;flex-direction:column;gap:8px;padding:12px;border-top:1px solid #E6E6EB;background:#F8F9FB;">
+      <div id="chatInputBar" class="chat-inputbar" style="display:flex;flex-direction:column;gap:8px;padding:12px;border-top:1px solid #E6E6EB;background:#F8F9FB;">
         <div id="mediaPreview" style="display:none;position:relative;max-height:200px;overflow:hidden;border-radius:12px;">
           <button id="cancelPreviewBtn" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.5);border:none;color:#fff;border-radius:50%;width:24px;height:24px;cursor:pointer;">✖</button>
         </div>
         <div style="display:flex;gap:10px;align-items:center;width:100%;">
-          <input id="chatText" placeholder="Сообщение…" style="flex:1;background:#F8F9FB;border-radius:12px;padding:12px;display:flex;align-items:center;border:1px solid #E6E6EB;outline:none;" />
+          <input id="chatText" placeholder="Сообщение…" style="background:#F8F9FB;border-radius:12px;padding:12px;display:flex;align-items:center;border:1px solid #E6E6EB;flex:1;outline:none;" />
           <input type="file" id="mediaInput" accept="image/*,video/*" style="display:none;" />
           <button id="uploadMediaBtn" style="background:none;border:none;font-size:20px;cursor:pointer;">📎</button>
           <button id="chatSend" style="padding:12px 16px;background:#2F80ED;color:#fff;cursor:pointer;border-radius:12px;display:flex;align-items:center;border:1px solid #E6E6EB;">Отправить</button>
@@ -3895,8 +3901,13 @@ async function openChatWindow(chatId, partnerId) {
   document.getElementById('bottomBar').style.display = 'none';
   box = document.getElementById('chatMessages');
 
+  // Загрузка и обновление сообщений
   const loadMessages = async () => {
-    const { data: msgs, error } = await supabase.from('messages').select('*').eq('chat_id', chatId).order('created_at', { ascending: true });
+    const { data: msgs, error } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('chat_id', chatId)
+      .order('created_at', { ascending: true });
     if (error || !msgs) return;
 
     const newMsgs = msgs.filter(m => !renderedIdSet.has(m.id));
@@ -3909,34 +3920,47 @@ async function openChatWindow(chatId, partnerId) {
       }
       scrollToBottom(true);
 
-      // помечаем прочитанными сразу все входящие
+      // Мгновенная пометка прочитанных
       for (const m of newMsgs.filter(m => m.sender_id !== currentUserId)) {
         const updated = Array.isArray(m.read_by) ? [...m.read_by, currentUserId] : [currentUserId];
-        await supabase.from('messages').update({ read_by: updated }).eq('id', m.id);
+        await supabase
+          .from('messages')
+          .update({ read_by: updated })
+          .eq('id', m.id);
       }
     }
   };
 
   await loadMessages();
   refreshInterval = setInterval(loadMessages, 1000);
-  chatChannel = supabase.channel(`chat-${chatId}`).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` }, loadMessages).subscribe();
+  chatChannel = supabase
+    .channel(`chat-${chatId}`)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` }, loadMessages)
+    .subscribe();
 
+  // Инициализация элементов ввода
   const input = document.getElementById('chatText');
   const sendBtn = document.getElementById('chatSend');
   const mediaInput = document.getElementById('mediaInput');
   const uploadBtn = document.getElementById('uploadMediaBtn');
   const mediaPrev = document.getElementById('mediaPreview');
   const cancelBtn = document.getElementById('cancelPreviewBtn');
-  let fileSel;
+  let fileSel = null;
 
+  // Предпросмотр медиа
   const showPreview = file => {
     mediaPrev.innerHTML = '';
     if (file.type.startsWith('image/')) {
-      const img = document.createElement('img'); img.src = URL.createObjectURL(file);
-      img.style.cssText = 'width:100%;max-height:200px;object-fit:contain;'; mediaPrev.appendChild(img);
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(file);
+      img.style.cssText = 'width:100%;max-height:200px;object-fit:contain;';
+      mediaPrev.appendChild(img);
     } else if (file.type.startsWith('video/')) {
-      const vid = document.createElement('video'); vid.src = URL.createObjectURL(file);
-      vid.controls = true; vid.style.cssText = 'width:100%;max-height:200px;object-fit:contain;'; mediaPrev.appendChild(vid);
+      const vid = document.createElement('video');
+      vid.src = URL.createObjectURL(file);
+      vid.controls = true;
+      vid.style.cssText = 'width:100%;max-height:200px;object-fit:contain;';
+      mediaPrev.appendChild(vid);
     }
     fileSel = file;
     mediaPrev.style.display = 'block';
@@ -3946,16 +3970,42 @@ async function openChatWindow(chatId, partnerId) {
   uploadBtn.onclick = () => mediaInput.click();
   mediaInput.onchange = () => { const f = mediaInput.files[0]; if (f && f.type.match(/image|video/)) showPreview(f); else showNotification('Можно загрузить только фото или видео','error'); };
   document.querySelector('.chat-container').addEventListener('dragover', e => e.preventDefault());
-  document.querySelector('.chat-container').addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f && f.type.match(/image|video/)) showPreview(f); else showNotification('Можно загрузить только фото или видео','error'); });
+  document.querySelector('.chat-container').addEventListener('drop', e => {
+    e.preventDefault(); const f = e.dataTransfer.files[0];
+    if (f && f.type.match(/image|video/)) showPreview(f);
+    else showNotification('Можно загрузить только фото или видео','error');
+  });
 
+  // Отправка сообщения
   const sendMessage = async () => {
-    const txt = input.value.trim(); if (!txt && !fileSel) return showNotification('Введите сообщение или прикрепите файл','error');
+    const txt = input.value.trim();
+    if (!txt && !fileSel) return showNotification('Введите сообщение или прикрепите файл','error');
+
     const payload = { chat_id: chatId, sender_id: currentUserId };
-    if (txt) { if (!partner.pub) { const { data } = await supabase.from('users').select('public_key').eq('user_id', partnerId).single(); partner.pub = data?.public_key || ''; } partner.pub ? Object.assign(payload, encryptMessage(txt, partner.pub)) : payload.encrypted_message = txt; }
-    if (fileSel) { const ext = fileSel.name.split('.').pop(); const name = `${Date.now()}_${currentUserId}.${ext}`; const path = `chat_media/${chatId}/${name}`; const { error: up } = await supabase.storage.from('media').upload(path, fileSel); if (up) return showNotification('Ошибка загрузки файла','error'); const { data } = supabase.storage.from('media').getPublicUrl(path); payload.media_url = data.publicUrl; payload.media_type = fileSel.type.startsWith('image/') ? 'image' : 'video'; }
+    if (txt) {
+      if (!partner.pub) {
+        const { data } = await supabase.from('users').select('public_key').eq('user_id', partnerId).single();
+        partner.pub = data?.public_key || '';
+      }
+      if (partner.pub) Object.assign(payload, encryptMessage(txt, partner.pub)); else payload.encrypted_message = txt;
+    }
+    if (fileSel) {
+      const ext = fileSel.name.split('.').pop();
+      const name = `${Date.now()}_${currentUserId}.${ext}`;
+      const path = `chat_media/${chatId}/${name}`;
+      const { error: up } = await supabase.storage.from('media').upload(path, fileSel);
+      if (up) return showNotification('Ошибка загрузки файла','error');
+      const { data } = supabase.storage.from('media').getPublicUrl(path);
+      payload.media_url = data.publicUrl;
+      payload.media_type = fileSel.type.startsWith('image/') ? 'image' : 'video';
+    }
     const { error } = await supabase.from('messages').insert([payload]);
     if (error) return showNotification('Не удалось отправить сообщение','error');
-    input.value = ''; fileSel = null; mediaPrev.style.display = 'none'; mediaPrev.innerHTML = '';
+
+    input.value = '';
+    fileSel = null;
+    mediaPrev.style.display = 'none';
+    mediaPrev.innerHTML = '';
     scrollToBottom(true);
   };
 
