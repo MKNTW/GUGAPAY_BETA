@@ -3835,8 +3835,8 @@ async function openChatWindow(chatId, partnerId) {
 
   createModal('chatModal', `
     <div class="chat-container" style="touch-action: manipulation;">
-      <div class="chat-header" style="display: flex; align-items: center; gap: 12px;">
-        <button id="chatMoreBtn" style="background: #fff; border: none; font-size: 18px; color: #333; cursor: pointer; border-radius: 10px; padding: 6px 10px;">⋮</button>
+      <div class="chat-header" style="position: relative; display: flex; align-items: center; gap: 12px;">
+        <button id="chatMoreBtn" style="background: #fff; border: none; font-size: 18px; color: #333; cursor: pointer; border-radius: 10px; padding: 6px 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">⋮</button>
         <img src="${partner.photo}" class="chat-avatar">
         <div class="chat-title">
           ${partner.name}
@@ -3846,22 +3846,22 @@ async function openChatWindow(chatId, partnerId) {
       <div id="chatMessages" class="chat-messages" style="flex: 1 1 auto; overflow-y: auto;"></div>
       <div class="chat-inputbar" id="chatInputBar">
         ${
-          blockedByMe || blockedMe ? `
-            <div style="padding: 14px; text-align: center; color: #999; background: #f8f8f8; border-radius: 12px; margin: 10px; font-style: italic;">
-              ${blockedByMe ? 'Вы заблокировали этого пользователя' : 'Вы были заблокированы этим пользователем'}
-            </div>
-          ` : `
-            <div id="mediaPreview" style="display:none; margin-bottom: 10px; position: relative;">
-              <div id="mediaPreviewContent"></div>
-              <button id="cancelPreviewBtn" style="position:absolute; top:4px; right:4px; background:#fff; border:none; border-radius:50%; cursor:pointer;">✖</button>
-            </div>
-            <div style="display: flex; gap: 10px; align-items: center; width: 100%;">
-              <input id="chatText" class="chat-input" placeholder="Сообщение…" style="font-size: 16px; padding: 12px; width: 100%;" />
-              <input type="file" id="mediaInput" accept="image/*,video/*" style="display: none;" />
-              <button id="uploadMediaBtn" style="background: none; border: none; font-size: 20px; cursor: pointer;">📎</button>
-              <button id="chatSend" class="chat-sendBtn" style="padding: 12px 16px; background: #2F80ED; color: #fff; font-weight: 600; border: none; border-radius: 12px; cursor: pointer;">Отправить</button>
-            </div>
-          `
+          blockedByMe
+            ? `<div class="chat-block-label" style="padding: 14px; text-align: center; color: #999; background: #f8f8f8; border-radius: 12px; margin: 10px; font-style: italic;">Вы заблокировали этого пользователя</div>`
+            : blockedMe
+            ? `<div class="chat-block-label" style="padding: 14px; text-align: center; color: #999; background: #f8f8f8; border-radius: 12px; margin: 10px; font-style: italic;">Вы были заблокированы этим пользователем</div>`
+            : `
+              <div style="display: flex; gap: 10px; align-items: center; width: 100%;">
+                <input id="chatText" class="chat-input" placeholder="Сообщение…" style="ime-mode: disabled; font-size: 16px; padding: 12px; width: 100%;" inputmode="text" />
+                <input type="file" id="mediaInput" accept="image/*,video/*" style="display: none;" />
+                <button id="uploadMediaBtn" style="background: none; border: none; font-size: 20px; cursor: pointer;">📎</button>
+                <button id="chatSend" class="chat-sendBtn" style="padding: 12px 16px; background: #2F80ED; color: #fff; font-weight: 600; border: none; border-radius: 12px; cursor: pointer;">Отправить</button>
+              </div>
+              <div id="mediaPreview" style="display:none; margin-top:10px; position:relative;">
+                <div id="mediaPreviewContent"></div>
+                <button id="cancelPreviewBtn" style="position:absolute; top:4px; right:4px; background:#fff; border:none; border-radius:50%; cursor:pointer;">✖</button>
+              </div>
+            `
         }
       </div>
     </div>
@@ -3877,6 +3877,7 @@ async function openChatWindow(chatId, partnerId) {
   });
 
   document.getElementById('bottomBar').style.display = 'none';
+
   const box = document.getElementById('chatMessages');
 
   function renderMessage(m) {
@@ -3885,29 +3886,28 @@ async function openChatWindow(chatId, partnerId) {
     const text = isEncrypted
       ? decryptMessage(m.encrypted_message, m.nonce, m.sender_public_key)
       : m.encrypted_message;
-    const tm = new Date(m.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    const tm = new Date(m.created_at)
+      .toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
     const bubble = document.createElement('div');
     bubble.className = `bubble ${side}`;
 
-    let mediaPart = '';
     if (m.media_url) {
       if (m.media_type === 'image') {
-        mediaPart = `<img src="${m.media_url}" style="max-width: 240px; border-radius: 12px; display: block; margin-bottom: 6px;" />`;
+        bubble.innerHTML = `<img src="${m.media_url}" style="max-width: 200px; border-radius: 12px;" /><span class="time-label">${tm}</span>`;
       } else if (m.media_type === 'video') {
-        mediaPart = `<video src="${m.media_url}" controls style="max-width: 240px; border-radius: 12px; display: block; margin-bottom: 6px;"></video>`;
+        bubble.innerHTML = `<video src="${m.media_url}" controls style="max-width: 240px; border-radius: 12px;"></video><span class="time-label">${tm}</span>`;
       } else {
-        mediaPart = `<a href="${m.media_url}" target="_blank" style="display: block; margin-bottom: 6px;">📎 Файл</a>`;
+        bubble.innerHTML = `<a href="${m.media_url}" target="_blank">📎 Файл</a><span class="time-label">${tm}</span>`;
       }
+    } else {
+      bubble.innerHTML = `${text}<span class="time-label">${tm}</span>`;
     }
 
-    bubble.innerHTML = `
-      ${mediaPart}
-      ${text ? `<div>${text}</div>` : ''}
-      <span class="time-label">${tm}</span>
-    `;
     return bubble;
   }
+
+  let lastMessageId = null;
 
   async function loadMessages() {
     const { data: msgs } = await supabase
@@ -3918,15 +3918,22 @@ async function openChatWindow(chatId, partnerId) {
 
     if (!msgs) return;
 
+    const last = msgs[msgs.length - 1]?.id;
+    if (last === lastMessageId) return;
+
     box.innerHTML = '';
     msgs.forEach(m => box.appendChild(renderMessage(m)));
+    lastMessageId = last;
     box.scrollTop = box.scrollHeight;
 
     await fetch(`${API_URL}/chat/read`, {
       method: 'POST',
       credentials: 'include',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
-      body: JSON.stringify({ chatId, userId: currentUserId })
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': csrfToken
+      },
+      body: JSON.stringify({ chatId: chatId, userId: currentUserId })
     });
   }
 
@@ -3940,13 +3947,54 @@ async function openChatWindow(chatId, partnerId) {
       schema: 'public',
       table: 'messages',
       filter: `chat_id=eq.${chatId}`
-    }, () => loadMessages())
+    }, payload => {
+      loadMessages();
+    })
     .subscribe();
 
-  // Работа с медиа и отправкой
+  document.getElementById('chatMoreBtn').onclick = () => {
+    let content = '';
+
+    if (blockedByMe) {
+      content += `<button id="unblockBtn" class="chat-option-btn" style="padding: 12px; width: 100%; border: none; background: #27ae60; color: white; border-radius: 10px; margin-bottom: 10px;">🔓 Разблокировать</button>`;
+    } else {
+      content += `<button id="blockBtn" class="chat-option-btn" style="padding: 12px; width: 100%; border: none; background: #e74c3c; color: white; border-radius: 10px; margin-bottom: 10px;">🚫 Заблокировать</button>`;
+    }
+
+    content += `<button id="deleteBtn" class="chat-option-btn danger" style="padding: 12px; width: 100%; border: none; background: #7c7c7c; color: white; border-radius: 10px;">🗑 Удалить чат</button>`;
+
+    createModal('chatActionsModal', `<div style="padding:16px; margin-top: 30px;">${content}</div>`, {
+      cornerTopRadius: 0
+    });
+
+    document.getElementById('blockBtn')?.addEventListener('click', async () => {
+      await supabase.from('blocked_users').insert([{ blocker_id: currentUserId, blocked_id: partnerId }]);
+      showNotification('Пользователь заблокирован', 'success');
+      removeAllModals();
+      openChatWindow(chatId, partnerId);
+    });
+
+    document.getElementById('unblockBtn')?.addEventListener('click', async () => {
+      await supabase.from('blocked_users').delete()
+        .eq('blocker_id', currentUserId).eq('blocked_id', partnerId);
+      showNotification('Пользователь разблокирован', 'success');
+      removeAllModals();
+      openChatWindow(chatId, partnerId);
+    });
+
+    document.getElementById('deleteBtn')?.addEventListener('click', async () => {
+      if (!confirm('Удалить этот чат и все сообщения?')) return;
+      await supabase.from('messages').delete().eq('chat_id', chatId);
+      await supabase.from('chats').delete().eq('id', chatId);
+      showNotification('Чат удалён', 'success');
+      removeAllModals();
+      openChatListModal();
+    });
+  };
+
   if (!blockedByMe && !blockedMe) {
-    const input = document.getElementById('chatText');
     const sendBtn = document.getElementById('chatSend');
+    const input = document.getElementById('chatText');
     const mediaInput = document.getElementById('mediaInput');
     const uploadBtn = document.getElementById('uploadMediaBtn');
     const mediaPreview = document.getElementById('mediaPreview');
@@ -3966,14 +4014,14 @@ async function openChatWindow(chatId, partnerId) {
     };
 
     function showPreview(file) {
-      mediaContent.innerHTML = '';
       const isImage = file.type.startsWith('image/');
       const isVideo = file.type.startsWith('video/');
+      mediaContent.innerHTML = '';
 
       if (isImage) {
         const img = document.createElement('img');
         img.src = URL.createObjectURL(file);
-        img.style.maxWidth = '240px';
+        img.style.maxWidth = '200px';
         img.style.borderRadius = '12px';
         mediaContent.appendChild(img);
       } else if (isVideo) {
@@ -4009,9 +4057,7 @@ async function openChatWindow(chatId, partnerId) {
 
     sendBtn.onclick = async () => {
       const val = input.value.trim();
-      if (!val && !selectedFile) {
-        return showNotification('Введите сообщение или прикрепите файл', 'error');
-      }
+      if (!val && !selectedFile) return showNotification('Введите сообщение или выберите файл', 'error');
 
       try {
         let messagePayload = { chat_id: chatId, sender_id: currentUserId };
@@ -4027,7 +4073,8 @@ async function openChatWindow(chatId, partnerId) {
           }
 
           if (partner.pub) {
-            const { encrypted_message, nonce, sender_public_key } = encryptMessage(val, partner.pub);
+            const { encrypted_message, nonce, sender_public_key } =
+              encryptMessage(val, partner.pub);
             Object.assign(messagePayload, { encrypted_message, nonce, sender_public_key });
           } else {
             Object.assign(messagePayload, { encrypted_message: val });
@@ -4070,10 +4117,7 @@ async function openChatWindow(chatId, partnerId) {
           return showNotification('Не удалось отправить сообщение', 'error');
         }
 
-        if (!selectedFile) {
-          input.value = '';
-        }
-
+        input.value = '';
       } catch (err) {
         console.error('Ошибка при отправке:', err);
         showNotification('Ошибка. Подробнее в консоли.', 'error');
