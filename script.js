@@ -938,30 +938,31 @@ function createMainUI() {
     const actionContainer = document.createElement("div");
     actionContainer.className = "action-container";
     actionContainer.innerHTML = `
-      <button id="transferBtn" class="action-btn">
-        <div class="icon-wrap">
-          <img src="photo/81.png" class="action-icon"/>
-        </div>
-        <span>Перевести</span>
-      </button>
-      <button id="requestBtn" class="action-btn">
-        <div class="icon-wrap">
-          <img src="photo/82.png" class="action-icon"/>
-        </div>
-        <span>Запросить</span>
-      </button>
-      <button id="payQRBtn" class="action-btn">
-        <div class="icon-wrap">
-          <img src="photo/90.png" class="action-icon"/>
-        </div>
-        <span>Оплатить</span>
-      </button>
-      <button id="exchangeBtn" class="action-btn">
-        <div class="icon-wrap">
-          <img src="photo/71.png" class="action-icon">
-        <span>Обменять</span>
-      </button>
-    `;
+  <button id="transferBtn" class="action-btn">
+    <div class="icon-wrap">
+      <img src="photo/81.png" class="action-icon"/>
+    </div>
+    <span>Перевести</span>
+  </button>
+  <button id="requestBtn" class="action-btn">
+    <div class="icon-wrap">
+      <img src="photo/82.png" class="action-icon"/>
+    </div>
+    <span>Запросить</span>
+  </button>
+  <button id="payQRBtn" class="action-btn">
+    <div class="icon-wrap">
+      <img src="photo/90.png" class="action-icon"/>
+    </div>
+    <span>Оплатить</span>
+  </button>
+  <button id="exchangeBtn" class="action-btn">
+    <div class="icon-wrap">
+      <img src="photo/71.png" class="action-icon"/>
+    </div>
+    <span>Обменять</span>
+  </button>
+`;
     headerEl.appendChild(actionContainer);
     // Button event handlers
     actionContainer.querySelector("#transferBtn").addEventListener("click", () => {
@@ -1055,11 +1056,10 @@ if (!document.getElementById("bottomBar")) {
     openHistoryModal();
   });
 
-  /* ——— кнопка «Обменять» ——— */
-  bottomBar.querySelector("#exchangeBtn").addEventListener("click", () => {
-    removeAllModals();
-    openExchangeModal();
-  });
+  actionContainer.querySelector("#exchangeBtn").addEventListener("click", () => {
+  removeAllModals();
+  openExchangeModal(); // открывает окно обмена
+});
 
   /* ——— кнопка «Чаты» ——— */
   bottomBar.querySelector("#chatBtn").addEventListener("click", () => {
