@@ -956,6 +956,11 @@ function createMainUI() {
         </div>
         <span>Оплатить</span>
       </button>
+      <button id="exchangeBtn" class="action-btn">
+        <div class="icon-wrap">
+          <img src="photo/71.png" class="action-icon">
+        <span>Обменять</span>
+      </button>
     `;
     headerEl.appendChild(actionContainer);
     // Button event handlers
@@ -1034,11 +1039,6 @@ if (!document.getElementById("bottomBar")) {
     <button id="chatBtn" class="nav-btn">
       <img src="photo/101.svg" class="nav-icon1">
       <span>Чаты</span>
-    </button>
-
-    <button id="exchangeBtn" class="nav-btn">
-      <img src="photo/71.png" class="nav-icon">
-      <span>Обменять</span>
     </button>
   `;
 
