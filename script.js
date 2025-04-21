@@ -3814,7 +3814,6 @@ function openNewChatModal() {
 }
 
 async function openChatWindow(chatId, partnerId) {
-  // Вставляем глобальные стили, если ещё не вставлены
   if (!document.getElementById('chatGlobalStyles')) {
     const style = document.createElement('style');
     style.id = 'chatGlobalStyles';
@@ -3822,7 +3821,8 @@ async function openChatWindow(chatId, partnerId) {
       html, body {
         margin: 0; padding: 0;
         height: 100%; width: 100%;
-        overflow: hidden;
+        overflow-x: hidden;
+        overflow-y: hidden;
         touch-action: manipulation;
         -webkit-text-size-adjust: 100%;
       }
@@ -3836,6 +3836,7 @@ async function openChatWindow(chatId, partnerId) {
         width: 100vw;
         box-sizing: border-box;
         overflow: hidden;
+        position: relative;
       }
       .chat-messages {
         flex: 1 1 auto;
@@ -3844,7 +3845,7 @@ async function openChatWindow(chatId, partnerId) {
         box-sizing: border-box;
       }
       .chat-inputbar {
-        position: fixed;
+        position: absolute;
         left: 0; right: 0; bottom: 0;
         display: flex;
         gap: 8px;
@@ -3854,6 +3855,7 @@ async function openChatWindow(chatId, partnerId) {
         border-top: 1px solid #E6E6EB;
         box-shadow: 0 -2px 6px rgba(0,0,0,0.06);
         z-index: 10;
+        box-sizing: border-box;
       }
       .chat-inputbar input[type="text"] {
         flex: 1;
@@ -3879,6 +3881,7 @@ async function openChatWindow(chatId, partnerId) {
         padding: 8px 12px;
         margin-bottom: 8px;
         box-sizing: border-box;
+        word-wrap: break-word;
       }
       .bubble.in {
         align-self: flex-start;
@@ -3911,6 +3914,17 @@ async function openChatWindow(chatId, partnerId) {
     `;
     document.head.appendChild(style);
   }
+
+  // Scroll adjustment to keep last message visible
+  const adjustScrollPadding = () => {
+    const inputBar = document.querySelector('.chat-inputbar');
+    const messages = document.querySelector('.chat-messages');
+    if (inputBar && messages) {
+      messages.style.paddingBottom = `${inputBar.offsetHeight + 16}px`;
+    }
+  };
+  window.addEventListener('resize', adjustScrollPadding);
+  window.addEventListener('orientationchange', adjustScrollPadding);
   
   // 2) Обычная логика инициализации и рендера (как раньше)…
   const partner = await fetchUserCard(partnerId);
