@@ -3736,12 +3736,12 @@ async function openChatListModal() {
       <img src="${u.photo}" class="chat-avatar">
       ${unreadCount > 0 ? `<div class="unread-dot">${unreadCount}</div>` : ''}
     </div>
-    <div class="chat-info" style="display: flex; flex-direction: column; justify-content: center;">
+    <div class="chat-info" style="display: flex; flex-direction: column; justify-content: center; min-width: 0;">
   <div class="chat-name" style="font-weight: 500; line-height: 1.2;">
     ${u.name}
     <div style="font-size:12px;color:#999;">ID: ${u.id}</div>
   </div>
-  <div class="chat-preview" style="font-size: 13px; color: #777; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+  <div class="chat-preview" style="font-size: 13px; color: #777; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;">
     ${previewText || 'нет сообщений'}
   </div>
 </div>
