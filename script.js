@@ -3813,13 +3813,22 @@ function openNewChatModal() {
   };
 }
 
-// openChatWindow – финальная версия (v4)
-// • стили поля ввода и кнопки отправки по ТЗ
-// • кропка удаления предпросмотра фото/видео
-// • мгновенная пометка прочитанных входящих
+// openChatWindow – финальная версия (v7)
+// • обновлено meta viewport для блокировки зума на мобильных
+// • стили и функционал без горизонтального скролла и адаптивный input-блок
+// • предпросмотр файлов с кнопкой удаления и пометка прочитанных
+
 /* global currentUserId, fetchUserCard, createModal, supabase, showNotification, decryptMessage, encryptMessage */
 
 async function openChatWindow(chatId, partnerId) {
+  // Добавляем meta viewport для отключения зума и фиксирования масштаба на мобильных
+  if (!document.querySelector('meta[name="viewport"]')) {
+    const meta = document.createElement('meta');
+    meta.name = 'viewport';
+    meta.content = 'width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no';
+    document.head.appendChild(meta);
+  }
+
   const partner = await fetchUserCard(partnerId);
   let chatChannel;
   let refreshInterval;
@@ -3827,18 +3836,19 @@ async function openChatWindow(chatId, partnerId) {
   const renderedIdSet = new Set();
 
   // Автоскролл
-  const scrollToBottom = (smooth = false) => requestAnimationFrame(() => {
-    if (!box) return;
-    box.scrollTo({ top: box.scrollHeight + 256, behavior: smooth ? 'smooth' : 'auto' });
-  });
+  const scrollToBottom = (smooth = false) =>
+    requestAnimationFrame(() => {
+      if (!box) return;
+      box.scrollTo({ top: box.scrollHeight + 256, behavior: smooth ? 'smooth' : 'auto' });
+    });
 
-  // Мониторинг загрузки медиа
+  // Мониторинг загрузки медиа для корректного скролла
   const monitorMedia = el => {
     el.querySelectorAll('img').forEach(img => img.addEventListener('load', () => scrollToBottom()));
     el.querySelectorAll('video').forEach(v => v.addEventListener('loadedmetadata', () => scrollToBottom()));
   };
 
-  // Рендер сообщения
+  // Рендер одного сообщения
   const renderMessage = (m, isLastFromMe = false) => {
     const side = m.sender_id === currentUserId ? 'out' : 'in';
     const text = m.encrypted_message && m.nonce && m.sender_public_key
@@ -3849,9 +3859,9 @@ async function openChatWindow(chatId, partnerId) {
     let media = '';
     if (m.media_url) {
       media = m.media_type === 'image'
-        ? `<img src="${m.media_url}" style="max-width:240px;border-radius:12px;display:block;margin-bottom:6px;"/>`
+        ? `<img src="${m.media_url}" style="max-width:100%;border-radius:12px;display:block;margin-bottom:6px;"/>`
         : m.media_type === 'video'
-          ? `<video src="${m.media_url}" controls preload="metadata" style="max-width:240px;border-radius:12px;display:block;margin-bottom:6px;"></video>`
+          ? `<video src="${m.media_url}" controls preload="metadata" style="max-width:100%;border-radius:12px;display:block;margin-bottom:6px;"></video>`
           : `<a href="${m.media_url}" target="_blank" style="display:block;margin-bottom:6px;">📎 Файл</a>`;
     }
 
@@ -3861,30 +3871,32 @@ async function openChatWindow(chatId, partnerId) {
 
     const bubble = document.createElement('div');
     bubble.className = `bubble ${side}`;
+    bubble.style.maxWidth = '85%'; // для адаптивности без горизонтального скролла
     bubble.innerHTML = `${media}${text ? `<div>${text}</div>` : ''}<span class="time-label">${tm}${status}</span>`;
     monitorMedia(bubble);
     return bubble;
   };
 
-  // Создаем модалку
+  // Создание модального окна чата
   createModal('chatModal', `
-    <div class="chat-container" style="touch-action:manipulation;display:flex;flex-direction:column;height:100%;">
-      <div class="chat-header" style="display:flex;align-items:center;gap:12px;">
-        <img src="${partner.photo}" class="chat-avatar"/>
-        <div class="chat-title">${partner.name}
+    <div class="chat-container" style="touch-action:manipulation;display:flex;flex-direction:column;height:100vh;overflow-x:hidden;width:100vw;box-sizing:border-box;-webkit-text-size-adjust:100%;">
+      <div class="chat-header" style="display:flex;align-items:center;gap:12px;padding:12px;border-bottom:1px solid #E6E6EB;">
+        <img src="${partner.photo}" class="chat-avatar" style="width:40px;height:40px;border-radius:50%;object-fit:cover;"/>
+        <div class="chat-title" style="font-size:16px;font-weight:500;">
+          ${partner.name}
           <div style="font-size:12px;color:#999;margin-top:2px;">ID: ${partner.id}</div>
         </div>
       </div>
-      <div id="chatMessages" class="chat-messages" style="flex:1 1 auto;overflow-y:auto;"></div>
-      <div id="chatInputBar" class="chat-inputbar" style="display:flex;flex-direction:column;gap:8px;padding:12px;border-top:1px solid #E6E6EB;">
-        <div id="mediaPreview" style="display:none;position:relative;max-height:200px;overflow:hidden;border-radius:12px;">
+      <div id="chatMessages" class="chat-messages" style="flex:1 1 auto;overflow-y:auto;padding:12px;box-sizing:border-box;"></div>
+      <div id="chatInputBar" class="chat-inputbar" style="display:flex;flex-direction:column;gap:8px;padding:12px;border-top:1px solid #E6E6EB;background:#F8F9FB;width:100%;box-sizing:border-box;">
+        <div id="mediaPreview" style="display:none;position:relative;max-height:200px;overflow:hidden;border-radius:12px;width:100%;">
           <button id="cancelPreviewBtn" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.5);border:none;color:#fff;border-radius:50%;width:24px;height:24px;cursor:pointer;">✖</button>
         </div>
         <div style="display:flex;gap:10px;align-items:center;width:100%;">
-          <input id="chatText" placeholder="Сообщение…" style="background:#F8F9FB;border-radius:12px;padding:12px;display:flex;align-items:center;border:1px solid #E6E6EB;flex:1;outline:none;" />
+          <input id="chatText" placeholder="Сообщение…" style="flex:1;background:#F8F9FB;border-radius:12px;padding:12px;display:flex;align-items:center;border:1px solid #E6E6EB;font-size:16px;outline:none;width:100%;box-sizing:border-box;" />
           <input type="file" id="mediaInput" accept="image/*,video/*" style="display:none;" />
           <button id="uploadMediaBtn" style="background:none;border:none;font-size:20px;cursor:pointer;">📎</button>
-          <button id="chatSend" style="padding:12px 16px;background:#2F80ED;color:#fff;cursor:pointer;border-radius:12px;display:flex;align-items:center;border:1px solid #E6E6EB;">Отправить</button>
+          <button id="chatSend" style="padding:12px 16px;background:#2F80ED;color:#fff;cursor:pointer;border-radius:12px;display:flex;align-items:center;border:1px solid #E6E6EB;font-size:16px;">Отправить</button>
         </div>
       </div>
     </div>
@@ -3914,31 +3926,31 @@ async function openChatWindow(chatId, partnerId) {
     if (newMsgs.length) {
       for (const m of newMsgs) {
         const idx = msgs.findIndex(x => x.id === m.id);
-        const isLastFromMe = m.sender_id === currentUserId && !msgs.slice(idx+1).some(n => n.sender_id === currentUserId);
+        const isLastFromMe =
+          m.sender_id === currentUserId &&
+          !msgs.slice(idx + 1).some(n => n.sender_id === currentUserId);
         box.appendChild(renderMessage(m, isLastFromMe));
         renderedIdSet.add(m.id);
       }
       scrollToBottom(true);
 
-      // Мгновенная пометка прочитанных
+      // Мгновенная пометка прочитанных входящих
       for (const m of newMsgs.filter(m => m.sender_id !== currentUserId)) {
-        const updated = Array.isArray(m.read_by) ? [...m.read_by, currentUserId] : [currentUserId];
-        await supabase
-          .from('messages')
-          .update({ read_by: updated })
-          .eq('id', m.id);
+        const updated = Array.isArray(m.read_by)
+          ? [...m.read_by, currentUserId]
+          : [currentUserId];
+        await supabase.from('messages').update({ read_by: updated }).eq('id', m.id);
       }
     }
   };
 
   await loadMessages();
   refreshInterval = setInterval(loadMessages, 1000);
-  chatChannel = supabase
-    .channel(`chat-${chatId}`)
+  chatChannel = supabase.channel(`chat-${chatId}`)
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` }, loadMessages)
     .subscribe();
 
-  // Инициализация элементов ввода
+  // Элементы ввода и предпросмотра
   const input = document.getElementById('chatText');
   const sendBtn = document.getElementById('chatSend');
   const mediaInput = document.getElementById('mediaInput');
@@ -3947,7 +3959,6 @@ async function openChatWindow(chatId, partnerId) {
   const cancelBtn = document.getElementById('cancelPreviewBtn');
   let fileSel = null;
 
-  // Предпросмотр медиа
   const showPreview = file => {
     mediaPrev.innerHTML = '';
     if (file.type.startsWith('image/')) {
@@ -3966,20 +3977,29 @@ async function openChatWindow(chatId, partnerId) {
     mediaPrev.style.display = 'block';
   };
 
-  cancelBtn.onclick = () => { fileSel = null; mediaPrev.style.display = 'none'; mediaPrev.innerHTML = ''; };
+  cancelBtn.onclick = () => {
+    fileSel = null;
+    mediaPrev.style.display = 'none';
+    mediaPrev.innerHTML = '';
+  };
   uploadBtn.onclick = () => mediaInput.click();
-  mediaInput.onchange = () => { const f = mediaInput.files[0]; if (f && f.type.match(/image|video/)) showPreview(f); else showNotification('Можно загрузить только фото или видео','error'); };
+  mediaInput.onchange = () => {
+    const f = mediaInput.files[0];
+    if (f && f.type.match(/image|video/)) showPreview(f);
+    else showNotification('Можно загрузить только фото или видео', 'error');
+  };
   document.querySelector('.chat-container').addEventListener('dragover', e => e.preventDefault());
   document.querySelector('.chat-container').addEventListener('drop', e => {
-    e.preventDefault(); const f = e.dataTransfer.files[0];
+    e.preventDefault();
+    const f = e.dataTransfer.files[0];
     if (f && f.type.match(/image|video/)) showPreview(f);
-    else showNotification('Можно загрузить только фото или видео','error');
+    else showNotification('Можно загрузить только фото или видео', 'error');
   });
 
   // Отправка сообщения
   const sendMessage = async () => {
     const txt = input.value.trim();
-    if (!txt && !fileSel) return showNotification('Введите сообщение или прикрепите файл','error');
+    if (!txt && !fileSel) return showNotification('Введите сообщение или прикрепите файл', 'error');
 
     const payload = { chat_id: chatId, sender_id: currentUserId };
     if (txt) {
@@ -3987,21 +4007,24 @@ async function openChatWindow(chatId, partnerId) {
         const { data } = await supabase.from('users').select('public_key').eq('user_id', partnerId).single();
         partner.pub = data?.public_key || '';
       }
-      if (partner.pub) Object.assign(payload, encryptMessage(txt, partner.pub)); else payload.encrypted_message = txt;
+      partner.pub
+        ? Object.assign(payload, encryptMessage(txt, partner.pub))
+        : (payload.encrypted_message = txt);
     }
     if (fileSel) {
       const ext = fileSel.name.split('.').pop();
       const name = `${Date.now()}_${currentUserId}.${ext}`;
       const path = `chat_media/${chatId}/${name}`;
       const { error: up } = await supabase.storage.from('media').upload(path, fileSel);
-      if (up) return showNotification('Ошибка загрузки файла','error');
+      if (up) return showNotification('Ошибка загрузки файла', 'error');
       const { data } = supabase.storage.from('media').getPublicUrl(path);
       payload.media_url = data.publicUrl;
       payload.media_type = fileSel.type.startsWith('image/') ? 'image' : 'video';
     }
     const { error } = await supabase.from('messages').insert([payload]);
-    if (error) return showNotification('Не удалось отправить сообщение','error');
+    if (error) return showNotification('Не удалось отправить сообщение', 'error');
 
+    // Очистка формы и предпросмотра
     input.value = '';
     fileSel = null;
     mediaPrev.style.display = 'none';
@@ -4010,7 +4033,12 @@ async function openChatWindow(chatId, partnerId) {
   };
 
   sendBtn.addEventListener('click', sendMessage);
-  input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); sendMessage(); } });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
 }
 
 /* ========= 6.  Вызвать ensureKeyPair сразу после успешного логина ========= */
