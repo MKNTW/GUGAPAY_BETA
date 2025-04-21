@@ -3814,6 +3814,7 @@ function openNewChatModal() {
 }
 
 /* ========= 5.  Окно переписки ========== */
+// Обновлённый openChatWindow с реакциями и боковым меню, без модалок и с мгновенным отображением
 async function openChatWindow(chatId, partnerId) {
   const partner = await fetchUserCard(partnerId);
   let chatChannel = null;
@@ -3834,28 +3835,35 @@ async function openChatWindow(chatId, partnerId) {
     .maybeSingle();
 
   createModal('chatModal', `
-    <div class="chat-container" style="touch-action: manipulation;">
-      <div class="chat-header" style="position: relative; display: flex; align-items: center; gap: 12px;">
-        <button id="chatMoreBtn" style="
-          background: #fff; border: none; font-size: 18px;
-          color: #333; cursor: pointer; border-radius: 10px;
-          padding: 6px 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">⋮</button>
-        <img src="${partner.photo}" class="chat-avatar">
-        <div class="chat-title">
-          ${partner.name}
-          <div style="font-size:12px;color:#999;margin-top:2px;">ID: ${partner.id}</div>
+    <div class="chat-container">
+      <div class="chat-header" style="display: flex; align-items: center; justify-content: space-between; padding: 12px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <button id="chatMoreBtn" style="background: none; border: none; font-size: 18px; cursor: pointer;">⋮</button>
+          <img src="${partner.photo}" class="chat-avatar">
+          <div>
+            <div class="chat-title">${partner.name}</div>
+            <div style="font-size:12px;color:#999;">ID: ${partner.id}</div>
+          </div>
+        </div>
+        <div id="chatActionsMenu" style="display:none;flex-direction:column;gap:8px;position:absolute;top:52px;left:12px;background:#fff;padding:10px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.1);z-index:1000;">
+          ${blockedByMe
+            ? `<button id="unblockBtn" style="padding:8px;background:#27ae60;color:#fff;border:none;border-radius:8px;">🔓 Разблокировать</button>`
+            : `<button id="blockBtn" style="padding:8px;background:#e74c3c;color:#fff;border:none;border-radius:8px;">🚫 Заблокировать</button>`}
+          <button id="deleteBtn" style="padding:8px;background:#7c7c7c;color:#fff;border:none;border-radius:8px;">🗑 Удалить чат</button>
         </div>
       </div>
       <div id="chatMessages" class="chat-messages" style="flex: 1 1 auto; overflow-y: auto;"></div>
       <div class="chat-inputbar" id="chatInputBar">
         ${
           blockedByMe
-            ? `<div class="chat-block-label" style="padding: 14px; text-align: center; color: #999; background: #f8f8f8; border-radius: 12px; margin: 10px; font-style: italic;">Вы заблокировали этого пользователя</div>`
+            ? `<div style="padding:14px;text-align:center;color:#999;background:#f8f8f8;border-radius:12px;margin:10px;font-style:italic;">Вы заблокировали этого пользователя</div>`
             : blockedMe
-            ? `<div class="chat-block-label" style="padding: 14px; text-align: center; color: #999; background: #f8f8f8; border-radius: 12px; margin: 10px; font-style: italic;">Вы были заблокированы этим пользователем</div>`
+            ? `<div style="padding:14px;text-align:center;color:#999;background:#f8f8f8;border-radius:12px;margin:10px;font-style:italic;">Вы были заблокированы этим пользователем</div>`
             : `
-              <input id="chatText" class="chat-input" placeholder="Сообщение…" style="ime-mode: disabled; font-size: 16px; padding: 12px; width: 100%; max-zoom: 1; touch-action: manipulation;" inputmode="text" />
-              <button id="chatSend" class="chat-sendBtn" style="margin-left: 10px; padding: 12px 16px; background: #2F80ED; color: #fff; font-weight: 600; border: none; border-radius: 12px; cursor: pointer;">Отправить</button>`
+              <div style="display: flex; padding: 10px; gap: 8px;">
+                <input id="chatText" class="chat-input" placeholder="Сообщение…" style="font-size: 16px; padding: 12px; flex:1; border-radius: 12px; border: 1px solid #ccc;" inputmode="text" />
+                <button id="chatSend" class="chat-sendBtn" style="padding: 12px 16px; background: #2F80ED; color: #fff; font-weight: 600; border: none; border-radius: 12px; cursor: pointer;">Отправить</button>
+              </div>`
         }
       </div>
     </div>
@@ -3872,6 +3880,34 @@ async function openChatWindow(chatId, partnerId) {
 
   document.getElementById('bottomBar').style.display = 'none';
 
+  document.getElementById('chatMoreBtn')?.addEventListener('click', () => {
+    const menu = document.getElementById('chatActionsMenu');
+    menu.style.display = menu.style.display === 'none' ? 'flex' : 'none';
+  });
+
+  document.getElementById('blockBtn')?.addEventListener('click', async () => {
+    await supabase.from('blocked_users').insert([{ blocker_id: currentUserId, blocked_id: partnerId }]);
+    showNotification('Пользователь заблокирован', 'success');
+    openChatWindow(chatId, partnerId);
+  });
+
+  document.getElementById('unblockBtn')?.addEventListener('click', async () => {
+    await supabase.from('blocked_users')
+      .delete()
+      .eq('blocker_id', currentUserId)
+      .eq('blocked_id', partnerId);
+    showNotification('Пользователь разблокирован', 'success');
+    openChatWindow(chatId, partnerId);
+  });
+
+  document.getElementById('deleteBtn')?.addEventListener('click', async () => {
+    await supabase.from('messages').delete().eq('chat_id', chatId);
+    await supabase.from('chats').delete().eq('id', chatId);
+    showNotification('Чат удалён', 'success');
+    removeAllModals();
+    openChatListModal();
+  });
+
   const box = document.getElementById('chatMessages');
 
   async function renderMessage(m) {
@@ -3880,44 +3916,32 @@ async function openChatWindow(chatId, partnerId) {
     const text = isEncrypted
       ? decryptMessage(m.encrypted_message, m.nonce, m.sender_public_key)
       : m.encrypted_message;
-    const tm = new Date(m.created_at)
-      .toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    const tm = new Date(m.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
     const bubble = document.createElement('div');
     bubble.className = `bubble ${side}`;
     bubble.innerHTML = `
-      <div class="bubble-content">
-        ${text}
-        <span class="time-label">${tm}</span>
-      </div>
+      <div class="bubble-content">${text}<span class="time-label">${tm}</span></div>
+      <div class="reaction-inline" style="display:flex;gap:4px;margin-top:4px;font-size:14px;"></div>
     `;
     bubble.style.position = 'relative';
 
-    bubble.addEventListener('click', () => {
-      const pickerHTML = `
-        <div style="display:flex;gap:8px;justify-content:center;">
-          <span class="emoji">❤️</span>
-          <span class="emoji">😂</span>
-          <span class="emoji">🔥</span>
-          <span class="emoji">😢</span>
-          <span class="emoji">👍</span>
-        </div>
-      `;
-
-      createModal('reactionPickerModal', pickerHTML, { cornerTopRadius: 14 });
-
-      document.querySelectorAll('.emoji').forEach(span => {
-        span.addEventListener('click', async () => {
-          const emoji = span.textContent;
-          await supabase.from('message_reactions').insert({
-            message_id: m.id,
-            user_id: currentUserId,
-            emoji
-          });
+    bubble.addEventListener('click', async () => {
+      const picker = document.createElement('div');
+      picker.className = 'reaction-picker';
+      picker.style = 'display:flex;gap:6px;margin-top:6px;background:#fff;border:1px solid #ccc;border-radius:8px;padding:6px;';
+      ['😍', '😂', '🔥', '😢', '👍'].forEach(e => {
+        const span = document.createElement('span');
+        span.textContent = e;
+        span.style.cursor = 'pointer';
+        span.onclick = async () => {
+          await supabase.from('message_reactions').insert({ message_id: m.id, user_id: currentUserId, emoji: e });
           showNotification('Реакция добавлена', 'success');
-          removeAllModals();
-        });
+          await loadMessages();
+        };
+        picker.appendChild(span);
       });
+      bubble.appendChild(picker);
     });
 
     const { data: reactions } = await supabase
@@ -3926,24 +3950,15 @@ async function openChatWindow(chatId, partnerId) {
       .eq('message_id', m.id);
 
     if (reactions?.length) {
+      const reactionBlock = bubble.querySelector('.reaction-inline');
       const counts = {};
-      reactions.forEach(r => {
-        counts[r.emoji] = (counts[r.emoji] || 0) + 1;
-      });
-
-      const reactionBlock = document.createElement('div');
-      reactionBlock.className = 'reaction-display';
-      reactionBlock.style.cssText = 'margin-top: 4px; font-size: 14px; opacity: 0.8;';
+      reactions.forEach(r => counts[r.emoji] = (counts[r.emoji] || 0) + 1);
       reactionBlock.innerHTML = Object.entries(counts)
         .map(([emoji, count]) => `${emoji} ${count}`).join('  ');
-
-      bubble.appendChild(reactionBlock);
     }
 
     return bubble;
   }
-
-  let lastMessageId = null;
 
   async function loadMessages() {
     const { data: msgs } = await supabase
@@ -3952,17 +3967,10 @@ async function openChatWindow(chatId, partnerId) {
       .eq('chat_id', chatId)
       .order('created_at', { ascending: true });
 
-    if (!msgs) return;
-
-    const last = msgs[msgs.length - 1]?.id;
-    if (last === lastMessageId) return;
-
     box.innerHTML = '';
     for (const m of msgs) {
       box.appendChild(await renderMessage(m));
     }
-
-    lastMessageId = last;
     box.scrollTop = box.scrollHeight;
 
     await fetch(`${API_URL}/chat/read`, {
@@ -3978,66 +3986,6 @@ async function openChatWindow(chatId, partnerId) {
 
   await loadMessages();
   refreshInterval = setInterval(loadMessages, 1000);
-
-  chatChannel = supabase
-    .channel(`chat-${chatId}`)
-    .on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'messages',
-      filter: `chat_id=eq.${chatId}`
-    }, payload => {
-      loadMessages();
-    })
-    .subscribe();
-
-  document.getElementById('chatMoreBtn').onclick = () => {
-    let content = '';
-
-    if (blockedByMe) {
-      content += `<button id="unblockBtn" class="chat-option-btn" style="padding: 12px; width: 100%; border: none; background: #27ae60; color: white; border-radius: 10px; margin-bottom: 10px;">🔓 Разблокировать</button>`;
-    } else {
-      content += `<button id="blockBtn" class="chat-option-btn" style="padding: 12px; width: 100%; border: none; background: #e74c3c; color: white; border-radius: 10px; margin-bottom: 10px;">🚫 Заблокировать</button>`;
-    }
-
-    content += `
-      <button id="deleteBtn" class="chat-option-btn danger" style="padding: 12px; width: 100%; border: none; background: #7c7c7c; color: white; border-radius: 10px;">🗑 Удалить чат</button>
-    `;
-
-    createModal('chatActionsModal', `<div style="padding:16px; margin-top: 30px;">${content}</div>`, {
-      cornerTopRadius: 0
-    });
-
-    document.getElementById('blockBtn')?.addEventListener('click', async () => {
-      await supabase.from('blocked_users').insert([
-        { blocker_id: currentUserId, blocked_id: partnerId }
-      ]);
-      showNotification('Пользователь заблокирован', 'success');
-      removeAllModals();
-      openChatWindow(chatId, partnerId);
-    });
-
-    document.getElementById('unblockBtn')?.addEventListener('click', async () => {
-      await supabase.from('blocked_users')
-        .delete()
-        .eq('blocker_id', currentUserId)
-        .eq('blocked_id', partnerId);
-      showNotification('Пользователь разблокирован', 'success');
-      removeAllModals();
-      openChatWindow(chatId, partnerId);
-    });
-
-    document.getElementById('deleteBtn')?.addEventListener('click', async () => {
-      if (!confirm('Удалить этот чат и все сообщения?')) return;
-
-      await supabase.from('messages').delete().eq('chat_id', chatId);
-      await supabase.from('chats').delete().eq('id', chatId);
-
-      showNotification('Чат удалён', 'success');
-      removeAllModals();
-      openChatListModal();
-    });
-  };
 
   if (!blockedByMe && !blockedMe) {
     const sendBtn = document.getElementById('chatSend');
@@ -4057,30 +4005,22 @@ async function openChatWindow(chatId, partnerId) {
           partner.pub = data?.public_key || '';
         }
 
-        let payload = { chat_id: chatId, sender_id: currentUserId };
-
-        if (partner.pub) {
-          const { encrypted_message, nonce, sender_public_key } =
-            encryptMessage(val, partner.pub);
-          payload = { ...payload, encrypted_message, nonce, sender_public_key };
-        } else {
-          payload = { ...payload, encrypted_message: val };
-        }
+        const payload = partner.pub
+          ? { ...encryptMessage(val, partner.pub), chat_id: chatId, sender_id: currentUserId }
+          : { chat_id: chatId, sender_id: currentUserId, encrypted_message: val };
 
         const { error } = await supabase.from('messages').insert([payload]);
-        if (error) {
-          console.error('Ошибка при отправке:', error);
-          return showNotification('Не удалось отправить сообщение', 'error');
-        }
+        if (error) return showNotification('Не удалось отправить сообщение', 'error');
 
         input.value = '';
+        await loadMessages();
       } catch (err) {
         console.error('Ошибка при отправке:', err);
-        showNotification('Ошибка. Подробнее в консоли.', 'error');
+        showNotification('Ошибка при отправке', 'error');
       }
     };
 
-    document.getElementById('chatText').addEventListener('keydown', e => {
+    input.addEventListener('keydown', e => {
       if (e.key === 'Enter') {
         e.preventDefault();
         sendBtn.click();
