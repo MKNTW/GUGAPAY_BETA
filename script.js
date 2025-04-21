@@ -3818,6 +3818,7 @@ async function openChatWindow(chatId, partnerId) {
   const partner = await fetchUserCard(partnerId);
   let chatChannel = null;
   let refreshInterval = null;
+  let lastRenderedMessageIds = [];
 
   const { data: blockedByMe } = await supabase
     .from('blocked_users')
@@ -3851,8 +3852,8 @@ async function openChatWindow(chatId, partnerId) {
               ${blockedByMe ? 'Вы заблокировали этого пользователя' : 'Вы были заблокированы этим пользователем'}
             </div>
           ` : `
-            <div id="mediaPreview" style="display:none; margin-bottom: 10px; position: relative;">
-              <div id="mediaPreviewContent"></div>
+            <div id="mediaPreview" style="display:none; margin-bottom: 10px; position: relative; max-height: 200px; overflow: hidden;">
+              <div id="mediaPreviewContent" style="max-height: 200px;"></div>
               <button id="cancelPreviewBtn" style="position:absolute; top:4px; right:4px; background:#fff; border:none; border-radius:50%; cursor:pointer;">✖</button>
             </div>
             <div style="display: flex; gap: 10px; align-items: center; width: 100%;">
@@ -3895,7 +3896,7 @@ async function openChatWindow(chatId, partnerId) {
       if (m.media_type === 'image') {
         mediaPart = `<img src="${m.media_url}" style="max-width: 240px; border-radius: 12px; display: block; margin-bottom: 6px;" />`;
       } else if (m.media_type === 'video') {
-        mediaPart = `<video src="${m.media_url}" controls style="max-width: 240px; border-radius: 12px; display: block; margin-bottom: 6px;"></video>`;
+        mediaPart = `<video src="${m.media_url}" controls preload="metadata" style="max-width: 240px; border-radius: 12px; display: block; margin-bottom: 6px;"></video>`;
       } else {
         mediaPart = `<a href="${m.media_url}" target="_blank" style="display: block; margin-bottom: 6px;">📎 Файл</a>`;
       }
@@ -3918,9 +3919,17 @@ async function openChatWindow(chatId, partnerId) {
 
     if (!msgs) return;
 
+    const newIds = msgs.map(m => m.id).join(',');
+    const lastIds = lastRenderedMessageIds.join(',');
+    if (newIds === lastIds) return; // не обновляем, если ничего не изменилось
+
     box.innerHTML = '';
     msgs.forEach(m => box.appendChild(renderMessage(m)));
-    box.scrollTop = box.scrollHeight;
+    lastRenderedMessageIds = msgs.map(m => m.id);
+
+    setTimeout(() => {
+      box.scrollTop = box.scrollHeight;
+    }, 50);
 
     await fetch(`${API_URL}/chat/read`, {
       method: 'POST',
@@ -4070,10 +4079,10 @@ async function openChatWindow(chatId, partnerId) {
           return showNotification('Не удалось отправить сообщение', 'error');
         }
 
-        if (!selectedFile) {
-          input.value = '';
-        }
-
+        input.value = '';
+        setTimeout(() => {
+          box.scrollTop = box.scrollHeight;
+        }, 100);
       } catch (err) {
         console.error('Ошибка при отправке:', err);
         showNotification('Ошибка. Подробнее в консоли.', 'error');
