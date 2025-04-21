@@ -1037,7 +1037,7 @@ if (!document.getElementById("bottomBar")) {
     </button>
 
     <button id="chatBtn" class="nav-btn">
-      <img src="photo/72.png" class="nav-icon">
+      <img src="photo/101.svg" class="nav-icon">
       <span>Чаты</span>
     </button>
   `;
