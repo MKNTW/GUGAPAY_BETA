@@ -3828,19 +3828,18 @@ async function openChatWindow(chatId, partnerId) {
     .maybeSingle();
 
   createModal('chatModal', `
-    <div class="chat-container">
-      <div class="chat-header">
+    <div class="chat-container" style="touch-action: manipulation;">
+      <div class="chat-header" style="position: relative; display: flex; align-items: center; gap: 12px;">
+        <button id="chatMoreBtn" style="
+          background: transparent; border: none; font-size: 20px;
+          color: #888; cursor: pointer;">⋮</button>
         <img src="${partner.photo}" class="chat-avatar">
         <div class="chat-title">
           ${partner.name}
           <div style="font-size:12px;color:#999;margin-top:2px;">ID: ${partner.id}</div>
         </div>
-        <button id="chatMoreBtn" style="
-          position: absolute; right: 16px; top: 16px;
-          background: transparent; border: none; font-size: 20px;
-          color: #888; cursor: pointer;">⋮</button>
       </div>
-      <div id="chatMessages" class="chat-messages"></div>
+      <div id="chatMessages" class="chat-messages" style="flex: 1 1 auto; overflow-y: auto;"></div>
       <div class="chat-inputbar" id="chatInputBar">
         ${
           blockedByMe
@@ -3848,7 +3847,7 @@ async function openChatWindow(chatId, partnerId) {
             : blockedMe
             ? `<div class="chat-block-label">Вы были заблокированы этим пользователем</div>`
             : `
-              <input id="chatText" class="chat-input" placeholder="Сообщение…" />
+              <input id="chatText" class="chat-input" placeholder="Сообщение…" style="ime-mode: disabled;" />
               <button id="chatSend" class="chat-sendBtn">Отправить</button>`
         }
       </div>
