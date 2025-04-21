@@ -3814,29 +3814,23 @@ function openNewChatModal() {
 }
 
 async function openChatWindow(chatId, partnerId) {
-  // --- 1) Разово инъектим стили в <head> ---
+  // 1) Внедряем глобальные стили (один раз)
   if (!document.getElementById('chatGlobalStyles')) {
     const style = document.createElement('style');
     style.id = 'chatGlobalStyles';
     style.innerHTML = `
-      /* Отключаем авто‑zoom и любые transform/zoom */
       html, body {
+        margin: 0; padding: 0;
+        height: 100%; width: 100%;
+        overflow: hidden;
         touch-action: manipulation;
         -webkit-text-size-adjust: 100%;
-        margin: 0; padding: 0;
-        overflow: hidden; /* тело не скроллится, внутри модалки — своя прокрутка */
       }
-      /* Защита от авто‑зума в iOS/Android */
-      input, textarea, button {
-        font-size: 16px !important;
-      }
-      /* Общий контейнер чата */
+      /* Контейнер чата */
       .chat-container {
         position: relative;
-        display: flex;
-        flex-direction: column;
-        height: 100vh;
-        width: 100%;
+        display: flex; flex-direction: column;
+        height: 100vh; width: 100vw;
         box-sizing: border-box;
         overflow: hidden;
       }
@@ -3845,88 +3839,117 @@ async function openChatWindow(chatId, partnerId) {
         flex: 1 1 auto;
         overflow-y: auto;
         padding: 12px;
-        /* дно под фиксированную панель ввода + безопасная зона */
-        padding-bottom: calc(12px + 64px + env(safe-area-inset-bottom));
+        /* запас снизу = высота панели ввода + отступы */
+        padding-bottom: calc(12px + 56px + env(safe-area-inset-bottom));
         box-sizing: border-box;
       }
       /* Панель ввода */
       .chat-inputbar {
         position: fixed;
         left: 0; right: 0; bottom: 0;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 12px env(safe-area-inset-left) 12px env(safe-area-inset-right);
+        display: flex; align-items: center; gap: 8px;
+        padding: 12px 16px env(safe-area-inset-bottom) 16px;
         background: #F8F9FB;
         border-top: 1px solid #E6E6EB;
+        box-shadow: 0 -1px 4px rgba(0,0,0,0.1);
+        z-index: 10;
         box-sizing: border-box;
       }
-      /* Пузырьки входящих */
+      /* Инпут и кнопки */
+      .chat-inputbar input[type="text"] {
+        flex: 1;
+        padding: 12px;
+        border: 1px solid #E6E6EB;
+        border-radius: 12px;
+        background: #fff;
+        font-size: 16px;
+        outline: none;
+        box-sizing: border-box;
+      }
+      .chat-inputbar button {
+        flex-shrink: 0;
+        font-size: 18px;
+        background: none; border: none;
+        cursor: pointer;
+      }
+      .chat-inputbar button#chatSend {
+        padding: 12px 16px;
+        background: #2F80ED;
+        color: #fff;
+        border: 1px solid #2F80ED;
+        border-radius: 12px;
+      }
+      /* Пузырьки сообщений */
       .bubble.in {
         align-self: flex-start;
-        background: #F1F0F0;
-        color: #000;
+        background: #F1F0F0; color: #000;
         border-radius: 12px 12px 12px 0;
         padding: 8px 12px;
         margin-bottom: 8px;
         max-width: 85%;
+        box-sizing: border-box;
       }
-      /* Пузырьки исходящих */
       .bubble.out {
         align-self: flex-end;
-        background: #2F80ED;
-        color: #fff;
+        background: #2F80ED; color: #fff;
         border-radius: 12px 12px 0 12px;
         padding: 8px 12px;
         margin-bottom: 8px;
         max-width: 85%;
+        box-sizing: border-box;
       }
-      /* Время/статус */
       .time-label {
         display: block;
-        font-size: 12px;
-        color: #999;
         margin-top: 4px;
+        font-size: 12px;
+        color: rgba(0,0,0,0.45);
         text-align: right;
+      }
+      /* Единообразие медиа */
+      .bubble img,
+      .bubble video {
+        display: block;
+        margin: 0 auto 6px;
+        max-width: 200px;
+        max-height: 200px;
+        border-radius: 12px;
+        object-fit: cover;
       }
     `;
     document.head.appendChild(style);
   }
 
-  // --- 2) Стандартная логика загрузки партнёра и сообщений ---
+  // 2) Обычная логика инициализации и рендера (как раньше)…
   const partner = await fetchUserCard(partnerId);
   let chatChannel, refreshInterval, box;
   const renderedIdSet = new Set();
 
-  // автоскролл
   const scrollToBottom = (smooth = false) =>
     requestAnimationFrame(() => {
       if (!box) return;
       box.scrollTo({ top: box.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
     });
 
-  // мониторинг подгрузки картинок/видео
   const monitorMedia = el => {
     el.querySelectorAll('img').forEach(i => i.addEventListener('load', () => scrollToBottom()));
     el.querySelectorAll('video').forEach(v => v.addEventListener('loadedmetadata', () => scrollToBottom()));
   };
 
-  // рисуем один бульб
   const renderMessage = (m, isLastFromMe = false) => {
     const side = m.sender_id === currentUserId ? 'out' : 'in';
-    const text = (m.encrypted_message && m.nonce && m.sender_public_key)
+    const text = m.nonce
       ? decryptMessage(m.encrypted_message, m.nonce, m.sender_public_key)
-      : m.encrypted_message || '';
+      : (m.encrypted_message || '');
     const tm = new Date(m.created_at)
       .toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
     let mediaHTML = '';
     if (m.media_url) {
       if (m.media_type === 'image') {
-        mediaHTML = `<img src="${m.media_url}" style="max-width:100%;border-radius:12px;display:block;margin-bottom:6px;">`;
+        mediaHTML = `<img src="${m.media_url}"/>`;
       } else if (m.media_type === 'video') {
-        mediaHTML = `<video src="${m.media_url}" controls preload="metadata" style="max-width:100%;border-radius:12px;display:block;margin-bottom:6px;"></video>`;
+        mediaHTML = `<video src="${m.media_url}" controls></video>`;
       } else {
-        mediaHTML = `<a href="${m.media_url}" target="_blank" style="display:block;margin-bottom:6px;">📎 Файл</a>`;
+        mediaHTML = `<a href="${m.media_url}" target="_blank">📎 Файл</a>`;
       }
     }
     const status = isLastFromMe
@@ -3943,7 +3966,6 @@ async function openChatWindow(chatId, partnerId) {
     return bubble;
   };
 
-  // --- 3) Создаём модалку с фиксированным снизу полем ввода ---
   createModal('chatModal', `
     <div class="chat-container">
       <div class="chat-header" style="display:flex;align-items:center;gap:12px;padding:12px;border-bottom:1px solid #E6E6EB;">
@@ -3955,13 +3977,10 @@ async function openChatWindow(chatId, partnerId) {
       </div>
       <div id="chatMessages" class="chat-messages"></div>
       <div class="chat-inputbar">
-        <div id="mediaPreview" style="display:none;position:relative;max-height:200px;overflow:hidden;border-radius:12px;width:100%;">
-          <button id="cancelPreviewBtn" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.5);border:none;color:#fff;border-radius:50%;width:24px;height:24px;cursor:pointer;">✖</button>
-        </div>
-        <input id="chatText" placeholder="Сообщение…" style="flex:1;border:1px solid #E6E6EB;border-radius:12px;padding:12px;outline:none;background:#F8F9FB;">
-        <input type="file" id="mediaInput" accept="image/*,video/*" style="display:none;">
-        <button id="uploadMediaBtn" style="background:none;border:none;font-size:20px;cursor:pointer;">📎</button>
-        <button id="chatSend" style="padding:12px 16px;border:1px solid #E6E6EB;border-radius:12px;cursor:pointer;background:#2F80ED;color:#fff;">Отправить</button>
+        <input id="chatText" type="text" placeholder="Сообщение…"/>
+        <input type="file" id="mediaInput" accept="image/*,video/*" style="display:none;"/>
+        <button id="uploadMediaBtn">📎</button>
+        <button id="chatSend">Отправить</button>
       </div>
     </div>
   `, {
