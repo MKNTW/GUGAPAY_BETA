@@ -3746,64 +3746,105 @@ function openNewChatModal() {
 async function openChatWindow(chatId, partnerId) {
   const partner = await fetchUserCard(partnerId);
 
+  // 1) Создаём модалку с flex‑контейнером
   createModal('chatModal', `
-    <div class="chat-header">
-      <img src="${partner.photo}" class="chat-avatar">
-      <div class="chat-title">${partner.name} · ID: ${partner.id}</div>
+    <div class="chat-container">
+      <div class="chat-header">
+        <img src="${partner.photo}" class="chat-avatar">
+        <div class="chat-title">${partner.name} · ID: ${partner.id}</div>
+      </div>
+      <div id="chatMessages" class="chat-messages"></div>
+      <div class="chat-inputbar">
+        <input id="chatText" class="chat-input" placeholder="Сообщение…" />
+        <button id="chatSend" class="chat-sendBtn">Отправить</button>
+      </div>
     </div>
-    <div id="chatMessages" class="chat-messages"></div>
-    <div class="chat-inputbar">
-      <input id="chatText" class="chat-input" placeholder="Сообщение">
-      <button id="chatSend" class="chat-sendBtn">Отправить</button>
-    </div>
-  `,{cornerTopRadius:20, hasVerticalScroll:false,
-     onClose:()=> document.getElementById('bottomBar').style.display='flex'});
+  `, {
+    cornerTopRadius: 20,
+    // блок ввода НЕ должен скроллиться вместе с сообщениями
+    hasVerticalScroll: false,
+    // делаем модалку флекс‑контейнером
+    customStyles: { display: 'flex', flexDirection: 'column', height: '100%' },
+    onClose: () => {
+      document.getElementById('bottomBar').style.display = 'flex';
+    }
+  });
 
-  document.getElementById('bottomBar').style.display='none';
+  // прячем bottomBar под клавиатуру
+  document.getElementById('bottomBar').style.display = 'none';
 
-  // подгрузка истории
+  // 2) Функция загрузки сообщений
   async function loadMessages() {
     const { data: msgs } = await supabase
-          .from('messages')
-          .select('*')
-          .eq('chat_id', chatId)
-          .order('created_at',{ascending:true});
-    const html = msgs.map(m=>{
+      .from('messages')
+      .select('*')
+      .eq('chat_id', chatId)
+      .order('created_at', { ascending: true });
+
+    const html = msgs.map(m => {
       const side = m.sender_id === currentUserId ? 'out' : 'in';
       const text = decryptMessage(m.encrypted_message, m.nonce, m.sender_public_key);
-      const tm   = new Date(m.created_at).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
-      return `<div class="bubble ${side}">${text}<span class="time-label">${tm}</span></div>`;
+      const tm   = new Date(m.created_at)
+                    .toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+      return `<div class="bubble ${side}">
+                ${text}<span class="time-label">${tm}</span>
+              </div>`;
     }).join('');
+
     const box = document.getElementById('chatMessages');
     box.innerHTML = html;
     box.scrollTop = box.scrollHeight;
   }
   await loadMessages();
 
-  // realtime channel
-  supabase.channel('chat:'+chatId)
-    .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:`chat_id=eq.${chatId}`},
-       loadMessages)
+  // 3) Реал‑тайм подписка на новые сообщения
+  supabase.channel('chat:' + chatId)
+    .on('postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` },
+        loadMessages
+    )
     .subscribe();
 
-  // отправка
-  document.getElementById('chatSend').onclick = async ()=>{
-    const val = document.getElementById('chatText').value.trim();
-    if(!val) return;
-    // гарантируем наличие ключа собеседника
-    if(!partner.pub){
-      const p = await supabase.from('users').select('public_key').eq('user_id',partnerId).single();
-      partner.pub = p.data?.public_key || '';
+  // 4) Отправка: по клику и по Enter
+  const sendBtn = document.getElementById('chatSend');
+  const input   = document.getElementById('chatText');
+
+  sendBtn.onclick = async () => {
+    const val = input.value.trim();
+    if (!val) return;
+
+    // подгружаем ключ партнёра, если надо
+    if (!partner.pub) {
+      const { data } = await supabase
+        .from('users')
+        .select('public_key')
+        .eq('user_id', partnerId)
+        .single();
+      partner.pub = data.public_key;
     }
-    const { encrypted_message, nonce, sender_public_key } = encryptMessage(val, partner.pub);
+
+    const { encrypted_message, nonce, sender_public_key } =
+          encryptMessage(val, partner.pub);
+
     await supabase.from('messages').insert([{
-      chat_id: chatId,
-      sender_id: currentUserId,
-      encrypted_message, nonce, sender_public_key
+      chat_id          : chatId,
+      sender_id        : currentUserId,
+      encrypted_message,
+      nonce,
+      sender_public_key
     }]);
-    document.getElementById('chatText').value='';
+
+    input.value = '';
     await loadMessages();
   };
+
+  // Отправка по Enter
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      sendBtn.click();
+    }
+  });
 }
 
 /* ========= 6.  Вызвать ensureKeyPair сразу после успешного логина ========= */
