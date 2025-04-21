@@ -3846,24 +3846,16 @@ async function openChatWindow(chatId, partnerId) {
       </div>
       <div id="chatMessages" class="chat-messages" style="flex: 1 1 auto; overflow-y: auto;"></div>
       <div class="chat-inputbar" id="chatInputBar">
-        ${
-          blockedByMe || blockedMe ? `
-            <div style="padding: 14px; text-align: center; color: #999; background: #f8f8f8; border-radius: 12px; margin: 10px; font-style: italic;">
-              ${blockedByMe ? 'Вы заблокировали этого пользователя' : 'Вы были заблокированы этим пользователем'}
-            </div>
-          ` : `
-            <div id="mediaPreview" style="display:none; margin-bottom: 10px; position: relative; max-height: 200px; overflow: hidden;">
-              <div id="mediaPreviewContent" style="max-height: 200px;"></div>
-              <button id="cancelPreviewBtn" style="position:absolute; top:4px; right:4px; background:#fff; border:none; border-radius:50%; cursor:pointer;">✖</button>
-            </div>
-            <div style="display: flex; gap: 10px; align-items: center; width: 100%;">
-              <input id="chatText" class="chat-input" placeholder="Сообщение…" style="font-size: 16px; padding: 12px; width: 100%;" />
-              <input type="file" id="mediaInput" accept="image/*,video/*" style="display: none;" />
-              <button id="uploadMediaBtn" style="background: none; border: none; font-size: 20px; cursor: pointer;">📎</button>
-              <button id="chatSend" class="chat-sendBtn" style="padding: 12px 16px; background: #2F80ED; color: #fff; font-weight: 600; border: none; border-radius: 12px; cursor: pointer;">Отправить</button>
-            </div>
-          `
-        }
+        <div id="mediaPreview" style="display:none; margin-bottom: 10px; position: relative; max-height: 200px; overflow: hidden;">
+          <div id="mediaPreviewContent" style="max-height: 200px;"></div>
+          <button id="cancelPreviewBtn" style="position:absolute; top:4px; right:4px; background:#fff; border:none; border-radius:50%; cursor:pointer;">✖</button>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center; width: 100%;">
+          <input id="chatText" class="chat-input" placeholder="Сообщение…" style="font-size: 16px; padding: 12px; width: 100%;" />
+          <input type="file" id="mediaInput" accept="image/*,video/*" style="display: none;" />
+          <button id="uploadMediaBtn" style="background: none; border: none; font-size: 20px; cursor: pointer;">📎</button>
+          <button id="chatSend" class="chat-sendBtn" style="padding: 12px 16px; background: #2F80ED; color: #fff; font-weight: 600; border: none; border-radius: 12px; cursor: pointer;">Отправить</button>
+        </div>
       </div>
     </div>
   `, {
@@ -3880,7 +3872,7 @@ async function openChatWindow(chatId, partnerId) {
   document.getElementById('bottomBar').style.display = 'none';
   const box = document.getElementById('chatMessages');
 
-  function renderMessage(m) {
+  function renderMessage(m, isLastFromMe = false) {
     const side = m.sender_id === currentUserId ? 'out' : 'in';
     const isEncrypted = m.encrypted_message && m.nonce && m.sender_public_key;
     const text = isEncrypted
@@ -3902,10 +3894,19 @@ async function openChatWindow(chatId, partnerId) {
       }
     }
 
+    let status = '';
+    if (isLastFromMe) {
+      if (m.read_by?.includes(partnerId)) {
+        status = ' • Прочитано';
+      } else {
+        status = ' • Отправлено';
+      }
+    }
+
     bubble.innerHTML = `
       ${mediaPart}
       ${text ? `<div>${text}</div>` : ''}
-      <span class="time-label">${tm}</span>
+      <span class="time-label">${tm}${status}</span>
     `;
     return bubble;
   }
@@ -3921,22 +3922,29 @@ async function openChatWindow(chatId, partnerId) {
 
     const newIds = msgs.map(m => m.id).join(',');
     const lastIds = lastRenderedMessageIds.join(',');
-    if (newIds === lastIds) return; // не обновляем, если ничего не изменилось
+    if (newIds === lastIds) return;
 
     box.innerHTML = '';
-    msgs.forEach(m => box.appendChild(renderMessage(m)));
+    msgs.forEach((m, i) => {
+      const isLastFromMe =
+        m.sender_id === currentUserId &&
+        msgs.slice(i + 1).findIndex(n => n.sender_id === currentUserId) === -1;
+      box.appendChild(renderMessage(m, isLastFromMe));
+    });
+
     lastRenderedMessageIds = msgs.map(m => m.id);
 
     setTimeout(() => {
       box.scrollTop = box.scrollHeight;
-    }, 50);
+    }, 100);
 
-    await fetch(`${API_URL}/chat/read`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
-      body: JSON.stringify({ chatId, userId: currentUserId })
-    });
+    // обновить прочитанные
+    await supabase
+      .from('messages')
+      .update({ read_by: supabase.fn.array_append('read_by', currentUserId) })
+      .eq('chat_id', chatId)
+      .neq('sender_id', currentUserId)
+      .or('read_by.is.null,not.read_by.cs.{' + currentUserId + '}');
   }
 
   await loadMessages();
