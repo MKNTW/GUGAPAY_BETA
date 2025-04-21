@@ -3810,23 +3810,31 @@ async function openChatWindow(chatId, partnerId) {
   const input   = document.getElementById('chatText');
 
   sendBtn.onclick = async () => {
-    const val = input.value.trim();
-    if (!val) return;
+  const val = input.value.trim();
+  if (!val) return;
 
-    // подгружаем ключ партнёра, если надо
+  try {
+    // 1. Убедимся, что есть публичный ключ
     if (!partner.pub) {
       const { data } = await supabase
         .from('users')
         .select('public_key')
         .eq('user_id', partnerId)
         .single();
-      partner.pub = data.public_key;
+      partner.pub = data?.public_key || '';
     }
 
+    if (!partner.pub) {
+      alert('У собеседника нет публичного ключа — он ещё не заходил.');
+      return;
+    }
+
+    // 2. Шифруем
     const { encrypted_message, nonce, sender_public_key } =
           encryptMessage(val, partner.pub);
 
-    await supabase.from('messages').insert([{
+    // 3. Отправляем
+    const { error } = await supabase.from('messages').insert([{
       chat_id          : chatId,
       sender_id        : currentUserId,
       encrypted_message,
@@ -3834,9 +3842,20 @@ async function openChatWindow(chatId, partnerId) {
       sender_public_key
     }]);
 
+    if (error) {
+      console.error('Ошибка отправки в Supabase:', error);
+      alert('Не удалось отправить сообщение');
+      return;
+    }
+
     input.value = '';
     await loadMessages();
-  };
+
+  } catch (err) {
+    console.error('Ошибка при отправке сообщения:', err);
+    alert('Ошибка отправки сообщения. Подробности в консоли.');
+  }
+};
 
   // Отправка по Enter
   input.addEventListener('keydown', e => {
