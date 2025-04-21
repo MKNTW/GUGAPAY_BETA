@@ -3813,86 +3813,129 @@ function openNewChatModal() {
   };
 }
 
-// openChatWindow – финальная версия (v7)
-// • обновлено meta viewport для блокировки зума на мобильных
-// • стили и функционал без горизонтального скролла и адаптивный input-блок
-// • предпросмотр файлов с кнопкой удаления и пометка прочитанных
-
-/* global currentUserId, fetchUserCard, createModal, supabase, showNotification, decryptMessage, encryptMessage */
-
 async function openChatWindow(chatId, partnerId) {
-  // 1) Отключаем мобильный зум
-  if (!document.querySelector('meta[name="viewport"]')) {
-    const meta = document.createElement('meta');
-    meta.name = 'viewport';
-    meta.content = 'width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no';
-    document.head.appendChild(meta);
-  }
-  // 2) Инъектим CSS-правила, чтобы убрать любые zoom/transform и задать min font-size
-  if (!document.getElementById('chatDisableZoomStyles')) {
+  // --- 1) Разово инъектим стили в <head> ---
+  if (!document.getElementById('chatGlobalStyles')) {
     const style = document.createElement('style');
-    style.id = 'chatDisableZoomStyles';
+    style.id = 'chatGlobalStyles';
     style.innerHTML = `
+      /* Отключаем авто‑zoom и любые transform/zoom */
       html, body {
         touch-action: manipulation;
         -webkit-text-size-adjust: 100%;
+        margin: 0; padding: 0;
+        overflow: hidden; /* тело не скроллится, внутри модалки — своя прокрутка */
       }
-      /* Глобальный font-size для предотвращения авто‑зума в iOS/Android */
+      /* Защита от авто‑зума в iOS/Android */
       input, textarea, button {
         font-size: 16px !important;
       }
-      /* Убираем любые transform/zoom у модалки */
-      .modal-content, .chat-container {
-        transform: none !important;
-        zoom: 1 !important;
-        width: 100vw !important;
-        max-width: 100vw !important;
-        box-sizing: border-box !important;
+      /* Общий контейнер чата */
+      .chat-container {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        width: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
+      }
+      /* Область сообщений */
+      .chat-messages {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        padding: 12px;
+        /* дно под фиксированную панель ввода + безопасная зона */
+        padding-bottom: calc(12px + 64px + env(safe-area-inset-bottom));
+        box-sizing: border-box;
+      }
+      /* Панель ввода */
+      .chat-inputbar {
+        position: fixed;
+        left: 0; right: 0; bottom: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px env(safe-area-inset-left) 12px env(safe-area-inset-right);
+        background: #F8F9FB;
+        border-top: 1px solid #E6E6EB;
+        box-sizing: border-box;
+      }
+      /* Пузырьки входящих */
+      .bubble.in {
+        align-self: flex-start;
+        background: #F1F0F0;
+        color: #000;
+        border-radius: 12px 12px 12px 0;
+        padding: 8px 12px;
+        margin-bottom: 8px;
+        max-width: 85%;
+      }
+      /* Пузырьки исходящих */
+      .bubble.out {
+        align-self: flex-end;
+        background: #2F80ED;
+        color: #fff;
+        border-radius: 12px 12px 0 12px;
+        padding: 8px 12px;
+        margin-bottom: 8px;
+        max-width: 85%;
+      }
+      /* Время/статус */
+      .time-label {
+        display: block;
+        font-size: 12px;
+        color: #999;
+        margin-top: 4px;
+        text-align: right;
       }
     `;
     document.head.appendChild(style);
   }
 
+  // --- 2) Стандартная логика загрузки партнёра и сообщений ---
   const partner = await fetchUserCard(partnerId);
   let chatChannel, refreshInterval, box;
   const renderedIdSet = new Set();
 
+  // автоскролл
   const scrollToBottom = (smooth = false) =>
     requestAnimationFrame(() => {
       if (!box) return;
-      box.scrollTo({ top: box.scrollHeight + 256, behavior: smooth ? 'smooth' : 'auto' });
+      box.scrollTo({ top: box.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
     });
 
+  // мониторинг подгрузки картинок/видео
   const monitorMedia = el => {
-    el.querySelectorAll('img').forEach(img => img.addEventListener('load', () => scrollToBottom()));
+    el.querySelectorAll('img').forEach(i => i.addEventListener('load', () => scrollToBottom()));
     el.querySelectorAll('video').forEach(v => v.addEventListener('loadedmetadata', () => scrollToBottom()));
   };
 
+  // рисуем один бульб
   const renderMessage = (m, isLastFromMe = false) => {
     const side = m.sender_id === currentUserId ? 'out' : 'in';
     const text = (m.encrypted_message && m.nonce && m.sender_public_key)
       ? decryptMessage(m.encrypted_message, m.nonce, m.sender_public_key)
-      : m.encrypted_message;
-    const tm = new Date(m.created_at).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
-
-    let media = '';
+      : m.encrypted_message || '';
+    const tm = new Date(m.created_at)
+      .toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    let mediaHTML = '';
     if (m.media_url) {
-      media = m.media_type === 'image'
-        ? `<img src="${m.media_url}" style="max-width:100%;border-radius:12px;display:block;margin-bottom:6px;">`
-        : m.media_type === 'video'
-          ? `<video src="${m.media_url}" controls preload="metadata" style="max-width:100%;border-radius:12px;display:block;margin-bottom:6px;"></video>`
-          : `<a href="${m.media_url}" target="_blank" style="display:block;margin-bottom:6px;">📎 Файл</a>`;
+      if (m.media_type === 'image') {
+        mediaHTML = `<img src="${m.media_url}" style="max-width:100%;border-radius:12px;display:block;margin-bottom:6px;">`;
+      } else if (m.media_type === 'video') {
+        mediaHTML = `<video src="${m.media_url}" controls preload="metadata" style="max-width:100%;border-radius:12px;display:block;margin-bottom:6px;"></video>`;
+      } else {
+        mediaHTML = `<a href="${m.media_url}" target="_blank" style="display:block;margin-bottom:6px;">📎 Файл</a>`;
+      }
     }
-
     const status = isLastFromMe
       ? (m.read_by?.includes(partnerId) ? ' • Прочитано' : ' • Отправлено')
       : '';
-
     const bubble = document.createElement('div');
     bubble.className = `bubble ${side}`;
-    bubble.style.maxWidth = '85%';
     bubble.innerHTML = `
-      ${media}
+      ${mediaHTML}
       ${text ? `<div>${text}</div>` : ''}
       <span class="time-label">${tm}${status}</span>
     `;
@@ -3900,87 +3943,25 @@ async function openChatWindow(chatId, partnerId) {
     return bubble;
   };
 
+  // --- 3) Создаём модалку с фиксированным снизу полем ввода ---
   createModal('chatModal', `
-    <div class="chat-container" style="
-      display:flex;
-      flex-direction:column;
-      height:100vh;
-      width:100vw;
-      overflow-x:hidden;
-      box-sizing:border-box;
-      -webkit-text-size-adjust:100%;
-    ">
-      <div class="chat-header" style="
-        display:flex;
-        align-items:center;
-        gap:12px;
-        padding:12px;
-        border-bottom:1px solid #E6E6EB;
-      ">
-        <img src="${partner.photo}" style="
-          width:40px;height:40px;border-radius:50%;object-fit:cover;
-        "/>
+    <div class="chat-container">
+      <div class="chat-header" style="display:flex;align-items:center;gap:12px;padding:12px;border-bottom:1px solid #E6E6EB;">
+        <img src="${partner.photo}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">
         <div style="font-size:16px;font-weight:500;">
           ${partner.name}
           <div style="font-size:12px;color:#999;margin-top:2px;">ID: ${partner.id}</div>
         </div>
       </div>
-      <div id="chatMessages" style="
-        flex:1 1 auto;
-        overflow-y:auto;
-        padding:12px;
-        box-sizing:border-box;
-      "></div>
-      <div style="
-        display:flex;
-        flex-direction:column;
-        gap:8px;
-        padding:12px;
-        border-top:1px solid #E6E6EB;
-        background:#F8F9FB;
-        width:100%;
-        box-sizing:border-box;
-      ">
-        <div id="mediaPreview" style="
-          display:none;
-          position:relative;
-          max-height:200px;
-          overflow:hidden;
-          border-radius:12px;
-          width:100%;
-        ">
-          <button id="cancelPreviewBtn" style="
-            position:absolute;
-            top:8px;right:8px;
-            background:rgba(0,0,0,0.5);
-            border:none;color:#fff;
-            border-radius:50%;
-            width:24px;height:24px;
-            cursor:pointer;
-          ">✖</button>
+      <div id="chatMessages" class="chat-messages"></div>
+      <div class="chat-inputbar">
+        <div id="mediaPreview" style="display:none;position:relative;max-height:200px;overflow:hidden;border-radius:12px;width:100%;">
+          <button id="cancelPreviewBtn" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.5);border:none;color:#fff;border-radius:50%;width:24px;height:24px;cursor:pointer;">✖</button>
         </div>
-        <div style="display:flex;gap:10px;align-items:center;width:100%;">
-          <input id="chatText" placeholder="Сообщение…" style="
-            background:#F8F9FB;
-            border-radius:12px;
-            padding:12px;
-            border:1px solid #E6E6EB;
-            flex:1;
-            outline:none;
-            font-size:16px;
-          ">
-          <input type="file" id="mediaInput" accept="image/*,video/*" style="display:none;">
-          <button id="uploadMediaBtn" style="background:none;border:none;font-size:20px;cursor:pointer;">📎</button>
-          <button id="chatSend" style="
-            padding:12px 16px;
-            background:#2F80ED;
-            color:#fff;
-            cursor:pointer;
-            border-radius:12px;
-            border:1px solid #E6E6EB;
-            font-size:16px;
-          ">Отправить</button>
-        </div>
+        <input id="chatText" placeholder="Сообщение…" style="flex:1;border:1px solid #E6E6EB;border-radius:12px;padding:12px;outline:none;background:#F8F9FB;">
+        <input type="file" id="mediaInput" accept="image/*,video/*" style="display:none;">
+        <button id="uploadMediaBtn" style="background:none;border:none;font-size:20px;cursor:pointer;">📎</button>
+        <button id="chatSend" style="padding:12px 16px;border:1px solid #E6E6EB;border-radius:12px;cursor:pointer;background:#2F80ED;color:#fff;">Отправить</button>
       </div>
     </div>
   `, {
@@ -3989,33 +3970,31 @@ async function openChatWindow(chatId, partnerId) {
     onClose: () => {
       document.getElementById('bottomBar').style.display = 'flex';
       if (chatChannel) supabase.removeChannel(chatChannel);
-      if (refreshInterval) clearInterval(refreshInterval);
+      clearInterval(refreshInterval);
     }
   });
 
   document.getElementById('bottomBar').style.display = 'none';
   box = document.getElementById('chatMessages');
 
+  // --- 4) Загрузка и realtime-подписка ---
   const loadMessages = async () => {
     const { data: msgs, error } = await supabase
-      .from('messages')
-      .select('*')
+      .from('messages').select('*')
       .eq('chat_id', chatId)
       .order('created_at', { ascending: true });
     if (!msgs || error) return;
-
     const newMsgs = msgs.filter(m => !renderedIdSet.has(m.id));
     if (newMsgs.length) {
       for (const m of newMsgs) {
         const idx = msgs.findIndex(x => x.id === m.id);
-        const isLastFromMe = m.sender_id === currentUserId &&
-          !msgs.slice(idx + 1).some(n => n.sender_id === currentUserId);
+        const isLastFromMe = m.sender_id === currentUserId
+          && !msgs.slice(idx + 1).some(n => n.sender_id === currentUserId);
         box.appendChild(renderMessage(m, isLastFromMe));
         renderedIdSet.add(m.id);
       }
       scrollToBottom(true);
-
-      // Помечаем входящие как прочитанные
+      // пометка входящих как прочитанных
       for (const m of newMsgs.filter(m => m.sender_id !== currentUserId)) {
         const updated = Array.isArray(m.read_by)
           ? [...m.read_by, currentUserId]
@@ -4027,7 +4006,8 @@ async function openChatWindow(chatId, partnerId) {
 
   await loadMessages();
   refreshInterval = setInterval(loadMessages, 1000);
-  chatChannel = supabase.channel(`chat-${chatId}`)
+  chatChannel = supabase
+    .channel(`chat-${chatId}`)
     .on('postgres_changes', {
       event: 'INSERT',
       schema: 'public',
@@ -4036,7 +4016,7 @@ async function openChatWindow(chatId, partnerId) {
     }, loadMessages)
     .subscribe();
 
-  // Инициализация инпута/кнопок и предпросмотра
+  // --- 5) Логика предпросмотра и отправки ---
   const input = document.getElementById('chatText');
   const sendBtn = document.getElementById('chatSend');
   const mediaInput = document.getElementById('mediaInput');
@@ -4082,12 +4062,9 @@ async function openChatWindow(chatId, partnerId) {
     else showNotification('Можно загрузить только фото или видео','error');
   });
 
-  // Отправка сообщения
   const sendMessage = async () => {
     const txt = input.value.trim();
-    if (!txt && !fileSel) {
-      return showNotification('Введите сообщение или прикрепите файл','error');
-    }
+    if (!txt && !fileSel) return showNotification('Введите сообщение или прикрепите файл','error');
 
     const payload = { chat_id: chatId, sender_id: currentUserId };
     if (txt) {
@@ -4098,11 +4075,9 @@ async function openChatWindow(chatId, partnerId) {
           .single();
         partner.pub = data?.public_key || '';
       }
-      if (partner.pub) {
-        Object.assign(payload, encryptMessage(txt, partner.pub));
-      } else {
-        payload.encrypted_message = txt;
-      }
+      partner.pub
+        ? Object.assign(payload, encryptMessage(txt, partner.pub))
+        : (payload.encrypted_message = txt);
     }
     if (fileSel) {
       const ext = fileSel.name.split('.').pop();
