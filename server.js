@@ -132,6 +132,38 @@ function verifyToken(req, res, next) {
   });
 }
 
+// После других app.use / перед остальными маршрутами
+app.post('/subscribe', verifyToken, csrfProtection, async (req, res) => {
+  const subscription = req.body;
+  // Сохранить subscription в вашей БД (Supabase, Redis и т.д.)
+  const { error } = await supabase
+    .from('subscriptions')
+    .upsert([{ user_id: req.user.userId, subscription }]);
+  if (error) {
+    console.error('[subscribe] Ошибка сохранения подписки:', error);
+    return res.status(500).json({ success: false });
+  }
+  res.status(201).json({ success: true });
+});
+
+async function sendPush(toUserId, payload) {
+  const { data } = await supabase
+    .from('subscriptions')
+    .select('subscription')
+    .eq('user_id', toUserId)
+    .maybeSingle();
+  if (!data?.subscription) return;
+  try {
+    await webpush.sendNotification(
+      data.subscription,
+      JSON.stringify(payload)
+    );
+  } catch (err) {
+    console.error('[sendPush] Ошибка при отправке пуша:', err);
+  }
+}
+
+
 /* ========================
    AUTHENTICATION ENDPOINTS
 ======================== */
