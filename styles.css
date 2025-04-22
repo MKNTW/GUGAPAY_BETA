@@ -1196,47 +1196,38 @@ body {
   animation: slideInUp 0.3s ease-out forwards;
 }
 
-// 1. Получаем или создаём главный контейнер
-let userInfoContainer = document.getElementById("user-info");
-if (!userInfoContainer) {
-  userInfoContainer = document.createElement("div");
-  userInfoContainer.id = "user-info";
-  userInfoContainer.classList.add("user-info");
-  document.body.appendChild(userInfoContainer);
+.user-info {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  /* подвиньте по вертикали */
+  margin-top: 20px;
+  padding: 0 16px;
 }
 
-// 2. Фото
-let userPhotoEl = userInfoContainer.querySelector(".user-photo");
-if (!userPhotoEl) {
-  userPhotoEl = document.createElement("img");
-  userPhotoEl.classList.add("user-photo");
-  userPhotoEl.alt = "User Photo";
-  userInfoContainer.appendChild(userPhotoEl);
-}
-userPhotoEl.src = photoUrl;
-
-// 3. Контейнер для текста (имя + ID)
-let userText = userInfoContainer.querySelector(".user-text");
-if (!userText) {
-  userText = document.createElement("div");
-  userText.classList.add("user-text");
-  userInfoContainer.appendChild(userText);
+.user-info .user-photo {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
-// 4. Имя
-let userNameEl = userText.querySelector(".user-name");
-if (!userNameEl) {
-  userNameEl = document.createElement("span");
-  userNameEl.classList.add("user-name");
-  userText.appendChild(userNameEl);
+.user-info .user-text {
+  display: flex;
+  flex-direction: column;
+  margin-left: 12px; /* расстояние между фото и текстом */
 }
-userNameEl.textContent = firstName;
 
-// 5. ID
-let userIdEl = userText.querySelector(".user-id");
-if (!userIdEl) {
-  userIdEl = document.createElement("span");
-  userIdEl.classList.add("user-id");
-  userText.appendChild(userIdEl);
+.user-info .user-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #FFFFFF;
+  line-height: 1;
 }
-userIdEl.textContent = `ID: ${currentUserId}`;
+
+.user-info .user-id {
+  font-size: 14px;
+  opacity: 0.8;
+  color: #FFFFFF;
+  margin-top: 2px;
+}
