@@ -1244,6 +1244,24 @@ function injectMainUIStyles() {
   document.head.appendChild(style);
 }
 
+/**
+ * Форматирует число с пробелами в качестве разделителей тысяч
+ * и фиксированным числом знаков после десятичной точки.
+ * @param {number|string} num
+ * @param {number} [decimals=5]
+ * @param {string} [defaultValue="0.00000"]
+ * @returns {string}
+ */
+function formatBalance(num, decimals = 5, defaultValue = "0.00000") {
+  const parsed = parseFloat(num);
+  if (isNaN(parsed)) return defaultValue;
+  const fixed = parsed.toFixed(decimals);
+  const parts = fixed.split('.');
+  // разделяем тысячи пробелом
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return parts.join('.');
+}
+
 /**************************************************
  * USER DATA & SYNC
  **************************************************/
@@ -1260,26 +1278,23 @@ async function fetchUserData() {
     const ratesData = await ratesResp.json();
 
     if (userData.success && userData.user) {
-      // Если аккаунт заблокирован — выход
       if (userData.user.blocked) {
         showNotification("Ваш аккаунт заблокирован. Доступ ограничен.", "error");
         logout();
         return;
       }
 
-      // Сохраняем основную информацию
+      // === сохраняем базовые данные ===
       currentUserId = userData.user.user_id;
-      const coinBalance = parseFloat(userData.user.balance) || 0;
-      const rubBalance  = parseFloat(userData.user.rub_balance) || 0;
-      const currentRate =
-        ratesData.success && ratesData.rates.length
-          ? parseFloat(ratesData.rates[0].exchange_rate)
-          : 0;
-
-      const photoUrl  = userData.user.photo_url || "";
+      const coinBalance = userData.user.balance || 0;
+      const rubBalance  = userData.user.rub_balance || 0;
+      const currentRate = (ratesData.success && ratesData.rates.length)
+        ? parseFloat(ratesData.rates[0].exchange_rate)
+        : 0;
       const firstName = userData.user.first_name || "Гость";
+      const photoUrl  = userData.user.photo_url || "";
 
-      // ====== Профиль: фото слева, текст (имя и ID) справа ======
+      // === шапка: профиль — фото + имя и ID ===
       let userInfoContainer = document.getElementById("user-info");
       if (!userInfoContainer) {
         userInfoContainer = document.createElement("div");
@@ -1288,7 +1303,7 @@ async function fetchUserData() {
         document.body.appendChild(userInfoContainer);
       }
 
-      // 1. Фото
+      // фото
       let userPhotoEl = userInfoContainer.querySelector(".user-photo");
       if (!userPhotoEl) {
         userPhotoEl = document.createElement("img");
@@ -1298,7 +1313,7 @@ async function fetchUserData() {
       }
       userPhotoEl.src = photoUrl;
 
-      // 2. Контейнер для текста
+      // контейнер текста (имя+ID)
       let userText = userInfoContainer.querySelector(".user-text");
       if (!userText) {
         userText = document.createElement("div");
@@ -1306,7 +1321,7 @@ async function fetchUserData() {
         userInfoContainer.appendChild(userText);
       }
 
-      // 3. Имя
+      // имя
       let userNameEl = userText.querySelector(".user-name");
       if (!userNameEl) {
         userNameEl = document.createElement("span");
@@ -1315,7 +1330,7 @@ async function fetchUserData() {
       }
       userNameEl.textContent = firstName;
 
-      // 4. ID
+      // ID
       let userIdEl = userText.querySelector(".user-id");
       if (!userIdEl) {
         userIdEl = document.createElement("span");
@@ -1324,17 +1339,30 @@ async function fetchUserData() {
       }
       userIdEl.textContent = `ID: ${currentUserId}`;
 
-      // ====== Общий баланс в центре экрана ======
+      // === общий баланс в рублях для шапки ===
       const totalRub = rubBalance + coinBalance * currentRate;
-      let centerBalEl = document.getElementById("mainBalanceCenter");
-      if (!centerBalEl) {
-        centerBalEl = document.createElement("div");
-        centerBalEl.id = "mainBalanceCenter";
-        document.body.appendChild(centerBalEl);
+      const headerEl = document.getElementById("mainHeaderContainer");
+      if (headerEl) {
+        let headerBalanceEl = headerEl.querySelector("#headerBalance");
+        if (!headerBalanceEl) {
+          headerBalanceEl = document.createElement("div");
+          headerBalanceEl.id = "headerBalance";
+          // стили можно вынести в CSS, здесь для примера сразу inline
+          headerBalanceEl.style.cssText = `
+            text-align: center;
+            font-size: 24px;
+            font-weight: 600;
+            color: #ffffff;
+            margin: 12px 0;
+          `;
+          // вставляем перед кнопками
+          const actionContainer = headerEl.querySelector(".action-container");
+          headerEl.insertBefore(headerBalanceEl, actionContainer);
+        }
+        headerBalanceEl.textContent = `${formatBalance(totalRub, 2)} ₽`;
       }
-      centerBalEl.textContent = `${formatBalance(totalRub, 2)} ₽`;
 
-      // ====== Обновление других элементов баланса ======
+      // === обновляем детальные карточки баланса ниже ===
       const rubBalanceInfo = document.getElementById("rubBalanceValue");
       if (rubBalanceInfo) {
         rubBalanceInfo.textContent = `${formatBalance(rubBalance, 2)} ₽`;
@@ -1343,25 +1371,18 @@ async function fetchUserData() {
       if (gugaBalanceEl) {
         gugaBalanceEl.textContent = `${formatBalance(coinBalance, 5)} ₲`;
       }
-
-      // Конвертированный баланс, курс и т.п.
       const convertedBalanceEl = document.getElementById("convertedBalance");
       if (convertedBalanceEl) {
-        convertedBalanceEl.textContent = `${formatBalance(
-          coinBalance * currentRate,
-          2
-        )} ₽`;
+        convertedBalanceEl.textContent = `${formatBalance(coinBalance * currentRate, 2)} ₽`;
       }
       const rateDisplayEl = document.getElementById("currentRateDisplay");
       if (rateDisplayEl) {
         rateDisplayEl.textContent = formatBalance(currentRate, 2);
       }
 
-      // ==== Загружаем список всех пользователей для истории/деталей ====
+      // === подгружаем список пользователей для истории/деталей транзакций ===
       try {
-        const allResp = await fetch(`${API_URL}/users`, {
-          credentials: "include"
-        });
+        const allResp      = await fetch(`${API_URL}/users`, { credentials: "include" });
         const allUsersData = await allResp.json();
         if (allUsersData.success && Array.isArray(allUsersData.users)) {
           users = allUsersData.users;
@@ -1372,10 +1393,12 @@ async function fetchUserData() {
     }
   } catch (err) {
     console.error("fetchUserData error:", err);
-    const centerBalEl = document.getElementById("mainBalanceCenter");
-    if (centerBalEl) centerBalEl.textContent = "-- ₽";
+    // в случае ошибки показываем дефолтный баланс
+    const headerBalanceEl = document.getElementById("headerBalance");
+    if (headerBalanceEl) headerBalanceEl.textContent = "-- ₽";
   }
 }
+
 
 /**************************************************
  * MINING (if any)
