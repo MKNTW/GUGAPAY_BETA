@@ -1,13 +1,6 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="format-detection" content="telephone=no">
-  <meta name="apple-mobile-web-app-title" content="GUGAPAY">
-  <link rel="apple-touch-icon" href="/icons/icon-192.png">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GugaPay</title>
@@ -24,6 +17,13 @@
   <script src="https://cdn.jsdelivr.net/npm/tweetnacl-util/nacl-util.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.5/dist/umd/supabase.min.js"></script>
   <script src="script.js" defer></script>
+
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#000000">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
 </head>
 <body>
   <div id="balanceDisplay" style="display:none;">
@@ -36,5 +36,52 @@
   <div id="loadingIndicator" class="loading-indicator hidden">
     <img src="photo/25.gif" alt="Загрузка..." />
   </div>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .then(() => console.log('Service Worker registered'))
+        .catch(err => console.error('Service Worker registration failed:', err));
+    }
+  </script>
+
+
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+  <script>
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    OneSignalDeferred.push(async function(OneSignal) {
+      await OneSignal.init({
+        appId: "b441693e-1456-45c7-8579-c2b2444f0765",
+      });
+    });
+  </script>
+
+<script>
+  document.addEventListener('touchstart', function(event) {
+    const isInput = event.target.closest('input, textarea');
+    if (!isInput) {
+      const active = document.activeElement;
+      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
+        active.blur();
+      }
+    }
+  }, { passive: true });
+
+  document.addEventListener('focusin', function(e) {
+    const el = e.target;
+    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+      setTimeout(() => {
+        try {
+          const cs = window.getComputedStyle(el);
+          if (el.offsetHeight > 0 && cs.display !== 'none') {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        } catch (err) {
+          console.warn('scroll error:', err);
+        }
+      }, 200);
+    }
+  });
+</script>
 </body>
 </html>
