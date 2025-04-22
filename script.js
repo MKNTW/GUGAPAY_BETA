@@ -3892,7 +3892,7 @@ async function openChatWindow(chatId, partnerId) {
     const tm = new Date(m.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
     const bubble = document.createElement('div');
-    bubble.className = `bubble ${side}`;
+    bubble.className = `bubble ${side} slide-in-up`;
 
     let mediaPart = '';
     if (m.media_url) {
