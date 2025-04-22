@@ -1110,6 +1110,11 @@ function injectMainUIStyles() {
   const style = document.createElement("style");
   style.id = "mainUIStyles";
   style.textContent = `
+    function injectMainUIStyles() {
+  if (document.getElementById("mainUIStyles")) return;
+  const style = document.createElement("style");
+  style.id = "mainUIStyles";
+  style.textContent = `
     body {
       margin: 0;
       padding: 0;
@@ -1286,6 +1291,9 @@ function injectMainUIStyles() {
     #balanceValue {
       font-weight: 500;
     }
+  `;
+  document.head.appendChild(style);
+}
   `;
   document.head.appendChild(style);
 }
