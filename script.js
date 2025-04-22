@@ -4192,6 +4192,8 @@ async function openChatWindow(chatId, partnerId) {
   // Если не заблокированы — подключаем ввод
   if (!blockedByMe && !blockedMe) {
     const input         = document.getElementById('chatText');
+console.log('INPUT CHATTEXT DETECTED:', input);
+if (input) console.log('OFFSET HEIGHT:', input.offsetHeight, 'VISIBLE:', window.getComputedStyle(input).display);
     const sendBtn       = document.getElementById('chatSend');
     const mediaInput    = document.getElementById('mediaInput');
     const uploadBtn     = document.getElementById('uploadMediaBtn');
@@ -4372,3 +4374,21 @@ document.addEventListener('touchstart', function(event) {
     }
   }
 }, { passive: true });
+
+
+document.addEventListener('focusin', (e) => {
+  const el = e.target;
+  if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+    setTimeout(() => {
+      try {
+        const cs = window.getComputedStyle(el);
+        console.log('[INPUT]', el.id, 'offsetHeight:', el.offsetHeight, 'display:', cs.display);
+        if (el.offsetHeight > 0 && cs.display !== 'none') {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      } catch(err) {
+        console.warn('focusin scroll error:', err);
+      }
+    }, 250);
+  }
+});
