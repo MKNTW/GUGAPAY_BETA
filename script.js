@@ -1058,79 +1058,53 @@ function createMainUI() {
     balanceContainer.appendChild(gugaCard);
   }
 
-  // Дополнительно
-  const mineContainer = document.getElementById("mineContainer");
-  if (mineContainer) mineContainer.style.display = "none";
+  // 🔹 Нижняя навигация
+  if (!document.getElementById("bottomBar")) {
+    const bottomBar = document.createElement("div");
+    bottomBar.id = "bottomBar";
+    bottomBar.className = "bottom-bar";
 
-  fetchUserData();
-  clearInterval(updateInterval);
-  updateInterval = setInterval(fetchUserData, 2000);
-}
+    bottomBar.innerHTML = `
+      <button id="btnMain" class="nav-btn">
+        <img src="photo/69.png" class="nav-icon">
+        <span>Главная</span>
+      </button>
+      <button id="historyBtn" class="nav-btn">
+        <img src="photo/70.png" class="nav-icon">
+        <span>История</span>
+      </button>
+      <button id="chatBtn" class="nav-btn">
+        <img src="photo/101.svg" class="nav-icon1">
+        <span>Чаты</span>
+      </button>
+    `;
+    document.body.appendChild(bottomBar);
 
-  // ──────────────────────────────────────────────────────────
-// Bottom navigation bar (создаётся один раз)
-// ──────────────────────────────────────────────────────────
-if (!document.getElementById("bottomBar")) {
-  const bottomBar = document.createElement("div");
-  bottomBar.id = "bottomBar";
-  bottomBar.className = "bottom-bar";
-
-  bottomBar.innerHTML = `
-    <button id="btnMain" class="nav-btn">
-      <img src="photo/69.png" class="nav-icon">
-      <span>Главная</span>
-    </button>
-
-    <button id="historyBtn" class="nav-btn">
-      <img src="photo/70.png" class="nav-icon">
-      <span>История</span>
-    </button>
-
-    <button id="chatBtn" class="nav-btn">
-      <img src="photo/101.svg" class="nav-icon1">
-      <span>Чаты</span>
-    </button>
-  `;
-
-  document.body.appendChild(bottomBar);
-
-  /* ——— кнопка «Главная» ——— */
-  bottomBar.querySelector("#btnMain").addEventListener("click", () => {
-    removeAllModals();
-  });
-
-  /* ——— кнопка «История» ——— */
-  bottomBar.querySelector("#historyBtn").addEventListener("click", () => {
-    removeAllModals();
-    openHistoryModal();
-  });
-
-  /* ——— кнопка «Чаты» ——— */
-  bottomBar.querySelector("#chatBtn").addEventListener("click", () => {
-    removeAllModals();
-    openChatListModal();   // функция из блока чатов
-  });
-}
-
-  // Show main balance display if present
-  const balanceDisplay = document.getElementById("balanceDisplay");
-  if (balanceDisplay) {
-    balanceDisplay.style.display = "block";
+    bottomBar.querySelector("#btnMain").addEventListener("click", () => {
+      removeAllModals();
+    });
+    bottomBar.querySelector("#historyBtn").addEventListener("click", () => {
+      removeAllModals();
+      openHistoryModal();
+    });
+    bottomBar.querySelector("#chatBtn").addEventListener("click", () => {
+      removeAllModals();
+      openChatListModal();
+    });
   }
-  // Hide mining UI if present
+
+  // Скрытие блока майнинга (если есть)
   const mineContainer = document.getElementById("mineContainer");
   if (mineContainer) {
     mineContainer.style.display = "none";
   }
-  // Fetch data (balances, user info) and set up periodic refresh
+
+  // Обновление данных
   fetchUserData();
   clearInterval(updateInterval);
   updateInterval = setInterval(fetchUserData, 2000);
 }
 
-/**
- * Inject main UI CSS (called once).
- */
 function injectMainUIStyles() {
   if (document.getElementById("mainUIStyles")) return;
   const style = document.createElement("style");
@@ -1141,7 +1115,8 @@ function injectMainUIStyles() {
       padding: 0;
       font-family: "Oswald", sans-serif;
     }
-    /* Gradient header */
+
+    /* 🔷 Верхняя шапка */
     .main-header {
       width: 100%;
       background: linear-gradient(90deg, #2F80ED, #2D9CDB);
@@ -1151,13 +1126,17 @@ function injectMainUIStyles() {
       box-sizing: border-box;
       z-index: 90000;
     }
+
+    /* 🔹 Кнопки действий */
     .action-container {
       display: flex;
-      gap: 0px;
       justify-content: center;
       margin-bottom: 16px;
       margin-top: 175px;
+      flex-wrap: wrap;
+      gap: 12px;
     }
+
     .action-btn {
       display: flex;
       flex-direction: column;
@@ -1168,11 +1147,13 @@ function injectMainUIStyles() {
       color: #fff;
       font-size: 14px;
       font-weight: 600;
-      // text-transform: uppercase;
+      outline: none;
     }
+
     .action-btn:hover {
       opacity: 0.9;
     }
+
     .icon-wrap {
       width: 50px;
       height: 50px;
@@ -1184,16 +1165,20 @@ function injectMainUIStyles() {
       margin-bottom: 10px;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
+
     .action-icon {
       width: 28px;
       height: 28px;
       border-radius: 6px;
       object-fit: cover;
     }
+
     .header-divider {
       width: 100%;
       height: 0px;
     }
+
+    /* 🔸 Карты с балансами */
     .balance-container {
       position: absolute;
       top: 320px;
@@ -1205,6 +1190,7 @@ function injectMainUIStyles() {
       flex-direction: column;
       gap: 8px;
     }
+
     .balance-card {
       background: #F8F9FB;
       border-radius: 15px;
@@ -1213,9 +1199,8 @@ function injectMainUIStyles() {
       display: flex;
       align-items: center;
       gap: 16px;
-      margin-left: -5px;
-      margin-right: -5px;
     }
+
     .balance-icon-wrap {
       width: 50px;
       height: 50px;
@@ -1225,36 +1210,45 @@ function injectMainUIStyles() {
       align-items: center;
       justify-content: center;
     }
+
     .balance-icon {
       width: 30px;
       height: 30px;
     }
+
     .balance-info {
       display: flex;
       flex-direction: column;
     }
+
     .balance-label {
       font-size: 15px;
       font-weight: 500;
       color: #1A1A1A;
     }
+
     .balance-amount {
       font-size: 16px;
       font-weight: 500;
       color: #666;
     }
+
+    /* 🔻 Нижняя панель навигации */
     .bottom-bar {
       position: fixed;
-      bottom: 0; left: 0;
+      bottom: 0;
+      left: 0;
       width: 100%;
       background-color: #fff;
       display: flex;
       justify-content: space-around;
       align-items: center;
       padding-bottom: 20px;
+      padding-top: 10px;
       box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
       z-index: 999999;
     }
+
     .nav-btn {
       display: flex;
       flex-direction: column;
@@ -1266,16 +1260,31 @@ function injectMainUIStyles() {
       font-size: 14px;
       padding: 10px;
     }
+
     .nav-icon {
       width: 30px;
       height: 30px;
       margin-bottom: 4px;
     }
+
     .nav-icon1 {
       width: 23px;
       height: 23px;
       margin-bottom: 8px;
       margin-top: 3px;
+    }
+
+    /* 🧾 Balance header block (optional) */
+    #balanceDisplayMain {
+      transition: all 0.3s ease;
+    }
+
+    #balanceDisplay {
+      display: block;
+    }
+
+    #balanceValue {
+      font-weight: 500;
     }
   `;
   document.head.appendChild(style);
