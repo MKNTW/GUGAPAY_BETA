@@ -4286,6 +4286,7 @@ document.getElementById('chatBtn')?.addEventListener('click',()=>{
 /**************************************************
  * WINDOW EVENTS
  **************************************************/
+
 // Flush mined coins before leaving page
 window.addEventListener("beforeunload", () => {
   if (pendingMinedCoins > 0) {
@@ -4293,26 +4294,29 @@ window.addEventListener("beforeunload", () => {
   }
 });
 
-
-
-  setTimeout(() => {
-  }, 300);
-});
-
+// Скрытие клавиатуры при тапе вне input/textarea
+document.addEventListener('touchstart', function(event) {
   const isInput = event.target.closest('input, textarea');
   if (!isInput) {
+    const focused = document.activeElement;
+    if (focused && (focused.tagName === 'INPUT' || focused.tagName === 'TEXTAREA')) {
+      focused.blur();
     }
   }
 }, { passive: true });
 
-
+// Прокрутка к полю ввода при фокусе (особенно важно для iOS)
+document.addEventListener('focusin', function(e) {
   const el = e.target;
   if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
     setTimeout(() => {
       try {
         const cs = window.getComputedStyle(el);
+        if (el.offsetHeight > 0 && cs.display !== 'none') {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
-      } catch(err) {
+      } catch (err) {
+        console.warn('scroll error:', err);
       }
     }, 250);
   }
