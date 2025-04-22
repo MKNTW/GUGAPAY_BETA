@@ -2431,7 +2431,6 @@ const exchangeStyles = `
   align-items: center;
   width: 100%;
   box-sizing: border-box;
-  flex-wrap: wrap;      /* на случай узкого экрана, элементы уйдут на новую строку */
 }
 
 .currency-block .currency-input {
