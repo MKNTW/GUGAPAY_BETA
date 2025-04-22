@@ -1119,7 +1119,7 @@ function injectMainUIStyles() {
       gap: 0px;
       justify-content: center;
       margin-bottom: 16px;
-      margin-top: 75px;
+      margin-top: 55px;
     }
     .action-btn {
       display: flex;
@@ -1353,7 +1353,7 @@ async function fetchUserData() {
             font-size: 24px;
             font-weight: 600;
             color: #ffffff;
-            margin: 70px 0;
+            margin: 90px 0;
           `;
           // вставляем перед кнопками
           const actionContainer = headerEl.querySelector(".action-container");
