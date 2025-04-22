@@ -2424,6 +2424,26 @@ const exchangeStyles = `
 .bottom-spacer {
   height: 0px;
 }
+
+.currency-block .input-group {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+  flex-wrap: wrap;      /* на случай узкого экрана, элементы уйдут на новую строку */
+}
+
+.currency-block .currency-input {
+  /* input будет занимать всё доступное место и при этом не вылезет */
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.currency-block .currency-display {
+  /* иконка + символ всегда «свёрстаны» по содержимому */
+  flex: 0 0 auto;
+}
 `;
 const style = document.createElement('style');
 style.textContent = exchangeStyles;
