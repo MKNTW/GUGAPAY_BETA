@@ -623,54 +623,17 @@ function openRequestModal() {
  * AUTH MODAL (Login/Register UI)
  **************************************************/
 function openAuthModal() {
-  hideMainUI();
-  removeAllModals();
-
-  createModal("authModal", `
-    <div class="auth-fullscreen white-background">
-      <div class="auth-header">
-        <img src="photo/15.png" alt="logo" class="auth-logo" />
-        <span class="auth-app-name">GugaPay</span>
-        <span class="auth-beta-tag">beta</span>
-      </div>
-
-      <p class="auth-subtitle">Для входа в GugaPay, пожалуйста, авторизуйтесь с помощью логина и пароля или через Telegram.</p>
-
-      <div class="auth-overlay">
-        <!-- Login Form -->
-        <div id="loginSection" class="auth-form">
-          <input type="text" id="loginInput" placeholder="Логин" class="auth-input" autofocus />
-          <div class="password-wrapper">
-            <input type="password" id="passwordInput" placeholder="Пароль" class="auth-input password-input" />
-            <span class="toggle-password" onclick="togglePasswordVisibility('passwordInput', this)">👁️</span>
-          </div>
-          <button id="loginSubmitBtn" class="auth-button">Войти</button>
-        </div>
-
-        <!-- Register Form -->
-        <div id="registerSection" class="auth-form" style="display: none;">
-          <input type="text" id="regLogin" placeholder="Логин" class="auth-input" />
-          <div class="password-wrapper">
-            <input type="password" id="regPassword" placeholder="Пароль" class="auth-input password-input" />
-            <span class="toggle-password" onclick="togglePasswordVisibility('regPassword', this)">👁️</span>
-          </div>
-          <button id="registerSubmitBtn" class="auth-button">Зарегистрироваться</button>
-        </div>
-
-        <!-- Toggle -->
-        <button id="toggleAuthBtn" class="toggle-auth">Войти / Зарегистрироваться</button>
-
-        <div class="divider">или</div>
-
-        <div id="telegramBtnContainer"></div>
-      </div>
+  createModal('authModal', `
+    <div style="padding: 20px;">
+      <h2>Авторизация</h2>
+      <input id="loginInput" placeholder="Введите логин" style="width: 100%; padding: 10px; font-size: 16px;" />
     </div>
-  `, {
-    showCloseBtn: false,
-    hasVerticalScroll: false,
-    defaultFromBottom: false,
-    noRadiusByDefault: true,
-    customStyles: { backgroundColor: "#ffffff" }
+  `);
+  const input = document.getElementById('loginInput');
+  input.addEventListener('touchstart', () => {
+    requestAnimationFrame(() => input.focus());
+  }, { once: true });
+}
   });
 
   document.getElementById("loginSubmitBtn").addEventListener("click", async () => {
@@ -4353,94 +4316,10 @@ window.addEventListener("beforeunload", () => {
   }
 });
 
-// iOS PWA input focus fix
-const el_amountInput = document.getElementById("amountInput");
-if (el_amountInput) {
-  el_amountInput.addEventListener("touchstart", () => {
-    requestAnimationFrame(() => el_amountInput.focus());
+
+// iOS-friendly модальное открытие авторизации
+document.addEventListener('DOMContentLoaded', () => {
+  document.body.addEventListener('click', () => {
+    openAuthModal(); // Показываем модалку ТОЛЬКО после клика
   }, { once: true });
-}
-const el_chatText = document.getElementById("chatText");
-if (el_chatText) {
-  el_chatText.addEventListener("touchstart", () => {
-    requestAnimationFrame(() => el_chatText.focus());
-  }, { once: true });
-}
-const el_loginInput = document.getElementById("loginInput");
-if (el_loginInput) {
-  el_loginInput.addEventListener("touchstart", () => {
-    requestAnimationFrame(() => el_loginInput.focus());
-  }, { once: true });
-}
-const el_mediaInput = document.getElementById("mediaInput");
-if (el_mediaInput) {
-  el_mediaInput.addEventListener("touchstart", () => {
-    requestAnimationFrame(() => el_mediaInput.focus());
-  }, { once: true });
-}
-const el_merchantToUserIdInput = document.getElementById("merchantToUserIdInput");
-if (el_merchantToUserIdInput) {
-  el_merchantToUserIdInput.addEventListener("touchstart", () => {
-    requestAnimationFrame(() => el_merchantToUserIdInput.focus());
-  }, { once: true });
-}
-const el_merchantTransferAmountInput = document.getElementById("merchantTransferAmountInput");
-if (el_merchantTransferAmountInput) {
-  el_merchantTransferAmountInput.addEventListener("touchstart", () => {
-    requestAnimationFrame(() => el_merchantTransferAmountInput.focus());
-  }, { once: true });
-}
-const el_partnerIdInput = document.getElementById("partnerIdInput");
-if (el_partnerIdInput) {
-  el_partnerIdInput.addEventListener("touchstart", () => {
-    requestAnimationFrame(() => el_partnerIdInput.focus());
-  }, { once: true });
-}
-const el_passwordInput = document.getElementById("passwordInput");
-if (el_passwordInput) {
-  el_passwordInput.addEventListener("touchstart", () => {
-    requestAnimationFrame(() => el_passwordInput.focus());
-  }, { once: true });
-}
-const el_profileNameInput = document.getElementById("profileNameInput");
-if (el_profileNameInput) {
-  el_profileNameInput.addEventListener("touchstart", () => {
-    requestAnimationFrame(() => el_profileNameInput.focus());
-  }, { once: true });
-}
-const el_profilePhotoInput = document.getElementById("profilePhotoInput");
-if (el_profilePhotoInput) {
-  el_profilePhotoInput.addEventListener("touchstart", () => {
-    requestAnimationFrame(() => el_profilePhotoInput.focus());
-  }, { once: true });
-}
-const el_qrAmountInput = document.getElementById("qrAmountInput");
-if (el_qrAmountInput) {
-  el_qrAmountInput.addEventListener("touchstart", () => {
-    requestAnimationFrame(() => el_qrAmountInput.focus());
-  }, { once: true });
-}
-const el_qrPurposeInput = document.getElementById("qrPurposeInput");
-if (el_qrPurposeInput) {
-  el_qrPurposeInput.addEventListener("touchstart", () => {
-    requestAnimationFrame(() => el_qrPurposeInput.focus());
-  }, { once: true });
-}
-const el_requestAmountInput = document.getElementById("requestAmountInput");
-if (el_requestAmountInput) {
-  el_requestAmountInput.addEventListener("touchstart", () => {
-    requestAnimationFrame(() => el_requestAmountInput.focus());
-  }, { once: true });
-}
-const el_toUserIdInput = document.getElementById("toUserIdInput");
-if (el_toUserIdInput) {
-  el_toUserIdInput.addEventListener("touchstart", () => {
-    requestAnimationFrame(() => el_toUserIdInput.focus());
-  }, { once: true });
-}
-const el_transferAmountInput = document.getElementById("transferAmountInput");
-if (el_transferAmountInput) {
-  el_transferAmountInput.addEventListener("touchstart", () => {
-    requestAnimationFrame(() => el_transferAmountInput.focus());
-  }, { once: true });
-}
+});
