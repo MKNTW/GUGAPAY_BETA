@@ -1317,7 +1317,6 @@ async function fetchUserData() {
         balanceValue.textContent = `${formatBalance(totalRub, 2)} ₽`;
       }
 
-      const userIdEl = document.getElementById("userIdDisplay");
       if (userIdEl) {
         userIdEl.textContent = "ID: " + currentUserId;
       }
