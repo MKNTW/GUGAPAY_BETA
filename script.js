@@ -1119,7 +1119,7 @@ function injectMainUIStyles() {
       gap: 0px;
       justify-content: center;
       margin-bottom: 16px;
-      margin-top: 175px;
+      margin-top: 75px;
     }
     .action-btn {
       display: flex;
@@ -1252,7 +1252,7 @@ function injectMainUIStyles() {
  * @param {string} [defaultValue="0.00000"]
  * @returns {string}
  */
-function formatBalance(num, decimals = 5, defaultValue = "0.00000") {
+function formatBalance(num, decimals = 2, defaultValue = "0.00") {
   const parsed = parseFloat(num);
   if (isNaN(parsed)) return defaultValue;
   const fixed = parsed.toFixed(decimals);
@@ -1353,7 +1353,7 @@ async function fetchUserData() {
             font-size: 24px;
             font-weight: 600;
             color: #ffffff;
-            margin: 12px 0;
+            margin: 70px 0;
           `;
           // вставляем перед кнопками
           const actionContainer = headerEl.querySelector(".action-container");
