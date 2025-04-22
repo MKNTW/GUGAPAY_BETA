@@ -3797,17 +3797,18 @@ async function openChatListModal() {
     const rowsHtml = chatData.map(c => c.rowHtml).join('');
 
     const newChatBtn = `
-      <button id="newChatBtn" style="
-        width: calc(100% - 32px);
-        margin-bottom: 12px;
-        padding: 12px;
-        border:none;
-        background:#2F80ED;
-        color:#fff;
-        border-radius:12px;
-        font-weight:600;
-        cursor:pointer;
-      ">
+  <button id="newChatBtn" style="
+    display: block;
+    width: 100%;
+    margin: 0 0 12px 0;
+    padding: 12px;
+    border: none;
+    background: #2F80ED;
+    color: #fff;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  ">
         + Новый чат
       </button>`;
 
