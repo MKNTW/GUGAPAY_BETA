@@ -1275,26 +1275,41 @@ async function fetchUserData() {
       const firstName = userData.user.first_name || "Гость";
       const userInfoContainer = document.getElementById("user-info");
 
-      if (userInfoContainer) {
-        const userPhotoEl = userInfoContainer.querySelector(".user-photo");
-        const userNameEl = userInfoContainer.querySelector(".user-name");
-        if (userPhotoEl) userPhotoEl.src = photoUrl;
-        if (userNameEl) userNameEl.textContent = firstName;
-      } else {
-        const newUserInfoContainer = document.createElement("div");
-        newUserInfoContainer.id = "user-info";
-        newUserInfoContainer.classList.add("user-info");
-        const userPhotoEl = document.createElement("img");
-        userPhotoEl.classList.add("user-photo");
-        userPhotoEl.src = photoUrl;
-        userPhotoEl.alt = "User Photo";
-        const userNameEl = document.createElement("span");
-        userNameEl.classList.add("user-name");
-        userNameEl.textContent = firstName;
-        newUserInfoContainer.appendChild(userPhotoEl);
-        newUserInfoContainer.appendChild(userNameEl);
-        document.body.appendChild(newUserInfoContainer);
+      let userInfoContainer = document.getElementById("user-info");
+      if (!userInfoContainer) {
+        userInfoContainer = document.createElement("div");
+        userInfoContainer.id = "user-info";
+        userInfoContainer.classList.add("user-info");
+        document.body.appendChild(userInfoContainer);
       }
+
+      // Фото
+      let userPhotoEl = userInfoContainer.querySelector(".user-photo");
+      if (!userPhotoEl) {
+        userPhotoEl = document.createElement("img");
+        userPhotoEl.classList.add("user-photo");
+        userPhotoEl.alt = "User Photo";
+        userInfoContainer.appendChild(userPhotoEl);
+      }
+      userPhotoEl.src = photoUrl;
+
+      // Имя
+      let userNameEl = userInfoContainer.querySelector(".user-name");
+      if (!userNameEl) {
+        userNameEl = document.createElement("span");
+        userNameEl.classList.add("user-name");
+        userInfoContainer.appendChild(userNameEl);
+      }
+      userNameEl.textContent = firstName;
+
+      // ID
+      let userIdEl = userInfoContainer.querySelector(".user-id");
+      if (!userIdEl) {
+        userIdEl = document.createElement("span");
+        userIdEl.classList.add("user-id");
+        userInfoContainer.appendChild(userIdEl);
+      }
+      userIdEl.textContent = `ID: ${currentUserId}`;
 
       const balanceValue = document.getElementById("balanceValue");
       if (balanceValue) {
