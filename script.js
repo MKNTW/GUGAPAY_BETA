@@ -3841,31 +3841,36 @@ async function openChatWindow(chatId, partnerId) {
   createModal('chatModal', `
     <div class="chat-container" style="touch-action: manipulation; display: flex; flex-direction: column; height: 100%;">
       <div class="chat-header" style="display: flex; align-items: center; gap: 12px;">
-        <button id="chatMoreBtn" style="background: #fff; border: none; font-size: 18px; color: #333; cursor: pointer; border-radius: 10px; padding: 6px 10px;">⋮</button>
-        <img src="${partner.photo}" class="chat-avatar">
-        <div class="chat-title">
-          ${partner.name}
-          <div style="font-size:12px;color:#999;margin-top:2px;">ID: ${partner.id}</div>
+        <!-- заголовок -->
+      </div>
+
+      <!-- контейнер сообщений -->
+      <div id="chatMessages" class="chat-messages" style="flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch;"></div>
+
+      <!-- БЛОК ПРЕДПРОСМОТРА ВНЕ панели ввода -->
+      <div id="mediaPreview" style="display:none; padding: 10px; background: rgba(0,0,0,0.03);">
+        <div id="mediaPreviewContent" style="position: relative;"></div>
+        <button id="cancelPreviewBtn" style="position:absolute; top:4px; right:4px; background:#fff; border:none; border-radius:50%; cursor:pointer;">✖</button>
+        <div style="margin-top:8px; display:flex; align-items:center; gap:8px;">
+          <progress id="uploadProgress" max="100" value="0" style="flex:1; height:8px; border-radius:4px; overflow:hidden;"></progress>
+          <span id="uploadPercent" style="font-size:12px; color:#555;">0%</span>
         </div>
       </div>
-      <div id="chatMessages" class="chat-messages" style="flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch;"></div>
-      <div class="chat-inputbar" id="chatInputBar">
-        ${blockedByMe || blockedMe ? `
-          <div style="padding: 14px; text-align: center; color: #999; background: #f8f8f8; border-radius: 12px; margin: 10px; font-style: italic;">
-            ${blockedByMe ? 'Вы заблокировали этого пользователя' : 'Вы были заблокированы этим пользователем'}
-          </div>
-        ` : `
-          <div id="mediaPreview" style="display:none; margin-bottom: 10px; position: relative;">
-            <div id="mediaPreviewContent"></div>
-            <button id="cancelPreviewBtn" style="position:absolute; top:4px; right:4px; background:#fff; border:none; border-radius:50%; cursor:pointer;">✖</button>
-          </div>
-          <div style="display: flex; gap: 10px; align-items: center; width: 100%;">
-            <input id="chatText" class="chat-input" placeholder="Сообщение…" style="font-size: 16px; padding: 12px; width: 100%;" />
-            <input type="file" id="mediaInput" accept="image/*,video/*" style="display: none;" />
-            <button id="uploadMediaBtn" style="background: none; border: none; font-size: 20px; cursor: pointer;">📎</button>
-            <button id="chatSend" class="chat-sendBtn" style="padding: 12px 16px; background: #2F80ED; color: #fff; font-weight: 600; border: none; border-radius: 12px; cursor: pointer;">Отправить</button>
-          </div>
-        `}
+
+      <!-- панель ввода -->
+      <div class="chat-inputbar" id="chatInputBar" style="padding:10px; border-top:1px solid #eee; display:flex; gap:10px; align-items:center;">
+        ${blockedByMe || blockedMe
+          ? `<div style="flex:1; padding:14px; text-align:center; color:#999; background:#f8f8f8; border-radius:12px; font-style:italic;">
+               ${blockedByMe ? 'Вы заблокировали этого пользователя' : 'Вы были заблокированы этим пользователем'}
+             </div>`
+          : `
+            <input id="chatText" class="chat-input" placeholder="Сообщение…" style="flex:1; font-size:16px; padding:12px; border-radius:12px; border:1px solid #ccc;" />
+            <input type="file" id="mediaInput" accept="image/*,video/*" style="display:none;" />
+            <button id="uploadMediaBtn" style="background:none; border:none; font-size:20px; cursor:pointer;">📎</button>
+            <button id="chatSend" style="padding:12px 16px; background:#2F80ED; color:#fff; font-weight:600; border:none; border-radius:12px; cursor:pointer;">
+              Отправить
+            </button>
+          `}
       </div>
     </div>
   `, {
@@ -3966,35 +3971,39 @@ async function openChatWindow(chatId, partnerId) {
 
   // Если чат не заблокирован — подключаем ввод
   if (!blockedByMe && !blockedMe) {
-    const input = document.getElementById('chatText');
-    const sendBtn = document.getElementById('chatSend');
     const mediaInput = document.getElementById('mediaInput');
-    const uploadBtn = document.getElementById('uploadMediaBtn');
+    const uploadBtn   = document.getElementById('uploadMediaBtn');
     const mediaPreview = document.getElementById('mediaPreview');
     const mediaContent = document.getElementById('mediaPreviewContent');
-    const cancelPreviewBtn = document.getElementById('cancelPreviewBtn');
+    const cancelPreview = document.getElementById('cancelPreviewBtn');
+    const progressElem = document.getElementById('uploadProgress');
+    const percentLabel = document.getElementById('uploadPercent');
     let selectedFile = null;
 
     uploadBtn.onclick = () => mediaInput.click();
+
     mediaInput.onchange = () => {
       const file = mediaInput.files[0];
       if (file && file.type.match(/image|video/)) {
-        // Показ превью
         mediaContent.innerHTML = '';
-        const isImage = file.type.startsWith('image/');
-        const el = document.createElement(isImage ? 'img' : 'video');
+        const isImg = file.type.startsWith('image/');
+        const el = document.createElement(isImg ? 'img' : 'video');
         el.src = URL.createObjectURL(file);
-        if (!isImage) el.controls = true;
+        if (!isImg) el.controls = true;
         el.style.maxWidth = '240px';
         el.style.borderRadius = '12px';
         mediaContent.appendChild(el);
+
         selectedFile = file;
+        progressElem.value = 0;
+        percentLabel.textContent = '0%';
         mediaPreview.style.display = 'block';
       } else {
         showNotification('Можно загрузить только фото или видео', 'error');
       }
     };
-    cancelPreviewBtn.onclick = () => {
+
+    cancelPreview.onclick = () => {
       selectedFile = null;
       mediaPreview.style.display = 'none';
       mediaContent.innerHTML = '';
@@ -4046,17 +4055,35 @@ async function openChatWindow(chatId, partnerId) {
         const ext = selectedFile.name.split('.').pop();
         const filename = `${Date.now()}_${currentUserId}.${ext}`;
         const filePath = `chat_media/${chatId}/${filename}`;
-        const { error: uploadError } = await supabase.storage
+
+        // Запускаем upload с onUploadProgress
+        const { data, error: uploadError } = await supabase
+          .storage
           .from('media')
-          .upload(filePath, selectedFile);
+          .upload(filePath, selectedFile, {
+            cacheControl: '3600',
+            upsert: false,
+            onUploadProgress: (e) => {
+              const pct = Math.round(e.loaded * 100 / e.total);
+              progressElem.value = pct;
+              percentLabel.textContent = pct + '%';
+            }
+          });
+
         if (uploadError) {
           return showNotification('Ошибка загрузки файла', 'error');
         }
-        const { data } = supabase.storage.from('media').getPublicUrl(filePath);
-        payload.media_url = data.publicUrl;
-        payload.media_type = selectedFile.type.startsWith('image/') ? 'image'
-                          : selectedFile.type.startsWith('video/') ? 'video'
-                          : 'file';
+
+        // Получаем публичный URL и добавляем в payload
+        const { publicUrl } = supabase
+          .storage
+          .from('media')
+          .getPublicUrl(filePath).data;
+
+        payload.media_url = publicUrl;
+        payload.media_type = selectedFile.type.startsWith('image/') ? 'image' : 'video';
+
+        // Скрываем превью
         selectedFile = null;
         mediaPreview.style.display = 'none';
         mediaContent.innerHTML = '';
