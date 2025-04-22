@@ -904,9 +904,30 @@ function togglePasswordVisibility(inputId, toggleEl) {
  * MAIN UI (Home screen with gradient header and balances)
  **************************************************/
 function createMainUI() {
-  // Inject main UI styles
   injectMainUIStyles();
-  // Profile icon (top-right)
+
+  // 🟦 Блок баланса и ID сверху
+  if (!document.getElementById("balanceDisplayMain")) {
+    const balanceBlock = document.createElement("div");
+    balanceBlock.id = "balanceDisplayMain";
+    balanceBlock.style.padding = "16px";
+    balanceBlock.style.background = "linear-gradient(90deg, #2F80ED, #2D9CDB)";
+    balanceBlock.style.borderRadius = "20px";
+    balanceBlock.style.color = "white";
+    balanceBlock.style.margin = "20px";
+    balanceBlock.style.fontFamily = "'Oswald', sans-serif";
+    balanceBlock.style.boxShadow = "0 4px 16px rgba(0,0,0,0.1)";
+    balanceBlock.style.textAlign = "center";
+
+    balanceBlock.innerHTML = `
+      <div id="userNameDisplay" style="font-size: 22px; font-weight: bold;">Имя</div>
+      <div id="userIdDisplay" style="font-size: 14px; opacity: 0.85;">ID: ---</div>
+      <div id="mainBalanceFormatted" style="font-size: 28px; font-weight: bold; margin-top: 8px;">0.00 ₲</div>
+    `;
+    document.body.appendChild(balanceBlock);
+  }
+
+  // 🔹 Профиль (иконка)
   if (!currentMerchantId && !document.getElementById("profileIconContainer")) {
     const profileIconContainer = document.createElement("div");
     profileIconContainer.id = "profileIconContainer";
@@ -935,44 +956,45 @@ function createMainUI() {
     profileIconContainer.addEventListener("click", openProfileModal);
   }
 
-  // Header container with action buttons
+  // 🔹 Header + action buttons
   let headerEl = document.getElementById("mainHeaderContainer");
   if (!headerEl) {
     headerEl = document.createElement("div");
     headerEl.id = "mainHeaderContainer";
     headerEl.className = "main-header";
     document.body.appendChild(headerEl);
-    // Action buttons (Transfer, Request, Pay)
+
     const actionContainer = document.createElement("div");
     actionContainer.className = "action-container";
     actionContainer.innerHTML = `
-  <button id="transferBtn" class="action-btn">
-    <div class="icon-wrap">
-      <img src="photo/81.png" class="action-icon"/>
-    </div>
-    <span>Перевести</span>
-  </button>
-  <button id="requestBtn" class="action-btn">
-    <div class="icon-wrap">
-      <img src="photo/82.png" class="action-icon"/>
-    </div>
-    <span>Запросить</span>
-  </button>
-  <button id="payQRBtn" class="action-btn">
-    <div class="icon-wrap">
-      <img src="photo/90.png" class="action-icon"/>
-    </div>
-    <span>Оплатить</span>
-  </button>
-  <button id="exchangeBtn" class="action-btn">
-    <div class="icon-wrap">
-      <img src="photo/71.png" class="action-icon"/>
-    </div>
-    <span>Обменять</span>
-  </button>
-`;
+      <button id="transferBtn" class="action-btn">
+        <div class="icon-wrap">
+          <img src="photo/81.png" class="action-icon"/>
+        </div>
+        <span>Перевести</span>
+      </button>
+      <button id="requestBtn" class="action-btn">
+        <div class="icon-wrap">
+          <img src="photo/82.png" class="action-icon"/>
+        </div>
+        <span>Запросить</span>
+      </button>
+      <button id="payQRBtn" class="action-btn">
+        <div class="icon-wrap">
+          <img src="photo/90.png" class="action-icon"/>
+        </div>
+        <span>Оплатить</span>
+      </button>
+      <button id="exchangeBtn" class="action-btn">
+        <div class="icon-wrap">
+          <img src="photo/71.png" class="action-icon"/>
+        </div>
+        <span>Обменять</span>
+      </button>
+    `;
     headerEl.appendChild(actionContainer);
-    // Button event handlers
+
+    // Обработчики
     actionContainer.querySelector("#transferBtn").addEventListener("click", () => {
       removeAllModals();
       openTransferModal();
@@ -986,23 +1008,23 @@ function createMainUI() {
       openPayQRModal();
     });
     actionContainer.querySelector("#exchangeBtn").addEventListener("click", () => {
-    removeAllModals();
-    openExchangeModal(); // открывает окно обмена
+      removeAllModals();
+      openExchangeModal();
     });
-    // Divider (or spacing at bottom of header)
+
     const headerDivider = document.createElement("div");
     headerDivider.className = "header-divider";
     headerEl.appendChild(headerDivider);
   }
 
-  // Balance cards container
+  // 🔹 Balance cards
   let balanceContainer = document.getElementById("balanceContainer");
   if (!balanceContainer) {
     balanceContainer = document.createElement("div");
     balanceContainer.id = "balanceContainer";
     balanceContainer.className = "balance-container";
     document.body.appendChild(balanceContainer);
-    // RUB card
+
     const rubCard = document.createElement("div");
     rubCard.className = "balance-card rub";
     rubCard.innerHTML = `
@@ -1015,7 +1037,7 @@ function createMainUI() {
       </div>
     `;
     balanceContainer.appendChild(rubCard);
-    // GUGA card
+
     const gugaCard = document.createElement("div");
     gugaCard.className = "balance-card guga";
     gugaCard.innerHTML = `
@@ -1030,218 +1052,47 @@ function createMainUI() {
     balanceContainer.appendChild(gugaCard);
   }
 
-  // ──────────────────────────────────────────────────────────
-// Bottom navigation bar (создаётся один раз)
-// ──────────────────────────────────────────────────────────
-if (!document.getElementById("bottomBar")) {
-  const bottomBar = document.createElement("div");
-  bottomBar.id = "bottomBar";
-  bottomBar.className = "bottom-bar";
+  // 🔹 Навигация снизу
+  if (!document.getElementById("bottomBar")) {
+    const bottomBar = document.createElement("div");
+    bottomBar.id = "bottomBar";
+    bottomBar.className = "bottom-bar";
+    bottomBar.innerHTML = `
+      <button id="btnMain" class="nav-btn">
+        <img src="photo/69.png" class="nav-icon">
+        <span>Главная</span>
+      </button>
+      <button id="historyBtn" class="nav-btn">
+        <img src="photo/70.png" class="nav-icon">
+        <span>История</span>
+      </button>
+      <button id="chatBtn" class="nav-btn">
+        <img src="photo/101.svg" class="nav-icon1">
+        <span>Чаты</span>
+      </button>
+    `;
+    document.body.appendChild(bottomBar);
 
-  bottomBar.innerHTML = `
-    <button id="btnMain" class="nav-btn">
-      <img src="photo/69.png" class="nav-icon">
-      <span>Главная</span>
-    </button>
-
-    <button id="historyBtn" class="nav-btn">
-      <img src="photo/70.png" class="nav-icon">
-      <span>История</span>
-    </button>
-
-    <button id="chatBtn" class="nav-btn">
-      <img src="photo/101.svg" class="nav-icon1">
-      <span>Чаты</span>
-    </button>
-  `;
-
-  document.body.appendChild(bottomBar);
-
-  /* ——— кнопка «Главная» ——— */
-  bottomBar.querySelector("#btnMain").addEventListener("click", () => {
-    removeAllModals();
-  });
-
-  /* ——— кнопка «История» ——— */
-  bottomBar.querySelector("#historyBtn").addEventListener("click", () => {
-    removeAllModals();
-    openHistoryModal();
-  });
-
-  /* ——— кнопка «Чаты» ——— */
-  bottomBar.querySelector("#chatBtn").addEventListener("click", () => {
-    removeAllModals();
-    openChatListModal();   // функция из блока чатов
-  });
-}
-
-  // Show main balance display if present
-  const balanceDisplay = document.getElementById("balanceDisplay");
-  if (balanceDisplay) {
-    balanceDisplay.style.display = "block";
+    bottomBar.querySelector("#btnMain").addEventListener("click", () => {
+      removeAllModals();
+    });
+    bottomBar.querySelector("#historyBtn").addEventListener("click", () => {
+      removeAllModals();
+      openHistoryModal();
+    });
+    bottomBar.querySelector("#chatBtn").addEventListener("click", () => {
+      removeAllModals();
+      openChatListModal();
+    });
   }
-  // Hide mining UI if present
+
+  // Дополнительно
   const mineContainer = document.getElementById("mineContainer");
-  if (mineContainer) {
-    mineContainer.style.display = "none";
-  }
-  // Fetch data (balances, user info) and set up periodic refresh
+  if (mineContainer) mineContainer.style.display = "none";
+
   fetchUserData();
   clearInterval(updateInterval);
   updateInterval = setInterval(fetchUserData, 2000);
-}
-
-/**
- * Inject main UI CSS (called once).
- */
-function injectMainUIStyles() {
-  if (document.getElementById("mainUIStyles")) return;
-  const style = document.createElement("style");
-  style.id = "mainUIStyles";
-  style.textContent = `
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: "Oswald", sans-serif;
-    }
-    /* Gradient header */
-    .main-header {
-      width: 100%;
-      background: linear-gradient(90deg, #2F80ED, #2D9CDB);
-      border-bottom-left-radius: 20px;
-      border-bottom-right-radius: 20px;
-      padding: 16px;
-      box-sizing: border-box;
-      z-index: 90000;
-    }
-    .action-container {
-      display: flex;
-      gap: 0px;
-      justify-content: center;
-      margin-bottom: 16px;
-      margin-top: 175px;
-    }
-    .action-btn {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      border: none;
-      background: none;
-      cursor: pointer;
-      color: #fff;
-      font-size: 14px;
-      font-weight: 600;
-      // text-transform: uppercase;
-    }
-    .action-btn:hover {
-      opacity: 0.9;
-    }
-    .icon-wrap {
-      width: 50px;
-      height: 50px;
-      background: #fff;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 10px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    }
-    .action-icon {
-      width: 28px;
-      height: 28px;
-      border-radius: 6px;
-      object-fit: cover;
-    }
-    .header-divider {
-      width: 100%;
-      height: 0px;
-    }
-    .balance-container {
-      position: absolute;
-      top: 320px;
-      width: 90%;
-      max-width: 500px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .balance-card {
-      background: #F8F9FB;
-      border-radius: 15px;
-      padding: 10px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      margin-left: -5px;
-      margin-right: -5px;
-    }
-    .balance-icon-wrap {
-      width: 50px;
-      height: 50px;
-      background: #F0F0F0;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .balance-icon {
-      width: 30px;
-      height: 30px;
-    }
-    .balance-info {
-      display: flex;
-      flex-direction: column;
-    }
-    .balance-label {
-      font-size: 15px;
-      font-weight: 500;
-      color: #1A1A1A;
-    }
-    .balance-amount {
-      font-size: 16px;
-      font-weight: 500;
-      color: #666;
-    }
-    .bottom-bar {
-      position: fixed;
-      bottom: 0; left: 0;
-      width: 100%;
-      background-color: #fff;
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-      padding-bottom: 20px;
-      box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
-      z-index: 999999;
-    }
-    .nav-btn {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      border: none;
-      background: none;
-      cursor: pointer;
-      color: #000;
-      font-size: 14px;
-      padding: 10px;
-    }
-    .nav-icon {
-      width: 30px;
-      height: 30px;
-      margin-bottom: 4px;
-    }
-    .nav-icon1 {
-      width: 23px;
-      height: 23px;
-      margin-bottom: 8px;
-      margin-top: 3px;
-    }
-  `;
-  document.head.appendChild(style);
 }
 
 /**************************************************
