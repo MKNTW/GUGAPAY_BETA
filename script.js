@@ -3672,37 +3672,42 @@ async function fetchUserCard(id) {
 let chatListInterval = null;
 
 async function openChatListModal() {
-  const bottomBar = document.getElementById('bottomBar');
-  if (bottomBar) bottomBar.style.display = 'none';
+  // НЕ скрываем bottomBar, он всегда виден
+
   showGlobalLoading();
 
-  // создаём контейнер для чатов
-  createModal('chatListModal', `<div class="modal-body" style="padding-bottom:16px;margin-top:30px;"></div>`, {
+  // добавляем больший паддинг внизу, чтобы контент не заезжал под bottomBar
+  createModal('chatListModal', `
+    <div class="modal-body chat-list-body" style="padding: 16px 0 80px; margin-top: 30px;"></div>
+  `, {
     showCloseBtn: true,
     cornerTopRadius: 0,
     hasVerticalScroll: true,
     onClose: () => {
-      if (bottomBar) bottomBar.style.display = 'flex';
       if (chatListInterval) clearInterval(chatListInterval);
+      // bottomBar остаётся видимым
     }
   });
 
   const container = document.querySelector('#chatListModal .modal-body');
 
   async function renderChatList() {
+    // Берём все чаты пользователя
     const { data: chats } = await supabase
       .from('chats')
       .select('*')
-      .or(`user1_id.eq.${currentUserId},user2_id.eq.${currentUserId}`)
-      .order('created_at', { ascending: false });
+      .or(`user1_id.eq.${currentUserId},user2_id.eq.${currentUserId}`);
 
-    const rows = await Promise.all(chats.map(async ch => {
+    // Собираем для каждого чата данные: html++timestamp последнего сообщения
+    const chatData = await Promise.all(chats.map(async ch => {
       const otherId = ch.user1_id === currentUserId ? ch.user2_id : ch.user1_id;
-      const u = await fetchUserCard(otherId);
+      const u       = await fetchUserCard(otherId);
 
+      // Последнее сообщение (текст+медиа)
       const { data: lastMsg } = await supabase
         .from('messages')
-        .select('encrypted_message, sender_id, sender_public_key, nonce, created_at')
+        .select(`encrypted_message, media_type,
+                 sender_public_key, nonce, created_at`)
         .eq('chat_id', ch.id)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -3710,69 +3715,124 @@ async function openChatListModal() {
 
       let previewText = '';
       let previewTime = '';
+      let lastTs      = 0;
 
       if (lastMsg) {
-        const isEncrypted = lastMsg.encrypted_message && lastMsg.nonce && lastMsg.sender_public_key;
-        previewText = isEncrypted
-          ? decryptMessage(lastMsg.encrypted_message, lastMsg.nonce, lastMsg.sender_public_key)
-          : lastMsg.encrypted_message;
-        previewTime = new Date(lastMsg.created_at).toLocaleTimeString('ru-RU', {
-          hour: '2-digit',
-          minute: '2-digit'
-        });
+        lastTs = new Date(lastMsg.created_at).getTime();
+        // Расшифровка/текст
+        if (lastMsg.encrypted_message) {
+          const isEnc = lastMsg.nonce && lastMsg.sender_public_key;
+          previewText = isEnc
+            ? decryptMessage(
+                lastMsg.encrypted_message,
+                lastMsg.nonce,
+                lastMsg.sender_public_key
+              )
+            : lastMsg.encrypted_message;
+        }
+        // Если нет текста, но есть медиа — пишем «Фото»/«Видео»
+        if (!previewText && lastMsg.media_type) {
+          if (lastMsg.media_type === 'image') previewText = 'Фото';
+          else if (lastMsg.media_type === 'video') previewText = 'Видео';
+          else previewText = 'Файл';
+        }
+        // Время
+        previewTime = new Date(lastMsg.created_at)
+          .toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
       }
 
-      let unreadCount = 0;
-      const { data: unreadMessages } = await supabase
+      // Количество непрочитанных
+      const { data: unread } = await supabase
         .from('messages')
-        .select('id')
+        .select('id', { count: 'exact' })
         .eq('chat_id', ch.id)
         .not('read_by', 'cs', `{${currentUserId}}`);
-      unreadCount = unreadMessages?.length || 0;
+      const unreadCount = unread?.length || 0;
 
-      return `
-  <div class="chat-row" data-chat="${ch.id}" data-partner="${otherId}">
-    <div style="position: relative;">
-      <img src="${u.photo}" class="chat-avatar">
-      ${unreadCount > 0 ? `<div class="unread-dot">${unreadCount}</div>` : ''}
-    </div>
-    <div class="chat-info" style="display: flex; flex-direction: column; justify-content: center; min-width: 0;">
-  <div class="chat-name" style="font-weight: 500; line-height: 1.2;">
-    ${u.name}
-    <div style="font-size:12px;color:#999;">ID: ${u.id}</div>
-  </div>
-  <div class="chat-preview" style="font-size: 13px; color: #777; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;">
-    ${previewText || 'нет сообщений'}
-  </div>
-</div>
-    <div class="chat-time">${previewTime}</div>
-  </div>
-`;
+      // Собираем html
+      const rowHtml = `
+        <div class="chat-row" data-chat="${ch.id}" data-partner="${otherId}" 
+             style="display:flex; align-items:center; padding:10px; cursor:pointer;">
+          <div style="position:relative; margin-right:12px;">
+            <img src="${u.photo}" class="chat-avatar"
+                 style="width:48px; height:48px; border-radius:50%; object-fit:cover;"
+                 onerror="this.onerror=null;this.src='/photo/15.png';" />
+            ${unreadCount > 0
+              ? `<div class="unread-dot" 
+                      style="
+                        position:absolute; 
+                        top:-2px; right:-2px; 
+                        background:#E63946; 
+                        color:#fff; 
+                        font-size:12px; 
+                        width:20px; height:20px;
+                        border-radius:50%;
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                      ">
+                  ${unreadCount}
+                </div>`
+              : ''}
+          </div>
+          <div class="chat-info" style="flex:1; min-width:0;">
+            <div class="chat-name" style="font-weight:500; line-height:1.2; margin-bottom:4px;">
+              ${u.name}
+              <span style="font-size:12px; color:#999; margin-left:4px;">ID:${u.id}</span>
+            </div>
+            <div class="chat-preview" style="
+                   font-size:13px; color:#777;
+                   overflow:hidden; white-space:nowrap;
+                   text-overflow:ellipsis;">
+              ${previewText || 'нет сообщений'}
+            </div>
+          </div>
+          <div class="chat-time" style="margin-left:12px; font-size:12px; color:#999;">
+            ${previewTime}
+          </div>
+        </div>`;
 
+      return { rowHtml, lastTs };
     }));
 
-    const html = `
+    // Сортируем по time DESC и рисуем
+    chatData.sort((a, b) => b.lastTs - a.lastTs);
+    const rowsHtml = chatData.map(c => c.rowHtml).join('');
+
+    // Кнопка «Новый чат»
+    const newChatBtn = `
       <button id="newChatBtn" style="
-        width:100%;margin:8px 0;padding:12px;border:none;background:#2F80ED;
-        color:#fff;border-radius:12px;font-weight:600;cursor:pointer;">
+        width: calc(100% - 32px);
+        margin: 0 16px 12px;
+        padding: 12px;
+        border:none;
+        background:#2F80ED;
+        color:#fff;
+        border-radius:12px;
+        font-weight:600;
+        cursor:pointer;
+      ">
         + Новый чат
-      </button>
-      ${rows.join('')}
-    `;
+      </button>`;
 
-    container.innerHTML = html;
+    container.innerHTML = newChatBtn + rowsHtml;
 
-    document.querySelectorAll('.chat-row').forEach(r => {
-      r.onclick = () => openChatWindow(r.dataset.chat, r.dataset.partner);
+    // Привязываем события
+    document.getElementById('newChatBtn')
+      .addEventListener('click', openNewChatModal);
+
+    document.querySelectorAll('.chat-row').forEach(el => {
+      el.addEventListener('click', () => {
+        openChatWindow(el.dataset.chat, el.dataset.partner);
+      });
     });
-
-    document.getElementById('newChatBtn')?.addEventListener('click', openNewChatModal);
   }
 
   await renderChatList();
   hideGlobalLoading();
 
-  chatListInterval = setInterval(renderChatList, 1000); // обновление раз в секунду
+  // Обновляем каждую секунду
+  chatListInterval = setInterval(renderChatList, 1000);
 }
 
 /* ========= 4.  Создание нового чата ========== */
