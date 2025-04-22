@@ -1416,32 +1416,31 @@ async function saveProfileChanges() {
       }
     }
 
-    // Отправка на сервер
+    // Обновление данных на сервере
     if (!csrfToken) await fetchCsrfToken();
     const form = new FormData();
     form.append("first_name", newName);
     if (photoUrl) form.append("photo_url", photoUrl);
 
-    const res = await fetch(`${API_URL}/user`, {
-      method: "PUT",
+    const res    = await fetch(`${API_URL}/user`, {
+      method:      "PUT",
       credentials: "include",
-      headers: { "X-CSRF-Token": csrfToken },
-      body: form,
+      headers:     { "X-CSRF-Token": csrfToken },
+      body:        form,
     });
     const result = await res.json();
     if (!result.success) throw new Error(result.error || "Ошибка обновления профиля");
 
-    // Обновляем UI
+    // Обновляем UI в главном экране
     const userPhoto = document.querySelector("#user-info .user-photo");
     const userName  = document.querySelector("#user-info .user-name");
     if (photoUrl && userPhoto) userPhoto.src = photoUrl;
     if (newName  && userName)  userName.textContent = newName;
 
-    // Закрываем модалку
-    document.getElementById("profileModal")?.remove();
+    // **Убираем закрытие модалки**, чтобы остаться в профиле
     showNotification("Профиль обновлён", "success");
-
-  } catch (err) {
+  }
+  catch (err) {
     console.error("Ошибка при обновлении профиля:", err);
     showNotification(err.message || "Ошибка обновления", "error");
   }
