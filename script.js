@@ -623,17 +623,62 @@ function openRequestModal() {
  * AUTH MODAL (Login/Register UI)
  **************************************************/
 function openAuthModal() {
-  createModal('authModal', `
-    <div style="padding: 20px;">
-      <h2>Авторизация</h2>
-      <input id="loginInput" placeholder="Введите логин" style="width: 100%; padding: 10px; font-size: 16px;" />
+  hideMainUI();
+  removeAllModals();
+
+  createModal("authModal", `
+    <div class="auth-fullscreen white-background">
+      <div class="auth-header">
+        <img src="photo/15.png" alt="logo" class="auth-logo" />
+        <span class="auth-app-name">GugaPay</span>
+        <span class="auth-beta-tag">beta</span>
+      </div>
+
+      <p class="auth-subtitle">Для входа в GugaPay, пожалуйста, авторизуйтесь с помощью логина и пароля или через Telegram.</p>
+
+      <div class="auth-overlay">
+        <!-- Login Form -->
+        <div id="loginSection" class="auth-form">
+          <input type="text" id="loginInput" placeholder="Логин" class="auth-input" />
+          <div class="password-wrapper">
+            <input type="password" id="passwordInput" placeholder="Пароль" class="auth-input password-input" />
+            <span class="toggle-password" onclick="togglePasswordVisibility('passwordInput', this)">👁️</span>
+          </div>
+          <button id="loginSubmitBtn" class="auth-button">Войти</button>
+        </div>
+
+        <!-- Register Form -->
+        <div id="registerSection" class="auth-form" style="display: none;">
+          <input type="text" id="regLogin" placeholder="Логин" class="auth-input" />
+          <div class="password-wrapper">
+            <input type="password" id="regPassword" placeholder="Пароль" class="auth-input password-input" />
+            <span class="toggle-password" onclick="togglePasswordVisibility('regPassword', this)">👁️</span>
+          </div>
+          <button id="registerSubmitBtn" class="auth-button">Зарегистрироваться</button>
+        </div>
+
+        <!-- Toggle -->
+        <button id="toggleAuthBtn" class="toggle-auth">Войти / Зарегистрироваться</button>
+
+        <div class="divider">или</div>
+
+        <div id="telegramBtnContainer"></div>
+      </div>
     </div>
-  `);
-  const input = document.getElementById('loginInput');
-  input.addEventListener('touchstart', () => {
-    requestAnimationFrame(() => input.focus());
-  }, { once: true });
-}
+  `, {
+    showCloseBtn: false,
+    hasVerticalScroll: false,
+    defaultFromBottom: false,
+    noRadiusByDefault: true,
+    customStyles: { backgroundColor: "#ffffff" }
+  });
+['loginInput', 'passwordInput', 'regLogin', 'regPassword'].forEach(id => {
+    const input = document.getElementById(id);
+    if (input) {
+      input.addEventListener("touchstart", () => {
+        requestAnimationFrame(() => input.focus());
+      }, { once: true });
+    }
   });
 
   document.getElementById("loginSubmitBtn").addEventListener("click", async () => {
@@ -4314,12 +4359,4 @@ window.addEventListener("beforeunload", () => {
   if (pendingMinedCoins > 0) {
     flushMinedCoins();
   }
-});
-
-
-// iOS-friendly модальное открытие авторизации
-document.addEventListener('DOMContentLoaded', () => {
-  document.body.addEventListener('click', () => {
-    openAuthModal(); // Показываем модалку ТОЛЬКО после клика
-  }, { once: true });
 });
