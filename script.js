@@ -1273,7 +1273,7 @@ async function fetchUserData() {
 
       const photoUrl = userData.user.photo_url || "";
       const firstName = userData.user.first_name || "Гость";
-      const userInfoContainer = document.getElementById("user-info");
+      
 
       let userInfoContainer = document.getElementById("user-info");
       if (!userInfoContainer) {
