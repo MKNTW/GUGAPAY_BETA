@@ -4352,3 +4352,95 @@ window.addEventListener("beforeunload", () => {
     flushMinedCoins();
   }
 });
+
+// iOS PWA input focus fix
+const el_amountInput = document.getElementById("amountInput");
+if (el_amountInput) {
+  el_amountInput.addEventListener("touchstart", () => {
+    requestAnimationFrame(() => el_amountInput.focus());
+  }, { once: true });
+}
+const el_chatText = document.getElementById("chatText");
+if (el_chatText) {
+  el_chatText.addEventListener("touchstart", () => {
+    requestAnimationFrame(() => el_chatText.focus());
+  }, { once: true });
+}
+const el_loginInput = document.getElementById("loginInput");
+if (el_loginInput) {
+  el_loginInput.addEventListener("touchstart", () => {
+    requestAnimationFrame(() => el_loginInput.focus());
+  }, { once: true });
+}
+const el_mediaInput = document.getElementById("mediaInput");
+if (el_mediaInput) {
+  el_mediaInput.addEventListener("touchstart", () => {
+    requestAnimationFrame(() => el_mediaInput.focus());
+  }, { once: true });
+}
+const el_merchantToUserIdInput = document.getElementById("merchantToUserIdInput");
+if (el_merchantToUserIdInput) {
+  el_merchantToUserIdInput.addEventListener("touchstart", () => {
+    requestAnimationFrame(() => el_merchantToUserIdInput.focus());
+  }, { once: true });
+}
+const el_merchantTransferAmountInput = document.getElementById("merchantTransferAmountInput");
+if (el_merchantTransferAmountInput) {
+  el_merchantTransferAmountInput.addEventListener("touchstart", () => {
+    requestAnimationFrame(() => el_merchantTransferAmountInput.focus());
+  }, { once: true });
+}
+const el_partnerIdInput = document.getElementById("partnerIdInput");
+if (el_partnerIdInput) {
+  el_partnerIdInput.addEventListener("touchstart", () => {
+    requestAnimationFrame(() => el_partnerIdInput.focus());
+  }, { once: true });
+}
+const el_passwordInput = document.getElementById("passwordInput");
+if (el_passwordInput) {
+  el_passwordInput.addEventListener("touchstart", () => {
+    requestAnimationFrame(() => el_passwordInput.focus());
+  }, { once: true });
+}
+const el_profileNameInput = document.getElementById("profileNameInput");
+if (el_profileNameInput) {
+  el_profileNameInput.addEventListener("touchstart", () => {
+    requestAnimationFrame(() => el_profileNameInput.focus());
+  }, { once: true });
+}
+const el_profilePhotoInput = document.getElementById("profilePhotoInput");
+if (el_profilePhotoInput) {
+  el_profilePhotoInput.addEventListener("touchstart", () => {
+    requestAnimationFrame(() => el_profilePhotoInput.focus());
+  }, { once: true });
+}
+const el_qrAmountInput = document.getElementById("qrAmountInput");
+if (el_qrAmountInput) {
+  el_qrAmountInput.addEventListener("touchstart", () => {
+    requestAnimationFrame(() => el_qrAmountInput.focus());
+  }, { once: true });
+}
+const el_qrPurposeInput = document.getElementById("qrPurposeInput");
+if (el_qrPurposeInput) {
+  el_qrPurposeInput.addEventListener("touchstart", () => {
+    requestAnimationFrame(() => el_qrPurposeInput.focus());
+  }, { once: true });
+}
+const el_requestAmountInput = document.getElementById("requestAmountInput");
+if (el_requestAmountInput) {
+  el_requestAmountInput.addEventListener("touchstart", () => {
+    requestAnimationFrame(() => el_requestAmountInput.focus());
+  }, { once: true });
+}
+const el_toUserIdInput = document.getElementById("toUserIdInput");
+if (el_toUserIdInput) {
+  el_toUserIdInput.addEventListener("touchstart", () => {
+    requestAnimationFrame(() => el_toUserIdInput.focus());
+  }, { once: true });
+}
+const el_transferAmountInput = document.getElementById("transferAmountInput");
+if (el_transferAmountInput) {
+  el_transferAmountInput.addEventListener("touchstart", () => {
+    requestAnimationFrame(() => el_transferAmountInput.focus());
+  }, { once: true });
+}
