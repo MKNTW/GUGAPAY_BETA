@@ -23,6 +23,23 @@ webpush.setVapidDetails(
   process.env.VAPID_PRIVATE_KEY
 )
 
+// 0) Ваш публичный VAPID-ключ от web-push (Base64 URL-safe)
+const PUBLIC_VAPID_KEY = 'BO-xrqEyeoH4EHZkg6YJgrO5tfniBp52aRL3V1JKokIe59OLPwFcoyHpciJnpJ3jBRlEXwMewKWYYcVFpuKOcoI';
+
+// 1) Утилита для конвертации Base64 URL-safe в Uint8Array
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding)
+    .replace(/-/g, '+')
+    .replace(/_/g, '/');
+  const rawData = atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
 const isProduction = process.env.NODE_ENV === 'production';
 const JWT_SECRET = process.env.JWT_SECRET || 'your_default_jwt_secret';
 
