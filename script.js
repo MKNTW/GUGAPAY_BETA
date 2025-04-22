@@ -3839,40 +3839,51 @@ async function openChatWindow(chatId, partnerId) {
 
   // Открываем модалку чата
   createModal('chatModal', `
-    <div class="chat-container" style="touch-action: manipulation; display: flex; flex-direction: column; height: 100%;">
-      <div class="chat-header" style="display: flex; align-items: center; gap: 12px;">
-        <!-- заголовок -->
-      </div>
-
-      <!-- контейнер сообщений -->
-      <div id="chatMessages" class="chat-messages" style="flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch;"></div>
-
-      <!-- БЛОК ПРЕДПРОСМОТРА ВНЕ панели ввода -->
-      <div id="mediaPreview" style="display:none; padding: 10px; background: rgba(0,0,0,0.03);">
-        <div id="mediaPreviewContent" style="position: relative;"></div>
-        <button id="cancelPreviewBtn" style="position:absolute; top:4px; right:4px; background:#fff; border:none; border-radius:50%; cursor:pointer;">✖</button>
-        <div style="margin-top:8px; display:flex; align-items:center; gap:8px;">
-          <progress id="uploadProgress" max="100" value="0" style="flex:1; height:8px; border-radius:4px; overflow:hidden;"></progress>
-          <span id="uploadPercent" style="font-size:12px; color:#555;">0%</span>
-        </div>
-      </div>
-
-      <!-- панель ввода -->
-      <div class="chat-inputbar" id="chatInputBar" style="padding:10px; border-top:1px solid #eee; display:flex; gap:10px; align-items:center;">
-        ${blockedByMe || blockedMe
-          ? `<div style="flex:1; padding:14px; text-align:center; color:#999; background:#f8f8f8; border-radius:12px; font-style:italic;">
-               ${blockedByMe ? 'Вы заблокировали этого пользователя' : 'Вы были заблокированы этим пользователем'}
-             </div>`
-          : `
-            <input id="chatText" class="chat-input" placeholder="Сообщение…" style="flex:1; font-size:16px; padding:12px; border-radius:12px; border:1px solid #ccc;" />
-            <input type="file" id="mediaInput" accept="image/*,video/*" style="display:none;" />
-            <button id="uploadMediaBtn" style="background:none; border:none; font-size:20px; cursor:pointer;">📎</button>
-            <button id="chatSend" style="padding:12px 16px; background:#2F80ED; color:#fff; font-weight:600; border:none; border-radius:12px; cursor:pointer;">
-              Отправить
-            </button>
-          `}
+  <div class="chat-container" style="touch-action: manipulation; display: flex; flex-direction: column; height: 100%;">
+    <!-- === ШАПКА ЧАТА === -->
+    <div class="chat-header" style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #eee;">
+      <button id="chatMoreBtn" style="background: #fff; border: none; font-size: 18px; color: #333; cursor: pointer; border-radius: 10px; padding: 6px 10px;">⋮</button>
+      <img
+        src="${partner.photo}"
+        class="chat-avatar"
+        style="width:40px; height:40px; border-radius:50%; object-fit:cover;"
+        onerror="this.onerror=null; this.src='/photo/default.png';"
+      />
+      <div class="chat-title" style="display:flex; flex-direction:column;">
+        <span style="font-weight:600; color:#333;">${partner.name}</span>
+        <span style="font-size:12px; color:#999; margin-top:2px;">ID: ${partner.id}</span>
       </div>
     </div>
+
+    <!-- === МЕДИА-ПРЕДПРОСМОТР === -->
+    <div id="mediaPreview" style="display:none; padding: 10px; background: rgba(0,0,0,0.03);">
+      <div id="mediaPreviewContent" style="position: relative;"></div>
+      <button id="cancelPreviewBtn" style="position:absolute; top:4px; right:4px; background:#fff; border:none; border-radius:50%; cursor:pointer;">✖</button>
+      <div style="margin-top:8px; display:flex; align-items:center; gap:8px;">
+        <progress id="uploadProgress" max="100" value="0" style="flex:1; height:8px; border-radius:4px; overflow:hidden;"></progress>
+        <span id="uploadPercent" style="font-size:12px; color:#555;">0%</span>
+      </div>
+    </div>
+
+    <!-- === БЛОК СООБЩЕНИЙ === -->
+    <div id="chatMessages" class="chat-messages" style="flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch;"></div>
+
+    <!-- === ПАНЕЛЬ ВВОДА === -->
+    <div class="chat-inputbar" id="chatInputBar" style="padding:10px; border-top:1px solid #eee; display:flex; gap:10px; align-items:center;">
+      ${blockedByMe || blockedMe
+        ? `<div style="flex:1; padding:14px; text-align:center; color:#999; background:#f8f8f8; border-radius:12px; font-style:italic;">
+             ${blockedByMe ? 'Вы заблокировали этого пользователя' : 'Вы были заблокированы этим пользователем'}
+           </div>`
+        : `
+          <input id="chatText" class="chat-input" placeholder="Сообщение…" style="flex:1; font-size:16px; padding:12px; border-radius:12px; border:1px solid #ccc;" />
+          <input type="file" id="mediaInput" accept="image/*,video/*" style="display:none;" />
+          <button id="uploadMediaBtn" style="background:none; border:none; font-size:20px; cursor:pointer;">📎</button>
+          <button id="chatSend" style="padding:12px 16px; background:#2F80ED; color:#fff; font-weight:600; border:none; border-radius:12px; cursor:pointer;">
+            Отправить
+          </button>
+        `}
+    </div>
+  </div>
   `, {
     cornerTopRadius: 0,
     hasVerticalScroll: false,
