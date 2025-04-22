@@ -1392,7 +1392,7 @@ async function saveProfileChanges() {
       if (parts[1]) oldPath = parts[1];
     }
 
-    // Загрузка нового фото
+    // Загрузка нового фото (если выбран)
     if (fileInput.files.length) {
       const file = fileInput.files[0];
       const path = `${currentUserId}/${Date.now()}_${file.name}`;
@@ -1401,24 +1401,22 @@ async function saveProfileChanges() {
         .storage
         .from(STORAGE_BUCKET)
         .upload(path, file);
-
       if (uploadError) throw uploadError;
 
       const { data: publicData, error: urlError } = supabase
         .storage
         .from(STORAGE_BUCKET)
         .getPublicUrl(path);
-
       if (urlError) throw urlError;
       photoUrl = publicData.publicUrl;
 
-      // Удаление старого фото
+      // Удаляем старое, если это не дефолт
       if (oldPath && !oldPath.includes("15.png")) {
         await supabase.storage.from(STORAGE_BUCKET).remove([oldPath]);
       }
     }
 
-    // Обновление данных на сервере
+    // Отправка на сервер
     if (!csrfToken) await fetchCsrfToken();
     const form = new FormData();
     form.append("first_name", newName);
@@ -1430,15 +1428,14 @@ async function saveProfileChanges() {
       headers: { "X-CSRF-Token": csrfToken },
       body: form,
     });
-
     const result = await res.json();
     if (!result.success) throw new Error(result.error || "Ошибка обновления профиля");
 
-    // Обновляем UI без перерисовки
+    // Обновляем UI
     const userPhoto = document.querySelector("#user-info .user-photo");
-    const userName = document.querySelector("#user-info .user-name");
+    const userName  = document.querySelector("#user-info .user-name");
     if (photoUrl && userPhoto) userPhoto.src = photoUrl;
-    if (newName && userName) userName.textContent = newName;
+    if (newName  && userName)  userName.textContent = newName;
 
     // Закрываем модалку
     document.getElementById("profileModal")?.remove();
@@ -1461,7 +1458,7 @@ function openProfileModal() {
   const name  = document.querySelector("#user-info .user-name")?.textContent || "GugaUser";
 
   createModal("profileModal", `
-    <div style="
+    <div id="profileContainer" style="
       max-width: 400px;
       margin: 0 auto;
       background: #FFFFFF;
@@ -1471,11 +1468,10 @@ function openProfileModal() {
       display: flex;
       flex-direction: column;
       gap: 20px;
-      padding: 24px 24px 80px; /* добавили нижний паддинг для кнопки logout */
+      padding: 24px;
       box-sizing: border-box;
     ">
       <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-        <!-- Кликабельное фото -->
         <img id="profilePhotoPreview" src="${photo}" style="
           width: 100px;
           height: 100px;
@@ -1487,7 +1483,6 @@ function openProfileModal() {
         <div style="font-size: 14px; color: #555;">
           Нажмите на фото, чтобы изменить
         </div>
-        <!-- невидимый input, будет открыт кликом по img -->
         <input type="file" id="profilePhotoInput" accept="image/*" style="display: none;" />
       </div>
 
@@ -1509,29 +1504,10 @@ function openProfileModal() {
         "/>
       </div>
 
-      <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
-        <button id="saveProfileBtn" style="
-          width: 100%;
-          padding: 14px;
-          background: linear-gradient(90deg, #2F80ED, #2D9CDB);
-          border: none;
-          border-radius: 12px;
-          color: white;
-          font-weight: 600;
-          font-size: 16px;
-          cursor: pointer;
-          transition: all 0.2s;
-        ">Сохранить</button>
-      </div>
-
-      <!-- кнопка выхода "прилипает" к низу контейнера -->
-      <button id="profileLogoutBtn" style="
-        position: absolute;
-        bottom: 16px;
-        left: 24px;
-        right: 24px;
+      <button id="saveProfileBtn" style="
+        width: 100%;
         padding: 14px;
-        background: #808080;
+        background: linear-gradient(90deg, #2F80ED, #2D9CDB);
         border: none;
         border-radius: 12px;
         color: white;
@@ -1539,8 +1515,28 @@ function openProfileModal() {
         font-size: 16px;
         cursor: pointer;
         transition: all 0.2s;
-      ">Выйти из аккаунта</button>
+      ">Сохранить</button>
     </div>
+
+    <!-- Кнопка "Выйти" фиксированно внизу экрана -->
+    <button id="profileLogoutBtn" style="
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 32px);
+      max-width: 400px;
+      padding: 14px;
+      background: #808080;
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      z-index: 1000;
+    ">Выйти из аккаунта</button>
   `, {
     showCloseBtn: true,
     cornerTopMargin: 0,
@@ -1556,48 +1552,38 @@ function openProfileModal() {
   const saveBtn      = document.getElementById("saveProfileBtn");
   const logoutBtn    = document.getElementById("profileLogoutBtn");
 
-  // клик по фото открывает выбор файла
+  // Открываем диалог выбора, кликая по фото
   photoPreview.addEventListener("click", () => {
     photoInput.click();
   });
 
-  // превью и автоматический автосейв при выборе файла
-  photoInput.addEventListener("change", e => {
-    const file = e.target.files[0];
+  // Превью + автосохранение сразу после выбора файла
+  photoInput.addEventListener("change", () => {
+    const file = photoInput.files[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
       photoPreview.src = reader.result;
-      // автосохранение — сохраняем сразу, только фото
-      saveProfilePhoto(file);
+      // после того как фото подгрузилось в preview, сразу сохраняем профиль
+      saveProfileChanges();
     };
     reader.readAsDataURL(file);
   });
 
-  // ручное сохранение имени
+  // Сохраняем имя по кнопке
   saveBtn.addEventListener("click", () => {
     saveProfileChanges();
   });
 
-  // выход
+  // Выход
   logoutBtn.addEventListener("click", () => {
     logout();
     closeProfileModal();
   });
 }
 
-// функция автосохранения фото — вам нужно дописать логику отправки на сервер
-async function saveProfilePhoto(file) {
-  // пример:
-  // const form = new FormData();
-  // form.append('photo', file);
-  // await fetch('/api/uploadProfilePhoto', { method: 'POST', body: form });
-  showNotification('Фото профиля сохранено', 'success');
-}
-
 function closeProfileModal() {
-  const modal = document.getElementById("profileModal");
-  if (modal) modal.remove();
+  document.getElementById("profileModal")?.remove();
   const bottomBar = document.getElementById("bottomBar");
   if (bottomBar) bottomBar.style.display = "flex";
 }
