@@ -4350,3 +4350,35 @@ document.addEventListener('focusin', (e) => {
     }, 250);
   }
 });
+
+/**************************************************
+ * iOS INPUT + TOUCH FIX
+ **************************************************/
+
+// Скрытие клавиатуры при тапе вне поля ввода
+document.addEventListener('touchstart', function(event) {
+  const isInput = event.target.closest('input, textarea');
+  if (!isInput) {
+    const focused = document.activeElement;
+    if (focused && (focused.tagName === 'INPUT' || focused.tagName === 'TEXTAREA')) {
+      focused.blur();
+    }
+  }
+}, { passive: true });
+
+// Прокрутка к полю при фокусе
+document.addEventListener('focusin', function(e) {
+  const el = e.target;
+  if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+    setTimeout(() => {
+      try {
+        const cs = window.getComputedStyle(el);
+        if (el.offsetHeight > 0 && cs.display !== 'none') {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      } catch (err) {
+        console.warn('scroll error:', err);
+      }
+    }, 250);
+  }
+});
