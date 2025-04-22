@@ -1240,6 +1240,6 @@ body {
   font-weight: 700;
   color: #FFFFFF;
   text-shadow: 0 1px 3px rgba(0,0,0,0.3);
-  z-index: 999000;
+  z-index: 9000;
   pointer-events: none;
 }
