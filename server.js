@@ -15,6 +15,14 @@ const { createClient: createRedisClient } = require('redis');
 const csrf = require('csurf');
 const crypto = require('crypto');
 
+// 1) В начало файла, после require('dotenv').config():
+const webpush = require('web-push');
+webpush.setVapidDetails(
+  process.env.VAPID_SUBJECT,
+  process.env.VAPID_PUBLIC_KEY,
+  process.env.VAPID_PRIVATE_KEY
+)
+
 const isProduction = process.env.NODE_ENV === 'production';
 const JWT_SECRET = process.env.JWT_SECRET || 'your_default_jwt_secret';
 
@@ -532,60 +540,91 @@ const transferSchema = Joi.object({
   amount: Joi.number().positive().required(),
   tags: Joi.string().allow('', null)
 });
+
 app.post('/transfer', verifyToken, async (req, res) => {
   try {
     if (req.user.role !== 'user') {
       return res.status(403).json({ success: false, error: 'Доступ запрещён' });
     }
+
     const fromUserId = req.user.userId;
-    const { error, value } = transferSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ success: false, error: error.details[0].message });
+    const { error: validationError, value } = transferSchema.validate(req.body);
+    if (validationError) {
+      return res
+        .status(400)
+        .json({ success: false, error: validationError.details[0].message });
     }
+
     const { toUserId, amount, tags } = value;
     if (fromUserId === toUserId) {
       return res.status(400).json({ success: false, error: 'Нельзя переводить самому себе' });
     }
-    const { data: fromUser } = await supabase
+
+    // Получаем отправителя
+    const { data: fromUser, error: fromErr } = await supabase
       .from('users')
       .select('*')
       .eq('user_id', fromUserId)
       .single();
-    if (!fromUser) {
+    if (fromErr || !fromUser) {
       return res.status(404).json({ success: false, error: 'Отправитель не найден' });
     }
     if (parseFloat(fromUser.balance) < amount) {
       return res.status(400).json({ success: false, error: 'Недостаточно средств' });
     }
-    const { data: toUser } = await supabase
+
+    // Получаем получателя
+    const { data: toUser, error: toErr } = await supabase
       .from('users')
       .select('*')
       .eq('user_id', toUserId)
       .single();
-    if (!toUser) {
+    if (toErr || !toUser) {
       return res.status(404).json({ success: false, error: 'Получатель не найден' });
     }
+
+    // Обновляем балансы
     const newFromBalance = parseFloat(fromUser.balance) - amount;
-    const newToBalance = parseFloat(toUser.balance) + amount;
-    await supabase.from('users').update({ balance: newFromBalance.toFixed(5) }).eq('user_id', fromUserId);
-    await supabase.from('users').update({ balance: newToBalance.toFixed(5) }).eq('user_id', toUserId);
-    // Генерация уникального хеша транзакции
+    const newToBalance   = parseFloat(toUser.balance) + amount;
+    await supabase
+      .from('users')
+      .update({ balance: newFromBalance.toFixed(5) })
+      .eq('user_id', fromUserId);
+    await supabase
+      .from('users')
+      .update({ balance: newToBalance.toFixed(5) })
+      .eq('user_id', toUserId);
+
+    // Генерация уникального хеша и запись транзакции
     const hash = crypto.randomBytes(16).toString('hex');
     const { error: insertError } = await supabase.from('transactions').insert([{
       from_user_id: fromUserId,
-      to_user_id: toUserId,
+      to_user_id:   toUserId,
       amount,
       hash,
-      tags: tags || null,
-      type: 'sent',
-      currency: 'GUGA'
+      tags:          tags || null,
+      type:          'sent',
+      currency:      'GUGA'
     }]);
     if (insertError) {
       console.error('Ошибка записи транзакции:', insertError);
       return res.status(500).json({ success: false, error: 'Ошибка записи транзакции' });
     }
-    console.log(`[transfer] ${fromUserId} → ${toUserId} = ${amount} GUGA, hash=${hash}`);
-    res.json({ success: true, fromBalance: newFromBalance, toBalance: newToBalance, hash });
+
+    // Отправляем Web‑Push уведомление получателю
+    await sendPush(toUserId, {
+      title: 'Новый перевод',
+      body:  `Вам поступило ${amount.toFixed(5)} ₲ от ${fromUser.first_name}`,
+      url:   '/' // при клике откроется домашняя страница
+    });
+
+    console.log(`[transfer] ${fromUserId} → ${toUserId} : ${amount} ₲ (hash=${hash})`);
+    res.json({
+      success:     true,
+      fromBalance: newFromBalance.toFixed(5),
+      toBalance:   newToBalance.toFixed(5),
+      hash
+    });
   } catch (err) {
     console.error('[transfer] Ошибка:', err);
     res.status(500).json({ success: false, error: 'Ошибка сервера' });
@@ -1580,3 +1619,27 @@ app.get('/userPublicKey/:id', verifyToken, async (req, res) => {
 
   res.json({ success:true, public_key:data.public_key });
 });
+
+// 2) Эндпоинт для подписки на пуши
+app.post('/subscribe', verifyToken, async (req, res) => {
+  const subscription = req.body;
+  const { error } = await supabase
+    .from('push_subscriptions')
+    .insert([{ user_id: req.user.userId, subscription }]);
+  if (error) return res.status(500).json({ success: false, error: error.message });
+  res.json({ success: true });
+});
+
+// 3) Утилита для отправки пуш-уведомлений
+async function sendPush(toUserId, payload) {
+  const { data, error } = await supabase
+    .from('push_subscriptions')
+    .select('subscription')
+    .eq('user_id', toUserId);
+  if (error || !data.length) return;
+  await Promise.all(
+    data.map(row =>
+      webpush.sendNotification(row.subscription, JSON.stringify(payload))
+    )
+  );
+}
