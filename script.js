@@ -4355,6 +4355,7 @@ document.getElementById('chatBtn')?.addEventListener('click',()=>{
 /**************************************************
  * WINDOW EVENTS
  **************************************************/
+
 // Flush mined coins before leaving page
 window.addEventListener("beforeunload", () => {
   if (pendingMinedCoins > 0) {
@@ -4362,20 +4363,19 @@ window.addEventListener("beforeunload", () => {
   }
 });
 
-
-
-  setTimeout(() => {
-  }, 300);
-});
-
+// Автоскрытие клавиатуры при тапе вне input/textarea
 document.addEventListener('touchstart', function(event) {
   const isInput = event.target.closest('input, textarea');
   if (!isInput) {
+    const focused = document.activeElement;
+    if (focused && (focused.tagName === 'INPUT' || focused.tagName === 'TEXTAREA')) {
+      focused.blur();
     }
   }
 }, { passive: true });
 
-
+// Универсальная прокрутка при фокусе на поле
+document.addEventListener('focusin', (e) => {
   const el = e.target;
   if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
     setTimeout(() => {
@@ -4383,8 +4383,10 @@ document.addEventListener('touchstart', function(event) {
         const cs = window.getComputedStyle(el);
         console.log('[INPUT]', el.id, 'offsetHeight:', el.offsetHeight, 'display:', cs.display);
         if (el.offsetHeight > 0 && cs.display !== 'none') {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
-      } catch(err) {
+      } catch (err) {
+        console.warn('scroll error:', err);
       }
     }, 250);
   }
