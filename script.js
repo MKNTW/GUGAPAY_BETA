@@ -64,6 +64,7 @@ appStyle.textContent = `
     left: 0;
     width: 100%;
     height: 100%;
+    display: flex;
     flex-direction: column;
   }
 
@@ -214,6 +215,7 @@ function createModal(
       color: "#fff",
       borderRadius: "50%",
       border: "none",
+      display: "flex",
       alignItems: "center",
       justifyContent: "center",
       cursor: "pointer",
@@ -422,6 +424,7 @@ function openRequestModal() {
         margin-top: 40px;
       ">
         <div style="
+          display: flex;
           align-items: center;
           gap: 12px;
           margin-bottom: 32px;
@@ -435,6 +438,7 @@ function openRequestModal() {
 
         <div style="margin-bottom: 24px;">
           <div style="
+            display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 8px;
@@ -448,6 +452,7 @@ function openRequestModal() {
             background: #F8F9FB;
             border-radius: 16px;
             padding: 16px;
+            display: flex;
             align-items: center;
             gap: 10px;
             border: 1px solid #E6E6EB;
@@ -534,6 +539,7 @@ function openRequestModal() {
           text-align: center;
         ">
           <div style="
+            display: flex;
             align-items: center;
             gap: 12px;
             justify-content: center;
@@ -633,6 +639,7 @@ function openAuthModal() {
       <div class="auth-overlay">
         <!-- Login Form -->
         <div id="loginSection" class="auth-form">
+          <input type="text" id="loginInput" placeholder="Логин" class="auth-input" autofocus />
           <div class="password-wrapper">
             <input type="password" id="passwordInput" placeholder="Пароль" class="auth-input password-input" />
             <span class="toggle-password" onclick="togglePasswordVisibility('passwordInput', this)">👁️</span>
@@ -641,6 +648,7 @@ function openAuthModal() {
         </div>
 
         <!-- Register Form -->
+        <div id="registerSection" class="auth-form" style="display: none;">
           <input type="text" id="regLogin" placeholder="Логин" class="auth-input" />
           <div class="password-wrapper">
             <input type="password" id="regPassword" placeholder="Пароль" class="auth-input password-input" />
@@ -704,6 +712,7 @@ function openAuthModal() {
       borderRadius: "12px",
       cursor: "pointer",
       fontSize: "16px",
+      display: "flex",
       alignItems: "center",
       justifyContent: "center"
     });
@@ -754,6 +763,7 @@ function openAuthModal() {
     .auth-fullscreen {
       position: fixed;
       inset: 0;
+      display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
@@ -764,6 +774,7 @@ function openAuthModal() {
       background: #ffffff;
     }
     .auth-header {
+      display: flex;
       align-items: center;
       gap: 10px;
       margin-bottom: 16px;
@@ -793,6 +804,7 @@ function openAuthModal() {
       background: #F8F9FB;
       border-radius: 24px;
       // box-shadow: 0 8px 30px rgba(0,0,0,0.05);
+      display: flex;
       flex-direction: column;
       gap: 20px;
     }
@@ -816,6 +828,7 @@ function openAuthModal() {
       -webkit-text-fill-color: transparent;
     }
     .auth-form {
+      display: flex;
       flex-direction: column;
       gap: 12px;
       width: 100%;
@@ -1094,12 +1107,14 @@ function injectMainUIStyles() {
       z-index: 90000;
     }
     .action-container {
+      display: flex;
       gap: 0px;
       justify-content: center;
       margin-bottom: 16px;
       margin-top: 175px;
     }
     .action-btn {
+      display: flex;
       flex-direction: column;
       align-items: center;
       border: none;
@@ -1118,6 +1133,7 @@ function injectMainUIStyles() {
       height: 50px;
       background: #fff;
       border-radius: 12px;
+      display: flex;
       align-items: center;
       justify-content: center;
       margin-bottom: 10px;
@@ -1140,6 +1156,7 @@ function injectMainUIStyles() {
       max-width: 500px;
       left: 50%;
       transform: translateX(-50%);
+      display: flex;
       flex-direction: column;
       gap: 8px;
     }
@@ -1148,6 +1165,7 @@ function injectMainUIStyles() {
       border-radius: 15px;
       padding: 10px;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      display: flex;
       align-items: center;
       gap: 16px;
       margin-left: -5px;
@@ -1158,6 +1176,7 @@ function injectMainUIStyles() {
       height: 50px;
       background: #F0F0F0;
       border-radius: 12px;
+      display: flex;
       align-items: center;
       justify-content: center;
     }
@@ -1166,6 +1185,7 @@ function injectMainUIStyles() {
       height: 30px;
     }
     .balance-info {
+      display: flex;
       flex-direction: column;
     }
     .balance-label {
@@ -1183,6 +1203,7 @@ function injectMainUIStyles() {
       bottom: 0; left: 0;
       width: 100%;
       background-color: #fff;
+      display: flex;
       justify-content: space-around;
       align-items: center;
       padding-bottom: 20px;
@@ -1190,6 +1211,7 @@ function injectMainUIStyles() {
       z-index: 999999;
     }
     .nav-btn {
+      display: flex;
       flex-direction: column;
       align-items: center;
       border: none;
@@ -1442,11 +1464,13 @@ function openProfileModal() {
       border-radius: 24px;
       position: relative;
       margin-top: 40px;
+      display: flex;
       flex-direction: column;
       gap: 20px;
       padding: 24px;
       box-sizing: border-box;
     ">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
         <img id="profilePhotoPreview" src="${photo}" style="
           width: 100px;
           height: 100px;
@@ -1458,10 +1482,12 @@ function openProfileModal() {
         <div style="font-size: 14px; color: #555;">
           Нажмите на фото, чтобы изменить
         </div>
+        <input type="file" id="profilePhotoInput" accept="image/*" style="display: none;" />
       </div>
 
       <div>
         <label for="profileNameInput" style="
+          display: block;
           font-size: 14px;
           font-weight: 600;
           margin-bottom: 6px;
@@ -1589,7 +1615,9 @@ function openTransferModal() {
         Перевод средств
       </div>
 
+      <div style="display: flex; gap: 12px; margin-bottom: 30px;">
         <div id="btnCurrencyGUGA" class="currency-card" style="border: 2px solid #E6E6EB; border-radius: 16px; padding: 12px; cursor: pointer; flex: 1;">
+          <div style="display: flex; align-items: center; gap: 12px;">
             <img src="photo/15.png" style="width: 32px; height: 32px; border-radius: 8px;">
             <div>
               <div style="font-weight: 500; color: #1A1A1A; font-size: 14px;">GUGA</div>
@@ -1602,6 +1630,7 @@ function openTransferModal() {
         </div>
 
         <div id="btnCurrencyRUB" class="currency-card" style="border: 2px solid #E6E6EB; border-radius: 16px; padding: 12px; cursor: pointer; flex: 1;">
+          <div style="display: flex; align-items: center; gap: 12px;">
             <img src="photo/18.png" style="width: 32px; height: 32px; border-radius: 8px;">
             <div>
               <div style="font-weight: 500; color: #1A1A1A; font-size: 14px;">RUB</div>
@@ -1615,10 +1644,12 @@ function openTransferModal() {
       </div>
 
       <div style="margin-bottom: 24px;">
+        <label style="display:block; margin-bottom: 6px; color:#666; font-size: 14px;">Получатель</label>
         <div style="
           background: #F8F9FB;
           border-radius: 12px;
           padding: 12px;
+          display: flex;
           align-items: center;
           border: 1px solid #E6E6EB;
         ">
@@ -1639,6 +1670,7 @@ function openTransferModal() {
       </div>
 
       <div style="margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
           <label style="color:#666; font-size:14px;">Сумма</label>
           <div id="transferBalanceInfo" style="font-size: 13px; color: #909099;"></div>
         </div>
@@ -1646,6 +1678,7 @@ function openTransferModal() {
           background: #F8F9FB;
           border-radius: 12px;
           padding: 12px;
+          display: flex;
           align-items: center;
           border: 1px solid #E6E6EB;
         ">
@@ -2066,6 +2099,7 @@ async function confirmPayUserModal({ userId, amount, purpose }) {
 
   /* ───────── вёрстка модалки ───────── */
   const userHtml = `
+    <div style="display:flex;align-items:center;gap:12px;">
       <img src="${userData.photo_url}"
            style="width:48px;height:48px;border-radius:50%;object-fit:cover;box-shadow:0 0 4px rgba(0,0,0,0.1);" />
       <div>
@@ -2325,6 +2359,7 @@ const exchangeStyles = `
   margin: 8px 0;
 }
 .currency-header {
+  display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
@@ -2339,6 +2374,7 @@ const exchangeStyles = `
   border: 2px solid #E6E6EB;
   border-radius: 50%;
   margin: 1px auto;
+  display: flex;
   align-items: center;
   justify-content: center;
   transition: background-color 0.2s, transform 0.2s;
@@ -2355,6 +2391,7 @@ const exchangeStyles = `
   animation: swapRotate 0.5s forwards ease;
 }
 .input-group {
+  display: flex;
   gap: 12px;
   align-items: center;
 }
@@ -2371,6 +2408,7 @@ const exchangeStyles = `
   color: #B1B8C5;
 }
 .currency-display {
+  display: flex;
   align-items: center;
   gap: 8px;
   background: #F8F9FB;
@@ -2400,6 +2438,7 @@ const exchangeStyles = `
 }
 
 .currency-block .input-group {
+  display: flex;
   gap: 12px;
   align-items: center;
   width: 100%;
@@ -2507,7 +2546,9 @@ function initChart(rates) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
       scales: {
+        x: { display: false },
         y: {
           position: 'right',
           grid: { color: '#E6E6EB' },
@@ -2667,6 +2708,7 @@ notificationStyle.textContent = `
     top: 10px;
     right: 10px;
     z-index: 9999999;
+    display: flex;
     flex-direction: column;
     gap: 10px;
     align-items: flex-end;
@@ -2684,11 +2726,13 @@ notificationStyle.textContent = `
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     color: #333;
     padding: 12px 16px;
+    display: flex;
     align-items: center;
     justify-content: space-between;
   }
   .notification::before {
     content: "";
+    display: block;
     position: absolute;
     left: 0; top: 0;
     width: 10px;
@@ -2818,6 +2862,7 @@ function openHistoryModal(horizontalSwitch) {
   background: #F8F9FB;
   border-radius: 12px;
   padding: 12px;
+  display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 8px;
@@ -3041,6 +3086,7 @@ async function openMerchantUI() {
         max-width:400px;
         margin:40px auto 0 auto;
         box-shadow:0 2px 5px rgba(0,0,0,0.1);
+        display:flex;
         flex-direction:column;
         gap:16px;
         align-items:center;
@@ -3049,6 +3095,7 @@ async function openMerchantUI() {
         <p>Мерчант: <strong>${currentMerchantId}</strong></p>
         <p>Баланс: <span id="merchantBalanceValue">0.00000</span> ₲</p>
 
+        <div style="display:flex; gap:10px; margin-top:20px;">
           <button id="merchantCreateQRBtn" style="padding:10px; border:none; border-radius:8px; cursor:pointer; background:#000; color:#fff;">
             Создать QR
           </button>
@@ -3178,10 +3225,12 @@ function createMerchantQR(amount, purpose) {
         max-width:400px;
         margin:0 auto;
         box-shadow:0 2px 5px rgba(0,0,0,0.1);
+        display:flex;
         flex-direction:column;
         margin-top:50px;
         align-items:center;
       ">
+        <div id="merchantQRModalContainer" style="display:flex; justify-content:center; margin-bottom:10px;"></div>
         <p style="margin-top:10px;">
           Запрашиваемая сумма: <strong>${formatBalance(amount, 5)} ₲</strong>
         </p>
@@ -3333,17 +3382,9 @@ function startUniversalQRScanner(videoElement, onResultCallback) {
   navigator.mediaDevices
     .getUserMedia({ video: { facingMode: "environment" } })
     .then((stream) => {
-    if (!document.body.contains(videoElement)) return;
-    videoElement.style.display = 'block';
-    videoElement.style.visibility = 'visible';
-    console.log('iOS: video element visible and in DOM');
       videoElement.srcObject = stream;
-    videoElement.style.display = 'block';
-    videoElement.style.visibility = 'visible';
-    console.log('Video element ready for playback');
       videoElement.setAttribute("playsinline", true);
-      videoElement.play().catch(err => console.error("Play error:", err));
-    // iOS requires user interaction before play
+      videoElement.play();
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
       let alreadyScanned = false;
@@ -3543,14 +3584,18 @@ async function showTransactionDetails(hash) {
   background:#E8F6EF;
   color:#219653;
   border-radius:12px;
+  display:inline-block;
 }
 
 .tx-detail-box{ background:#F8F9FB; border-radius:16px; padding:16px; }
+.tx-detail-row{ display:flex; justify-content:space-between; align-items:center;
                 padding:10px 0; border-bottom:1px solid #E6E6EB; }
 .tx-detail-row:last-child{ border-bottom:none; }
 
 .tx-label{ font-size:13px; color:#666; }
+.tx-value{ font-size:14px; color:#1A1A1A; display:flex; align-items:center; gap:6px; }
 
+.tx-user-info{ display:flex; align-items:center; gap:10px; }
 .tx-avatar{ width:32px; height:32px; border-radius:50%; object-fit:cover;
             box-shadow:0 0 4px rgba(0,0,0,.1); }
 .tx-user-name{ font-weight:600; color:#1A1A1A; }
@@ -3744,6 +3789,7 @@ async function openChatListModal() {
         <div class="chat-row"
              data-chat="${ch.id}"
              data-partner="${otherId}"
+             style="display:flex; align-items:center; padding:10px; cursor:pointer;">
           <div style="position:relative; margin-right:12px;">
             <img src="${avatarUrl}"
                  class="chat-avatar"
@@ -3758,6 +3804,7 @@ async function openChatListModal() {
                     font-size:12px;
                     width:20px; height:20px;
                     border-radius:50%;
+                    display:flex;
                     align-items:center;
                     justify-content:center;
                   ">
@@ -3793,6 +3840,7 @@ async function openChatListModal() {
 
     const newChatBtn = `
   <button id="newChatBtn" style="
+    display: block;
     width: 100%;
     margin: 0 0 12px 0;
     padding: 12px;
@@ -3889,11 +3937,13 @@ async function openChatWindow(chatId, partnerId) {
   createModal('chatModal', `
     <div class="chat-container" style="
       touch-action: manipulation;
+      display: flex;
       flex-direction: column;
       height: 100%;
     ">
       <!-- === ШАПКА ЧАТА (без ⋮) === -->
       <div class="chat-header" style="
+        display: flex;
         align-items: center;
         gap: 12px;
         padding: 10px;
@@ -3910,6 +3960,7 @@ async function openChatWindow(chatId, partnerId) {
           "
           onerror="this.onerror=null;this.src='/photo/15.png';"
         />
+        <div class="chat-title" style="display: flex; flex-direction: column;">
           <span style="font-weight: 600; color: #333;">${partner.name}</span>
           <span style="font-size: 12px; color: #999; margin-top: 2px;">
             ID: ${partner.id}
@@ -3932,6 +3983,7 @@ async function openChatWindow(chatId, partnerId) {
         z-index: 2;
         box-sizing: border-box;
         padding: 10px;
+        display: flex;
         flex-direction: column;
         gap: 8px;
         width: 100%;
@@ -3953,6 +4005,7 @@ async function openChatWindow(chatId, partnerId) {
           : `
           <!-- превью файла -->
           <div id="mediaPreview" style="
+            display: none;
             position: relative;
             max-height: 250px;
             overflow: hidden;
@@ -3971,6 +4024,7 @@ async function openChatWindow(chatId, partnerId) {
             ">✖</button>
             <div style="
               margin-top: 8px;
+              display: flex;
               align-items: center;
               gap: 8px;
             ">
@@ -3982,15 +4036,18 @@ async function openChatWindow(chatId, partnerId) {
                           height: 6px;
                           border-radius: 4px;
                           overflow: hidden;
+                          display: none;
                         "></progress>
               <span id="uploadPercent" style="
                 font-size: 12px;
                 color: #555;
+                display: none;
               ">0%</span>
             </div>
           </div>
 
           <!-- строка ввода и кнопок -->
+          <div style="display: flex; gap: 0px; align-items: center;">
             <input id="chatText" class="chat-input" placeholder="Сообщение…"
                    style="
                      flex: 1;
@@ -4004,6 +4061,7 @@ async function openChatWindow(chatId, partnerId) {
             <input type="file"
                    id="mediaInput"
                    accept="image/*,video/*"
+                   style="display: none;" />
             <button id="uploadMediaBtn" style="
               background: none;
               border: none;
@@ -4057,16 +4115,19 @@ async function openChatWindow(chatId, partnerId) {
         mediaPart = `<img src="${m.media_url}"
                           style="max-width: 200px;
                                  border-radius: 12px;
+                                 display: block;
                                  margin-bottom: 6px;" />`;
       } else if (m.media_type === 'video') {
         mediaPart = `<video src="${m.media_url}"
                              controls preload="metadata"
                              style="max-width: 200px;
                                     border-radius: 12px;
+                                    display: block;
                                     margin-bottom: 6px;"></video>`;
       } else {
         mediaPart = `<a href="${m.media_url}"
                          target="_blank"
+                         style="display: block;
                                 margin-bottom: 6px;">📎 Файл</a>`;
       }
     }
@@ -4128,7 +4189,6 @@ async function openChatWindow(chatId, partnerId) {
   // Если не заблокированы — подключаем ввод
   if (!blockedByMe && !blockedMe) {
     const input         = document.getElementById('chatText');
-console.log('INPUT CHATTEXT DETECTED:', input);
     const sendBtn       = document.getElementById('chatSend');
     const mediaInput    = document.getElementById('mediaInput');
     const uploadBtn     = document.getElementById('uploadMediaBtn');
@@ -4286,103 +4346,9 @@ document.getElementById('chatBtn')?.addEventListener('click',()=>{
 /**************************************************
  * WINDOW EVENTS
  **************************************************/
-
 // Flush mined coins before leaving page
 window.addEventListener("beforeunload", () => {
   if (pendingMinedCoins > 0) {
     flushMinedCoins();
-  }
-});
-
-// Скрытие клавиатуры при тапе вне input/textarea
-document.addEventListener('touchstart', function(event) {
-  const isInput = event.target.closest('input, textarea');
-  if (!isInput) {
-    const focused = document.activeElement;
-    if (focused && (focused.tagName === 'INPUT' || focused.tagName === 'TEXTAREA')) {
-      focused.blur();
-    }
-  }
-}, { passive: true });
-
-// Прокрутка к полю ввода при фокусе (особенно важно для iOS)
-document.addEventListener('focusin', function(e) {
-  const el = e.target;
-  if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-    setTimeout(() => {
-      try {
-        const cs = window.getComputedStyle(el);
-        if (el.offsetHeight > 0 && cs.display !== 'none') {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      } catch (err) {
-        console.warn('scroll error:', err);
-      }
-    }, 250);
-  }
-});
-
-/**************************************************
- * iOS INPUT + TOUCH FIX
- **************************************************/
-
-// Скрывание клавиатуры при тапе вне поля ввода
-document.addEventListener('touchstart', function(event) {
-  const isInput = event.target.closest('input, textarea');
-  if (!isInput) {
-    const focused = document.activeElement;
-    if (focused && (focused.tagName === 'INPUT' || focused.tagName === 'TEXTAREA')) {
-      focused.blur();
-    }
-  }
-}, { passive: true });
-
-// Прокрутка поля в центр при фокусе
-document.addEventListener('focusin', (e) => {
-  const el = e.target;
-  if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-    setTimeout(() => {
-      try {
-        const cs = window.getComputedStyle(el);
-        console.log('[INPUT]', el.id, 'offsetHeight:', el.offsetHeight, 'display:', cs.display);
-        if (el.offsetHeight > 0 && cs.display !== 'none') {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      } catch (err) {
-        console.warn('scroll error:', err);
-      }
-    }, 250);
-  }
-});
-
-/**************************************************
- * iOS INPUT + TOUCH FIX
- **************************************************/
-
-// Скрытие клавиатуры при тапе вне поля ввода
-document.addEventListener('touchstart', function(event) {
-  const isInput = event.target.closest('input, textarea');
-  if (!isInput) {
-    const focused = document.activeElement;
-    if (focused && (focused.tagName === 'INPUT' || focused.tagName === 'TEXTAREA')) {
-      focused.blur();
-    }
-  }
-}, { passive: true });
-
-// Прокрутка к полю при фокусе
-document.addEventListener('focusin', function(e) {
-  const el = e.target;
-  if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-    setTimeout(() => {
-      try {
-        const cs = window.getComputedStyle(el);
-        if (el.offsetHeight > 0 && cs.display !== 'none') {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      } catch (err) {
-        console.warn('scroll error:', err);
-      }
-    }, 250);
   }
 });
