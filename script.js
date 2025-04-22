@@ -639,7 +639,6 @@ function openAuthModal() {
       <div class="auth-overlay">
         <!-- Login Form -->
         <div id="loginSection" class="auth-form">
-          <input type="text" id="loginInput" placeholder="Логин" class="auth-input" autofocus />
           <div class="password-wrapper">
             <input type="password" id="passwordInput" placeholder="Пароль" class="auth-input password-input" />
             <span class="toggle-password" onclick="togglePasswordVisibility('passwordInput', this)">👁️</span>
@@ -3382,12 +3381,17 @@ function startUniversalQRScanner(videoElement, onResultCallback) {
   navigator.mediaDevices
     .getUserMedia({ video: { facingMode: "environment" } })
     .then((stream) => {
+    if (!document.body.contains(videoElement)) return;
+    videoElement.style.display = 'block';
+    videoElement.style.visibility = 'visible';
+    console.log('iOS: video element visible and in DOM');
       videoElement.srcObject = stream;
     videoElement.style.display = 'block';
     videoElement.style.visibility = 'visible';
     console.log('Video element ready for playback');
       videoElement.setAttribute("playsinline", true);
       videoElement.play().catch(err => console.error("Play error:", err));
+    // iOS requires user interaction before play
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
       let alreadyScanned = false;
@@ -4360,7 +4364,6 @@ window.addEventListener("beforeunload", () => {
 
 
 
-document.getElementById('chatText')?.addEventListener('focus', () => {
   setTimeout(() => {
   }, 300);
 });
@@ -4368,15 +4371,11 @@ document.getElementById('chatText')?.addEventListener('focus', () => {
 document.addEventListener('touchstart', function(event) {
   const isInput = event.target.closest('input, textarea');
   if (!isInput) {
-    const focused = document.activeElement;
-    if (focused && (focused.tagName === 'INPUT' || focused.tagName === 'TEXTAREA')) {
-      focused.blur();
     }
   }
 }, { passive: true });
 
 
-document.addEventListener('focusin', (e) => {
   const el = e.target;
   if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
     setTimeout(() => {
@@ -4384,10 +4383,8 @@ document.addEventListener('focusin', (e) => {
         const cs = window.getComputedStyle(el);
         console.log('[INPUT]', el.id, 'offsetHeight:', el.offsetHeight, 'display:', cs.display);
         if (el.offsetHeight > 0 && cs.display !== 'none') {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
       } catch(err) {
-        console.warn('focusin scroll error:', err);
       }
     }, 250);
   }
