@@ -509,7 +509,7 @@ body {
   height: 40px;
   border-radius: 50%;
   object-fit: cover;
-  margin-right: 10px;
+  margin-right: 0px;
 }
 
 .user-name {
@@ -1201,8 +1201,8 @@ body {
   flex-direction: row;
   align-items: center;
   /* подвиньте по вертикали */
-  margin-top: 20px;
-  padding: 0 16px;
+  margin-top: 0px;
+  padding: 0px;
 }
 
 .user-info .user-photo {
