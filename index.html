@@ -17,26 +17,19 @@
   <script src="https://cdn.jsdelivr.net/npm/tweetnacl-util/nacl-util.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.5/dist/umd/supabase.min.js"></script>
   <script src="script.js" defer></script>
-
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#000000">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
-
 </head>
 <body>
-  <div id="balanceDisplay" style="display:none;">
-    <div id="balanceValue">0.00000 ₲</div>
-    <div id="userIdDisplay"></div>
-  </div>
   <div id="mineContainer" class="hidden">
     <img id="mineBtn" src="photo/15.png" alt="Майнить">
   </div>
   <div id="loadingIndicator" class="loading-indicator hidden">
     <img src="photo/25.gif" alt="Загрузка..." />
   </div>
-
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js')
@@ -44,8 +37,6 @@
         .catch(err => console.error('Service Worker registration failed:', err));
     }
   </script>
-
-
   <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
   <script>
     window.OneSignalDeferred = window.OneSignalDeferred || [];
@@ -55,7 +46,6 @@
       });
     });
   </script>
-
 <script>
   document.addEventListener('touchstart', function(event) {
     const isInput = event.target.closest('input, textarea');
@@ -66,7 +56,6 @@
       }
     }
   }, { passive: true });
-
   document.addEventListener('focusin', function(e) {
     const el = e.target;
     if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
