@@ -3911,7 +3911,7 @@ async function openChatWindow(chatId, partnerId) {
           <div id="mediaPreview" style="
             display: none;
             position: relative;
-            max-height: 150px;
+            max-height: 250px;
             overflow: hidden;
             border-radius: 12px;
             background: rgba(0,0,0,0.05);
@@ -3951,7 +3951,7 @@ async function openChatWindow(chatId, partnerId) {
           </div>
 
           <!-- строка ввода и кнопок -->
-          <div style="display: flex; gap: 10px; align-items: center;">
+          <div style="display: flex; gap: 0px; align-items: center;">
             <input id="chatText" class="chat-input" placeholder="Сообщение…"
                    style="
                      flex: 1;
@@ -4016,14 +4016,14 @@ async function openChatWindow(chatId, partnerId) {
     if (m.media_url) {
       if (m.media_type === 'image') {
         mediaPart = `<img src="${m.media_url}"
-                          style="max-width: 240px;
+                          style="max-width: 200px;
                                  border-radius: 12px;
                                  display: block;
                                  margin-bottom: 6px;" />`;
       } else if (m.media_type === 'video') {
         mediaPart = `<video src="${m.media_url}"
                              controls preload="metadata"
-                             style="max-width: 240px;
+                             style="max-width: 200px;
                                     border-radius: 12px;
                                     display: block;
                                     margin-bottom: 6px;"></video>`;
