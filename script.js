@@ -3672,38 +3672,34 @@ async function fetchUserCard(id) {
 let chatListInterval = null;
 
 async function openChatListModal() {
-  // НЕ скрываем bottomBar, он всегда виден
-
   showGlobalLoading();
 
-  // добавляем больший паддинг внизу, чтобы контент не заезжал под bottomBar
   createModal('chatListModal', `
     <div class="modal-body chat-list-body" style="padding: 16px 0 80px; margin-top: 30px;"></div>
   `, {
-    showCloseBtn: true,
+    showCloseBtn: false,      // убираем крестик
     cornerTopRadius: 0,
     hasVerticalScroll: true,
     onClose: () => {
       if (chatListInterval) clearInterval(chatListInterval);
-      // bottomBar остаётся видимым
     }
   });
 
   const container = document.querySelector('#chatListModal .modal-body');
 
   async function renderChatList() {
-    // Берём все чаты пользователя
     const { data: chats } = await supabase
       .from('chats')
       .select('*')
       .or(`user1_id.eq.${currentUserId},user2_id.eq.${currentUserId}`);
 
-    // Собираем для каждого чата данные: html++timestamp последнего сообщения
     const chatData = await Promise.all(chats.map(async ch => {
       const otherId = ch.user1_id === currentUserId ? ch.user2_id : ch.user1_id;
       const u       = await fetchUserCard(otherId);
 
-      // Последнее сообщение (текст+медиа)
+      // подставляем дефолт сразу, чтобы не было миготения
+      const avatarUrl = u.photo ? u.photo : '/photo/15.png';
+
       const { data: lastMsg } = await supabase
         .from('messages')
         .select(`encrypted_message, media_type,
@@ -3719,7 +3715,6 @@ async function openChatListModal() {
 
       if (lastMsg) {
         lastTs = new Date(lastMsg.created_at).getTime();
-        // Расшифровка/текст
         if (lastMsg.encrypted_message) {
           const isEnc = lastMsg.nonce && lastMsg.sender_public_key;
           previewText = isEnc
@@ -3730,18 +3725,17 @@ async function openChatListModal() {
               )
             : lastMsg.encrypted_message;
         }
-        // Если нет текста, но есть медиа — пишем «Фото»/«Видео»
         if (!previewText && lastMsg.media_type) {
-          if (lastMsg.media_type === 'image') previewText = 'Фото';
-          else if (lastMsg.media_type === 'video') previewText = 'Видео';
-          else previewText = 'Файл';
+          previewText = lastMsg.media_type === 'image'
+            ? 'Фото'
+            : lastMsg.media_type === 'video'
+              ? 'Видео'
+              : 'Файл';
         }
-        // Время
         previewTime = new Date(lastMsg.created_at)
           .toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
       }
 
-      // Количество непрочитанных
       const { data: unread } = await supabase
         .from('messages')
         .select('id', { count: 'exact' })
@@ -3749,57 +3743,59 @@ async function openChatListModal() {
         .not('read_by', 'cs', `{${currentUserId}}`);
       const unreadCount = unread?.length || 0;
 
-      // Собираем html
       const rowHtml = `
-        <div class="chat-row" data-chat="${ch.id}" data-partner="${otherId}" 
+        <div class="chat-row"
+             data-chat="${ch.id}"
+             data-partner="${otherId}"
              style="display:flex; align-items:center; padding:10px; cursor:pointer;">
           <div style="position:relative; margin-right:12px;">
-            <img src="${u.photo}" class="chat-avatar"
+            <img src="${avatarUrl}"
+                 class="chat-avatar"
                  style="width:48px; height:48px; border-radius:50%; object-fit:cover;"
-                 onerror="this.onerror=null;this.src='/photo/15.png';" />
+            />
             ${unreadCount > 0
-              ? `<div class="unread-dot" 
-                      style="
-                        position:absolute; 
-                        top:-2px; right:-2px; 
-                        background:#E63946; 
-                        color:#fff; 
-                        font-size:12px; 
-                        width:20px; height:20px;
-                        border-radius:50%;
-                        display:flex;
-                        align-items:center;
-                        justify-content:center;
-                      ">
+              ? `<div style="
+                    position:absolute;
+                    top:-2px; right:-2px;
+                    background:#E63946;
+                    color:#fff;
+                    font-size:12px;
+                    width:20px; height:20px;
+                    border-radius:50%;
+                    display:flex;
+                    align-items:center;
+                    justify-content:center;
+                  ">
                   ${unreadCount}
                 </div>`
               : ''}
           </div>
           <div class="chat-info" style="flex:1; min-width:0;">
-            <div class="chat-name" style="font-weight:500; line-height:1.2; margin-bottom:4px;">
+            <div style="font-weight:500; line-height:1.2; margin-bottom:4px;">
               ${u.name}
-              <span style="font-size:12px; color:#999; margin-left:4px;">ID:${u.id}</span>
+              <span style="font-size:12px; color:#999; margin-left:4px;">
+                ID:${u.id}
+              </span>
             </div>
-            <div class="chat-preview" style="
+            <div style="
                    font-size:13px; color:#777;
                    overflow:hidden; white-space:nowrap;
                    text-overflow:ellipsis;">
               ${previewText || 'нет сообщений'}
             </div>
           </div>
-          <div class="chat-time" style="margin-left:12px; font-size:12px; color:#999;">
+          <div style="margin-left:12px; font-size:12px; color:#999;">
             ${previewTime}
           </div>
-        </div>`;
+        </div>
+      `;
 
       return { rowHtml, lastTs };
     }));
 
-    // Сортируем по time DESC и рисуем
     chatData.sort((a, b) => b.lastTs - a.lastTs);
     const rowsHtml = chatData.map(c => c.rowHtml).join('');
 
-    // Кнопка «Новый чат»
     const newChatBtn = `
       <button id="newChatBtn" style="
         width: calc(100% - 32px);
@@ -3817,7 +3813,6 @@ async function openChatListModal() {
 
     container.innerHTML = newChatBtn + rowsHtml;
 
-    // Привязываем события
     document.getElementById('newChatBtn')
       .addEventListener('click', openNewChatModal);
 
@@ -3830,8 +3825,6 @@ async function openChatListModal() {
 
   await renderChatList();
   hideGlobalLoading();
-
-  // Обновляем каждую секунду
   chatListInterval = setInterval(renderChatList, 1000);
 }
 
