@@ -1108,7 +1108,7 @@ function injectMainUIStyles() {
     }
     .action-container {
       display: flex;
-      gap: 8px;
+      gap: 0px;
       justify-content: center;
       margin-bottom: 16px;
       margin-top: 175px;
@@ -3839,49 +3839,150 @@ async function openChatWindow(chatId, partnerId) {
 
   // Открываем модалку чата
   createModal('chatModal', `
-    <div class="chat-container" style="touch-action: manipulation; display: flex; flex-direction: column; height: 100%;">
-      <!-- === ШАПКА ЧАТА === -->
-      <div class="chat-header" style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #eee;">
-        <button id="chatMoreBtn" style="background: #fff; border: none; font-size: 18px; color: #333; cursor: pointer; border-radius: 10px; padding: 6px 10px;">⋮</button>
+    <div class="chat-container" style="
+      touch-action: manipulation;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    ">
+      <!-- === ШАПКА ЧАТА (без ⋮) === -->
+      <div class="chat-header" style="
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px;
+        border-bottom: 1px solid #eee;
+      ">
         <img
           src="${partner.photo}"
           class="chat-avatar"
-          style="width:40px; height:40px; border-radius:50%; object-fit:cover;"
-          onerror="this.onerror=null; this.src='/photo/15.png';"
+          style="
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+          "
+          onerror="this.onerror=null;this.src='/photo/15.png';"
         />
-        <div class="chat-title" style="display:flex; flex-direction:column;">
-          <span style="font-weight:600; color:#333;">${partner.name}</span>
-          <span style="font-size:12px; color:#999; margin-top:2px;">ID: ${partner.id}</span>
+        <div class="chat-title" style="display: flex; flex-direction: column;">
+          <span style="font-weight: 600; color: #333;">${partner.name}</span>
+          <span style="font-size: 12px; color: #999; margin-top: 2px;">
+            ID: ${partner.id}
+          </span>
         </div>
       </div>
 
-      <!-- === МЕДИА-ПРЕДПРОСМОТР === -->
-      <div id="mediaPreview" style="display:none; padding: 10px; background: rgba(0,0,0,0.03); position: relative;">
-        <div id="mediaPreviewContent"></div>
-        <button id="cancelPreviewBtn" style="position:absolute; top:4px; right:4px; background:#fff; border:none; border-radius:50%; cursor:pointer;">✖</button>
-        <div style="margin-top:8px; display:flex; align-items:center; gap:8px;">
-          <progress id="uploadProgress" max="100" value="0" style="flex:1; height:8px; border-radius:4px; overflow:hidden;"></progress>
-          <span id="uploadPercent" style="font-size:12px; color:#555;">0%</span>
-        </div>
-      </div>
+      <!-- === ЛЕНТА СООБЩЕНИЙ === -->
+      <div id="chatMessages" class="chat-messages" style="
+        flex: 1 1 auto;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      "></div>
 
-      <!-- === БЛОК СООБЩЕНИЙ === -->
-      <div id="chatMessages" class="chat-messages" style="flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch;"></div>
-
-      <!-- === ПАНЕЛЬ ВВОДА === -->
-      <div class="chat-inputbar" id="chatInputBar" style="padding:10px; border-top:1px solid #eee; display:flex; gap:10px; align-items:center;">
+      <!-- === ПАНЕЛЬ ВВОДА С ПРЕДПРОСМОТРОМ === -->
+      <div id="chatInputBar" class="chat-inputbar" style="
+        position: sticky;
+        bottom: 0;
+        background: #fff;
+        z-index: 2;
+        box-sizing: border-box;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+      ">
         ${blockedByMe || blockedMe
-          ? `<div style="flex:1; padding:14px; text-align:center; color:#999; background:#f8f8f8; border-radius:12px; font-style:italic;">
-               ${blockedByMe ? 'Вы заблокировали этого пользователя' : 'Вы были заблокированы этим пользователем'}
+          ? `<div style="
+               flex: 1;
+               padding: 14px;
+               text-align: center;
+               color: #999;
+               background: #f8f8f8;
+               border-radius: 12px;
+               font-style: italic;
+             ">
+               ${blockedByMe
+                 ? 'Вы заблокировали этого пользователя'
+                 : 'Вы были заблокированы этим пользователем'}
              </div>`
           : `
-            <input id="chatText" class="chat-input" placeholder="Сообщение…" style="flex:1; font-size:16px; padding:12px; border-radius:12px; border:1px solid #ccc;" />
-            <input type="file" id="mediaInput" accept="image/*,video/*" style="display:none;" />
-            <button id="uploadMediaBtn" style="background:none; border:none; font-size:20px; cursor:pointer;">📎</button>
-            <button id="chatSend" style="padding:12px 16px; background:#2F80ED; color:#fff; font-weight:600; border:none; border-radius:12px; cursor:pointer;">
-              Отправить
-            </button>
-          `}
+          <!-- превью файла -->
+          <div id="mediaPreview" style="
+            display: none;
+            position: relative;
+            max-height: 150px;
+            overflow: hidden;
+            border-radius: 12px;
+            background: rgba(0,0,0,0.05);
+          ">
+            <div id="mediaPreviewContent"></div>
+            <button id="cancelPreviewBtn" style="
+              position: absolute;
+              top: 4px;
+              right: 4px;
+              background: #fff;
+              border: none;
+              border-radius: 50%;
+              cursor: pointer;
+            ">✖</button>
+            <div style="
+              margin-top: 8px;
+              display: flex;
+              align-items: center;
+              gap: 8px;
+            ">
+              <progress id="uploadProgress"
+                        max="100"
+                        value="0"
+                        style="
+                          flex: 1;
+                          height: 6px;
+                          border-radius: 4px;
+                          overflow: hidden;
+                          display: none;
+                        "></progress>
+              <span id="uploadPercent" style="
+                font-size: 12px;
+                color: #555;
+                display: none;
+              ">0%</span>
+            </div>
+          </div>
+
+          <!-- строка ввода и кнопок -->
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <input id="chatText" class="chat-input" placeholder="Сообщение…"
+                   style="
+                     flex: 1;
+                     width: 100%;
+                     box-sizing: border-box;
+                     font-size: 16px;
+                     padding: 12px;
+                     border-radius: 12px;
+                     border: 1px solid #ccc;
+                   " />
+            <input type="file"
+                   id="mediaInput"
+                   accept="image/*,video/*"
+                   style="display: none;" />
+            <button id="uploadMediaBtn" style="
+              background: none;
+              border: none;
+              font-size: 20px;
+              cursor: pointer;
+            ">📎</button>
+            <button id="chatSend" style="
+              padding: 12px 16px;
+              background: #2F80ED;
+              color: #fff;
+              font-weight: 600;
+              border: none;
+              border-radius: 12px;
+              cursor: pointer;
+            ">Отправить</button>
+          </div>
+        `}
       </div>
     </div>
   `, {
@@ -3894,7 +3995,7 @@ async function openChatWindow(chatId, partnerId) {
     }
   });
 
-  // Скрываем нижнюю панель
+  // Скрываем нижнюю системную панель
   document.getElementById('bottomBar').style.display = 'none';
   const box = document.getElementById('chatMessages');
 
@@ -3905,7 +4006,8 @@ async function openChatWindow(chatId, partnerId) {
     const text = isEncrypted
       ? decryptMessage(m.encrypted_message, m.nonce, m.sender_public_key)
       : m.encrypted_message;
-    const tm = new Date(m.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    const tm = new Date(m.created_at)
+      .toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
     const bubble = document.createElement('div');
     bubble.className = `bubble ${side} slide-in-up`;
@@ -3913,11 +4015,23 @@ async function openChatWindow(chatId, partnerId) {
     let mediaPart = '';
     if (m.media_url) {
       if (m.media_type === 'image') {
-        mediaPart = `<img src="${m.media_url}" style="max-width: 200px; border-radius: 12px; display: block; margin-bottom: 6px;" />`;
+        mediaPart = `<img src="${m.media_url}"
+                          style="max-width: 240px;
+                                 border-radius: 12px;
+                                 display: block;
+                                 margin-bottom: 6px;" />`;
       } else if (m.media_type === 'video') {
-        mediaPart = `<video src="${m.media_url}" controls preload="metadata" style="max-width: 200px; border-radius: 12px; display: block; margin-bottom: 6px;"></video>`;
+        mediaPart = `<video src="${m.media_url}"
+                             controls preload="metadata"
+                             style="max-width: 240px;
+                                    border-radius: 12px;
+                                    display: block;
+                                    margin-bottom: 6px;"></video>`;
       } else {
-        mediaPart = `<a href="${m.media_url}" target="_blank" style="display: block; margin-bottom: 6px;">📎 Файл</a>`;
+        mediaPart = `<a href="${m.media_url}"
+                         target="_blank"
+                         style="display: block;
+                                margin-bottom: 6px;">📎 Файл</a>`;
       }
     }
 
@@ -3929,7 +4043,7 @@ async function openChatWindow(chatId, partnerId) {
     return bubble;
   }
 
-  // Загрузка новых сообщений (incremental)
+  // Загрузка новых сообщений
   async function loadMessages() {
     let query = supabase
       .from('messages')
@@ -3948,26 +4062,23 @@ async function openChatWindow(chatId, partnerId) {
       box.appendChild(renderMessage(m));
       lastMessageTime = m.created_at;
     });
-
-    // Прокручиваем вниз после добавления
     box.scrollTop = box.scrollHeight;
 
-    // Помечаем как прочитанное
+    // Пометить прочитанным
     await fetch(`${API_URL}/chat/read`, {
       method: 'POST',
       credentials: 'include',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': csrfToken
+      },
       body: JSON.stringify({ chatId, userId: currentUserId })
     });
   }
 
-  // Первичная загрузка
+  // Инициализация
   await loadMessages();
-
-  // Polling каждую секунду
   refreshInterval = setInterval(loadMessages, 1000);
-
-  // Realtime‑подписка
   chatChannel = supabase
     .channel(`chat-${chatId}`)
     .on('postgres_changes', {
@@ -3975,24 +4086,26 @@ async function openChatWindow(chatId, partnerId) {
       schema: 'public',
       table: 'messages',
       filter: `chat_id=eq.${chatId}`
-    }, () => loadMessages())
+    }, loadMessages)
     .subscribe();
 
-  // Если чат не заблокирован — подключаем ввод
+  // Если не заблокированы — подключаем ввод
   if (!blockedByMe && !blockedMe) {
-    const input       = document.getElementById('chatText');
-    const sendBtn     = document.getElementById('chatSend');
-    const mediaInput  = document.getElementById('mediaInput');
-    const uploadBtn   = document.getElementById('uploadMediaBtn');
-    const mediaPreview= document.getElementById('mediaPreview');
-    const mediaContent= document.getElementById('mediaPreviewContent');
+    const input         = document.getElementById('chatText');
+    const sendBtn       = document.getElementById('chatSend');
+    const mediaInput    = document.getElementById('mediaInput');
+    const uploadBtn     = document.getElementById('uploadMediaBtn');
+    const mediaPreview  = document.getElementById('mediaPreview');
+    const mediaContent  = document.getElementById('mediaPreviewContent');
     const cancelPreview = document.getElementById('cancelPreviewBtn');
-    const progressElem = document.getElementById('uploadProgress');
-    const percentLabel = document.getElementById('uploadPercent');
+    const progressElem  = document.getElementById('uploadProgress');
+    const percentLabel  = document.getElementById('uploadPercent');
     let selectedFile = null;
 
+    // Открыть выбор файла
     uploadBtn.onclick = () => mediaInput.click();
 
+    // При выборе — показать превью, но НЕ загружать
     mediaInput.onchange = () => {
       const file = mediaInput.files[0];
       if (file && file.type.match(/image|video/)) {
@@ -4001,19 +4114,18 @@ async function openChatWindow(chatId, partnerId) {
         const el = document.createElement(isImg ? 'img' : 'video');
         el.src = URL.createObjectURL(file);
         if (!isImg) el.controls = true;
-        el.style.maxWidth = '240px';
+        el.style.maxWidth = '100%';
         el.style.borderRadius = '12px';
         mediaContent.appendChild(el);
 
         selectedFile = file;
-        progressElem.value = 0;
-        percentLabel.textContent = '0%';
         mediaPreview.style.display = 'block';
       } else {
-        showNotification('Можно загрузить только фото или видео', 'error');
+        showNotification('Можно загружать только фото или видео', 'error');
       }
     };
 
+    // Отмена превью
     cancelPreview.onclick = () => {
       selectedFile = null;
       mediaPreview.style.display = 'none';
@@ -4025,16 +4137,11 @@ async function openChatWindow(chatId, partnerId) {
     chatModal.addEventListener('dragover', e => e.preventDefault());
     chatModal.addEventListener('drop', e => {
       e.preventDefault();
-      const file = e.dataTransfer.files[0];
-      if (file && file.type.match(/image|video/)) {
-        mediaInput.files = e.dataTransfer.files;
-        mediaInput.onchange();
-      } else {
-        showNotification('Можно загрузить только фото или видео', 'error');
-      }
+      mediaInput.files = e.dataTransfer.files;
+      mediaInput.onchange();
     });
 
-    // Отправка сообщения
+    // Отправка
     sendBtn.onclick = async () => {
       const textVal = input.value.trim();
       if (!textVal && !selectedFile) {
@@ -4043,7 +4150,7 @@ async function openChatWindow(chatId, partnerId) {
 
       const payload = { chat_id: chatId, sender_id: currentUserId };
 
-      // Шифруем текст
+      // Шифруем текст, если есть
       if (textVal) {
         if (!partner.pub) {
           const { data } = await supabase
@@ -4054,18 +4161,23 @@ async function openChatWindow(chatId, partnerId) {
           partner.pub = data?.public_key || '';
         }
         if (partner.pub) {
-          const { encrypted_message, nonce, sender_public_key } = encryptMessage(textVal, partner.pub);
+          const { encrypted_message, nonce, sender_public_key } =
+            encryptMessage(textVal, partner.pub);
           Object.assign(payload, { encrypted_message, nonce, sender_public_key });
         } else {
           payload.encrypted_message = textVal;
         }
       }
 
-      // Загрузка файла
+      // Если есть файл — загружаем только теперь
       if (selectedFile) {
         const ext = selectedFile.name.split('.').pop();
         const filename = `${Date.now()}_${currentUserId}.${ext}`;
         const filePath = `chat_media/${chatId}/${filename}`;
+
+        // Показ прогресса
+        progressElem.style.display = 'block';
+        percentLabel.style.display = 'inline';
 
         const { data, error: uploadError } = await supabase
           .storage
@@ -4091,19 +4203,25 @@ async function openChatWindow(chatId, partnerId) {
 
         payload.media_url  = publicUrl;
         payload.media_type = selectedFile.type.startsWith('image/') ? 'image' : 'video';
-
-        selectedFile = null;
-        mediaPreview.style.display = 'none';
-        mediaContent.innerHTML = '';
       }
 
-      // Сохраняем сообщение
+      // Отправляем в БД
       const { error } = await supabase.from('messages').insert([payload]);
       if (error) {
         return showNotification('Не удалось отправить сообщение', 'error');
       }
 
+      // Сброс полей
       input.value = '';
+      if (selectedFile) {
+        selectedFile = null;
+        mediaPreview.style.display = 'none';
+        mediaContent.innerHTML = '';
+        progressElem.style.display = 'none';
+        percentLabel.style.display = 'none';
+      }
+
+      // Прокрутка вниз
       setTimeout(() => {
         box.scrollTop = box.scrollHeight;
       }, 50);
