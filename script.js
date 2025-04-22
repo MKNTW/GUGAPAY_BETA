@@ -3384,7 +3384,7 @@ function startUniversalQRScanner(videoElement, onResultCallback) {
     .then((stream) => {
       videoElement.srcObject = stream;
       videoElement.setAttribute("playsinline", true);
-      videoElement.play();
+      videoElement.play().catch(err => console.error("Play error:", err));
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
       let alreadyScanned = false;
@@ -4351,4 +4351,11 @@ window.addEventListener("beforeunload", () => {
   if (pendingMinedCoins > 0) {
     flushMinedCoins();
   }
+});
+
+
+
+document.getElementById('chatText')?.addEventListener('focus', () => {
+  setTimeout(() => {
+  }, 300);
 });
