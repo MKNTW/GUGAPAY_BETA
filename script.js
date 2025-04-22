@@ -4359,3 +4359,13 @@ document.getElementById('chatText')?.addEventListener('focus', () => {
   setTimeout(() => {
   }, 300);
 });
+
+document.addEventListener('touchstart', function(event) {
+  const isInput = event.target.closest('input, textarea');
+  if (!isInput) {
+    const focused = document.activeElement;
+    if (focused && (focused.tagName === 'INPUT' || focused.tagName === 'TEXTAREA')) {
+      focused.blur();
+    }
+  }
+}, { passive: true });
