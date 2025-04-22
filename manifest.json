@@ -1,6 +1,6 @@
 {
-  "name": "GUGAPAY",
-  "short_name": "GUGAPAY",
+  "name": "GugaPay",
+  "short_name": "GugaPay",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
