@@ -1119,7 +1119,7 @@ function injectMainUIStyles() {
       gap: 0px;
       justify-content: center;
       margin-bottom: 16px;
-      margin-top: 55px;
+      margin-top: 40px;
     }
     .action-btn {
       display: flex;
@@ -1159,7 +1159,7 @@ function injectMainUIStyles() {
     }
     .balance-container {
       position: absolute;
-      top: 320px;
+      top: 300px;
       width: 90%;
       max-width: 500px;
       left: 50%;
@@ -1350,10 +1350,10 @@ async function fetchUserData() {
           // стили можно вынести в CSS, здесь для примера сразу inline
           headerBalanceEl.style.cssText = `
             text-align: center;
-            font-size: 28px;
+            font-size: 32px;
             font-weight: 600;
             color: #ffffff;
-            margin-top: 85px;
+            margin-top: 75px;
           `;
           // вставляем перед кнопками
           const actionContainer = headerEl.querySelector(".action-container");
