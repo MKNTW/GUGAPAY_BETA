@@ -3971,7 +3971,7 @@ async function openChatWindow(chatId, partnerId) {
               border: none;
               font-size: 20px;
               cursor: pointer;
-              margin: 10px;
+              margin: 5px;
             ">📎</button>
             <button id="chatSend" style="
               padding: 14px 16px;
