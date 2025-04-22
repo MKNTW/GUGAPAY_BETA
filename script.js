@@ -17,6 +17,8 @@ async function fetchCsrfToken() {
   }
 }
 
+fetchCsrfToken();
+
 // 0) Ваш публичный VAPID-ключ от web-push (Base64 URL-safe)
 const PUBLIC_VAPID_KEY = 'BO-xrqEyeoH4EHZkg6YJgrO5tfniBp52aRL3V1JKokIe59OLPwFcoyHpciJnpJ3jBRlEXwMewKWYYcVFpuKOcoI';
 
