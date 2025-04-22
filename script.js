@@ -130,6 +130,50 @@ function loadCSSStylesheet() {
 loadCSSStylesheet();
 
 /**************************************************
+ * PUSH
+ **************************************************/
+
+// 1. Регистрируем SW
+if ('serviceWorker' in navigator && 'PushManager' in window) {
+  navigator.serviceWorker.register('/sw.js')
+    .then(reg => {
+      console.log('SW зарегистрирован:', reg);
+
+      // 2. Запрашиваем разрешение на уведомления
+      return Notification.requestPermission().then(permission => {
+        if (permission !== 'granted') {
+          console.warn('Уведомления не разрешены');
+          return null;
+        }
+        // 3. Получаем подписку
+        return reg.pushManager.getSubscription()
+          .then(sub => {
+            if (sub) return sub;
+            // applicationServerKey — ваш публичный VAPID‑ключ, законвертированный в Uint8Array
+            return reg.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY)
+            });
+          });
+      });
+    })
+    .then(subscription => {
+      if (!subscription) return;
+      // 4. Отправляем subscription на бэкенд
+      fetch(`${API_URL}/subscribe`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken
+        },
+        body: JSON.stringify(subscription)
+      });
+    })
+    .catch(err => console.error('SW/Push registration error', err));
+}
+
+/**************************************************
  * MODALS (Generic Modal Management)
  **************************************************/
 /**
