@@ -3799,7 +3799,7 @@ async function openChatListModal() {
     const newChatBtn = `
       <button id="newChatBtn" style="
         width: calc(100% - 32px);
-        margin: 0 0px 12px;
+        margin-bottom: 12px;
         padding: 12px;
         border:none;
         background:#2F80ED;
