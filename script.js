@@ -3675,7 +3675,7 @@ async function openChatListModal() {
   showGlobalLoading();
 
   createModal('chatListModal', `
-    <div class="modal-body chat-list-body" style="padding: 16px 0 80px; margin-top: 30px;"></div>
+    <div class="modal-body chat-list-body" style="padding: 0px 0 80px; margin-top: 0px;"></div>
   `, {
     showCloseBtn: false,      // убираем крестик
     cornerTopRadius: 0,
@@ -3799,7 +3799,7 @@ async function openChatListModal() {
     const newChatBtn = `
       <button id="newChatBtn" style="
         width: calc(100% - 32px);
-        margin: 0 16px 12px;
+        margin: 0 0px 12px;
         padding: 12px;
         border:none;
         background:#2F80ED;
