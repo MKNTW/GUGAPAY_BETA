@@ -1,0 +1,4 @@
+// generate_vapid.js
+const webpush = require('web-push');
+const keys   = webpush.generateVAPIDKeys();
+console.log(JSON.stringify(keys, null, 2));
