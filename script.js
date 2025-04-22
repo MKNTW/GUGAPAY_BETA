@@ -1260,99 +1260,108 @@ async function fetchUserData() {
     const ratesData = await ratesResp.json();
 
     if (userData.success && userData.user) {
+      // Если аккаунт заблокирован — выход
       if (userData.user.blocked) {
         showNotification("Ваш аккаунт заблокирован. Доступ ограничен.", "error");
         logout();
         return;
       }
 
+      // Сохраняем основную информацию
       currentUserId = userData.user.user_id;
-      const coinBalance = userData.user.balance || 0;
-      const rubBalance = userData.user.rub_balance || 0;
-      const currentRate = (ratesData.success && ratesData.rates.length) ? parseFloat(ratesData.rates[0].exchange_rate) : 0;
+      const coinBalance = parseFloat(userData.user.balance) || 0;
+      const rubBalance  = parseFloat(userData.user.rub_balance) || 0;
+      const currentRate =
+        ratesData.success && ratesData.rates.length
+          ? parseFloat(ratesData.rates[0].exchange_rate)
+          : 0;
 
-      const photoUrl = userData.user.photo_url || "";
+      const photoUrl  = userData.user.photo_url || "";
       const firstName = userData.user.first_name || "Гость";
-      
 
-      // 1. Получаем или создаём главный контейнер
-let userInfoContainer = document.getElementById("user-info");
-if (!userInfoContainer) {
-  userInfoContainer = document.createElement("div");
-  userInfoContainer.id = "user-info";
-  userInfoContainer.classList.add("user-info");
-  document.body.appendChild(userInfoContainer);
-}
-
-// 2. Фото
-let userPhotoEl = userInfoContainer.querySelector(".user-photo");
-if (!userPhotoEl) {
-  userPhotoEl = document.createElement("img");
-  userPhotoEl.classList.add("user-photo");
-  userPhotoEl.alt = "User Photo";
-  userInfoContainer.appendChild(userPhotoEl);
-}
-userPhotoEl.src = photoUrl;
-
-// 3. Контейнер для текста (имя + ID)
-let userText = userInfoContainer.querySelector(".user-text");
-if (!userText) {
-  userText = document.createElement("div");
-  userText.classList.add("user-text");
-  userInfoContainer.appendChild(userText);
-}
-
-// 4. Имя
-let userNameEl = userText.querySelector(".user-name");
-if (!userNameEl) {
-  userNameEl = document.createElement("span");
-  userNameEl.classList.add("user-name");
-  userText.appendChild(userNameEl);
-}
-userNameEl.textContent = firstName;
-
-// 5. ID
-let userIdEl = userText.querySelector(".user-id");
-if (!userIdEl) {
-  userIdEl = document.createElement("span");
-  userIdEl.classList.add("user-id");
-  userText.appendChild(userIdEl);
-}
-userIdEl.textContent = `ID: ${currentUserId}`;
-
-      const balanceValue = document.getElementById("balanceValue");
-      if (balanceValue) {
-        const totalRub = rubBalance + (coinBalance * currentRate);
-        balanceValue.textContent = `${formatBalance(totalRub, 2)} ₽`;
+      // ====== Профиль: фото слева, текст (имя и ID) справа ======
+      let userInfoContainer = document.getElementById("user-info");
+      if (!userInfoContainer) {
+        userInfoContainer = document.createElement("div");
+        userInfoContainer.id = "user-info";
+        userInfoContainer.classList.add("user-info");
+        document.body.appendChild(userInfoContainer);
       }
 
-      if (userIdEl) {
-        userIdEl.textContent = "ID: " + currentUserId;
+      // 1. Фото
+      let userPhotoEl = userInfoContainer.querySelector(".user-photo");
+      if (!userPhotoEl) {
+        userPhotoEl = document.createElement("img");
+        userPhotoEl.classList.add("user-photo");
+        userPhotoEl.alt = "User Photo";
+        userInfoContainer.appendChild(userPhotoEl);
+      }
+      userPhotoEl.src = photoUrl;
+
+      // 2. Контейнер для текста
+      let userText = userInfoContainer.querySelector(".user-text");
+      if (!userText) {
+        userText = document.createElement("div");
+        userText.classList.add("user-text");
+        userInfoContainer.appendChild(userText);
       }
 
+      // 3. Имя
+      let userNameEl = userText.querySelector(".user-name");
+      if (!userNameEl) {
+        userNameEl = document.createElement("span");
+        userNameEl.classList.add("user-name");
+        userText.appendChild(userNameEl);
+      }
+      userNameEl.textContent = firstName;
+
+      // 4. ID
+      let userIdEl = userText.querySelector(".user-id");
+      if (!userIdEl) {
+        userIdEl = document.createElement("span");
+        userIdEl.classList.add("user-id");
+        userText.appendChild(userIdEl);
+      }
+      userIdEl.textContent = `ID: ${currentUserId}`;
+
+      // ====== Общий баланс в центре экрана ======
+      const totalRub = rubBalance + coinBalance * currentRate;
+      let centerBalEl = document.getElementById("mainBalanceCenter");
+      if (!centerBalEl) {
+        centerBalEl = document.createElement("div");
+        centerBalEl.id = "mainBalanceCenter";
+        document.body.appendChild(centerBalEl);
+      }
+      centerBalEl.textContent = `${formatBalance(totalRub, 2)} ₽`;
+
+      // ====== Обновление других элементов баланса ======
       const rubBalanceInfo = document.getElementById("rubBalanceValue");
       if (rubBalanceInfo) {
         rubBalanceInfo.textContent = `${formatBalance(rubBalance, 2)} ₽`;
       }
-
-      const gugaBalanceElement = document.getElementById("gugaBalanceValue");
-      if (gugaBalanceElement) {
-        gugaBalanceElement.textContent = `${formatBalance(coinBalance, 5)} ₲`;
+      const gugaBalanceEl = document.getElementById("gugaBalanceValue");
+      if (gugaBalanceEl) {
+        gugaBalanceEl.textContent = `${formatBalance(coinBalance, 5)} ₲`;
       }
 
-      const convertedBalanceElement = document.getElementById("convertedBalance");
-      if (convertedBalanceElement) {
-        convertedBalanceElement.textContent = `${formatBalance(coinBalance * currentRate, 2)} ₽`;
+      // Конвертированный баланс, курс и т.п.
+      const convertedBalanceEl = document.getElementById("convertedBalance");
+      if (convertedBalanceEl) {
+        convertedBalanceEl.textContent = `${formatBalance(
+          coinBalance * currentRate,
+          2
+        )} ₽`;
+      }
+      const rateDisplayEl = document.getElementById("currentRateDisplay");
+      if (rateDisplayEl) {
+        rateDisplayEl.textContent = formatBalance(currentRate, 2);
       }
 
-      const rateDisplayElement = document.getElementById("currentRateDisplay");
-      if (rateDisplayElement) {
-        rateDisplayElement.textContent = formatBalance(currentRate, 2);
-      }
-
-      // 👇 Загружаем список всех пользователей для отображения в деталях транзакций
+      // ==== Загружаем список всех пользователей для истории/деталей ====
       try {
-        const allResp = await fetch(`${API_URL}/users`, { credentials: "include" });
+        const allResp = await fetch(`${API_URL}/users`, {
+          credentials: "include"
+        });
         const allUsersData = await allResp.json();
         if (allUsersData.success && Array.isArray(allUsersData.users)) {
           users = allUsersData.users;
@@ -1363,10 +1372,8 @@ userIdEl.textContent = `ID: ${currentUserId}`;
     }
   } catch (err) {
     console.error("fetchUserData error:", err);
-    const balanceValue = document.getElementById("balanceValue");
-    if (balanceValue) {
-      balanceValue.textContent = "-- ₽";
-    }
+    const centerBalEl = document.getElementById("mainBalanceCenter");
+    if (centerBalEl) centerBalEl.textContent = "-- ₽";
   }
 }
 
