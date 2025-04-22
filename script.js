@@ -3383,6 +3383,9 @@ function startUniversalQRScanner(videoElement, onResultCallback) {
     .getUserMedia({ video: { facingMode: "environment" } })
     .then((stream) => {
       videoElement.srcObject = stream;
+    videoElement.style.display = 'block';
+    videoElement.style.visibility = 'visible';
+    console.log('Video element ready for playback');
       videoElement.setAttribute("playsinline", true);
       videoElement.play().catch(err => console.error("Play error:", err));
       const canvas = document.createElement("canvas");
