@@ -1169,3 +1169,25 @@ body {
   z-index: 2;
   box-shadow: 0 0 0 2px white;
 }
+
+/* Ключевые кадры: выезжаем снизу и одновременно появляемся */
+@keyframes slideInUp {
+  0% {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Сбрасываем начальную прозрачность для всех .bubble */
+.chat-messages .bubble {
+  opacity: 0;
+}
+
+/* Класс, который запускает анимацию */
+.chat-messages .slide-in-up {
+  animation: slideInUp 0.3s ease-out forwards;
+}
