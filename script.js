@@ -1119,7 +1119,7 @@ function injectMainUIStyles() {
       gap: 0px;
       justify-content: center;
       margin-bottom: 16px;
-      margin-top: 45px;
+      margin-top: 55px;
     }
     .action-btn {
       display: flex;
@@ -1350,10 +1350,10 @@ async function fetchUserData() {
           // стили можно вынести в CSS, здесь для примера сразу inline
           headerBalanceEl.style.cssText = `
             text-align: center;
-            font-size: 24px;
+            font-size: 28px;
             font-weight: 600;
             color: #ffffff;
-            margin-top: 100px;
+            margin-top: 85px;
           `;
           // вставляем перед кнопками
           const actionContainer = headerEl.querySelector(".action-container");
