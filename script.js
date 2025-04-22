@@ -2208,11 +2208,17 @@ function parseQRCodeData(qrString) {
 /**************************************************
  * CURRENCY EXCHANGE
  **************************************************/
+/* =========  CURRENCY EXCHANGE  ========= */
 let currentExchangeDirection = "coin_to_rub";
 let currentExchangeRate = 0;
 
-function openExchangeModal() {
+async function openExchangeModal() {
   showGlobalLoading();
+
+  // прячем нижнюю панель, когда открываем модалку
+  const bottomBar = document.getElementById('bottomBar');
+  if (bottomBar) bottomBar.style.display = 'none';
+
   createModal(
     "exchangeModal",
     `
@@ -2290,13 +2296,18 @@ function openExchangeModal() {
 </div>
     `,
     {
-      showCloseBtn: false,
+      showCloseBtn: true,          // включаем кнопку закрытия
       cornerTopMargin: 0,
       cornerTopRadius: 0,
       contentMaxHeight: "100vh",
-      noRadiusByDefault: true
+      noRadiusByDefault: true,
+      onClose: () => {
+        // возвращаем bottomBar при закрытии
+        if (bottomBar) bottomBar.style.display = 'flex';
+      }
     }
   );
+
   initExchange();
 }
 
@@ -2408,7 +2419,7 @@ const exchangeStyles = `
   cursor: pointer;
   box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
   z-index: 9999;
-  margin-bottom: 80px;
+  margin-bottom: 0px;
 }
 .bottom-spacer {
   height: 0px;
