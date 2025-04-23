@@ -265,6 +265,8 @@ function createModal(
     background: '#fff',
     boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
     padding: '20px',
+    paddingTop: `calc(20px + env(safe-area-inset-top, 0px))`,
+
     ...customStyles,
   });
 
