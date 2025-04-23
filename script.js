@@ -1491,7 +1491,6 @@ async function fetchUserData() {
   }
 }
 
-
 /**************************************************
  * MINING (if any)
  **************************************************/
@@ -1603,63 +1602,88 @@ async function saveProfileChanges() {
  * PROFILE
  **************************************************/
 function openProfileModal() {
+  // Скрываем нижнюю панель навигации
   const bottomBar = document.getElementById("bottomBar");
   if (bottomBar) bottomBar.style.display = "none";
 
+  // Текущие фото и имя
   const photo = document.querySelector("#user-info .user-photo")?.src || "photo/15.png";
   const name  = document.querySelector("#user-info .user-name")?.textContent || "GugaUser";
 
-  createModal("profileModal", `
-    <div id="profileContainer" style="
-      max-width: 400px;
-      margin: 0 auto;
-      background: #FFFFFF;
-      border-radius: 24px;
-      position: relative;
-      margin-top: 40px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-      padding: 24px;
-      box-sizing: border-box;
-    ">
-      <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-        <img id="profilePhotoPreview" src="${photo}" style="
-          width: 100px;
-          height: 100px;
-          border-radius: 50%;
-          object-fit: cover;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-          cursor: pointer;
-        " />
-        <div style="font-size: 14px; color: #555;">
-          Нажмите на фото, чтобы изменить
+  // Открываем модалку
+  createModal(
+    "profileModal",
+    `
+      <div id="profileContainer" style="
+        max-width: 400px;
+        margin: 0 auto;
+        background: #FFFFFF;
+        border-radius: 24px;
+        position: relative;
+        margin-top: 40px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        padding: 24px;
+        box-sizing: border-box;
+      ">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+          <img id="profilePhotoPreview" src="${photo}" style="
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            cursor: pointer;
+          " />
+          <div style="font-size: 14px; color: #555;">
+            Нажмите на фото, чтобы изменить
+          </div>
+          <input type="file" id="profilePhotoInput" accept="image/*" style="display: none;" />
         </div>
-        <input type="file" id="profilePhotoInput" accept="image/*" style="display: none;" />
-      </div>
 
-      <div>
-        <label for="profileNameInput" style="
-          display: block;
-          font-size: 14px;
-          font-weight: 600;
-          margin-bottom: 6px;
-          color: #333;
-        ">Имя пользователя</label>
-        <input type="text" id="profileNameInput" value="${name}" style="
+        <div>
+          <label for="profileNameInput" style="
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #333;
+          ">Имя пользователя</label>
+          <input type="text" id="profileNameInput" value="${name}" style="
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #E6E6EB;
+            border-radius: 12px;
+            font-size: 16px;
+            box-sizing: border-box;
+          "/>        
+        </div>
+
+        <button id="saveProfileBtn" style="
           width: 100%;
-          padding: 12px 16px;
-          border: 1px solid #E6E6EB;
+          padding: 14px;
+          background: linear-gradient(90deg, #2F80ED, #2D9CDB);
+          border: none;
           border-radius: 12px;
+          color: white;
+          font-weight: 600;
           font-size: 16px;
-          box-sizing: border-box;
-        "/>
+          cursor: pointer;
+          transition: all 0.2s;
+        ">Сохранить</button>
       </div>
 
-      <button id="saveProfileBtn" style="
-        width: 100%;
+      <!-- Кнопка "Выйти" фиксированно внизу экрана -->
+      <button id="profileLogoutBtn" style="
+        position: fixed;
+        bottom: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: calc(100% - 32px);
+        max-width: 400px;
         padding: 14px;
-        background: linear-gradient(90deg, #2F80ED, #2D9CDB);
+        background: #808080;
         border: none;
         border-radius: 12px;
         color: white;
@@ -1667,67 +1691,53 @@ function openProfileModal() {
         font-size: 16px;
         cursor: pointer;
         transition: all 0.2s;
-      ">Сохранить</button>
-    </div>
+        z-index: 1000;
+      ">Выйти из аккаунта</button>
+    `,
+    {
+      showCloseBtn: true,
+      cornerTopMargin: 0,
+      cornerTopRadius: 0,
+      hasVerticalScroll: true,
+      defaultFromBottom: true,
+      noRadiusByDefault: false,
+      onClose: closeProfileModal
+    }
+  );
 
-    <!-- Кнопка "Выйти" фиксированно внизу экрана -->
-    <button id="profileLogoutBtn" style="
-      position: fixed;
-      bottom: 16px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: calc(100% - 32px);
-      max-width: 400px;
-      padding: 14px;
-      background: #808080;
-      border: none;
-      border-radius: 12px;
-      color: white;
-      font-weight: 600;
-      font-size: 16px;
-      cursor: pointer;
-      transition: all 0.2s;
-      z-index: 1000;
-    ">Выйти из аккаунта</button>
-  `, {
-    showCloseBtn: true,
-    cornerTopMargin: 0,
-    cornerTopRadius: 0,
-    hasVerticalScroll: true,
-    defaultFromBottom: true,
-    noRadiusByDefault: false,
-    onClose: closeProfileModal
-  });
-
+  // Элементы управления модалкой
   const photoPreview = document.getElementById("profilePhotoPreview");
   const photoInput   = document.getElementById("profilePhotoInput");
+  const nameInput    = document.getElementById("profileNameInput");
   const saveBtn      = document.getElementById("saveProfileBtn");
   const logoutBtn    = document.getElementById("profileLogoutBtn");
 
-  // Открываем диалог выбора, кликая по фото
-  photoPreview.addEventListener("click", () => {
-    photoInput.click();
-  });
+  // Тип кнопок — button, чтобы не было submit
+  saveBtn.type   = "button";
+  logoutBtn.type = "button";
 
-  // Превью + автосохранение сразу после выбора файла
+  // При нажатии (pointerdown) — сначала blur, скрываем клавиатуру
+  const blurOnPress = () => nameInput.blur();
+  saveBtn.addEventListener('pointerdown', blurOnPress);
+  logoutBtn.addEventListener('pointerdown', blurOnPress);
+
+  // Изменение фото
+  photoPreview.addEventListener("click", () => photoInput.click());
   photoInput.addEventListener("change", () => {
     const file = photoInput.files[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
       photoPreview.src = reader.result;
-      // после того как фото подгрузилось в preview, сразу сохраняем профиль
       saveProfileChanges();
     };
     reader.readAsDataURL(file);
   });
 
-  // Сохраняем имя по кнопке
-  saveBtn.addEventListener("click", () => {
-    saveProfileChanges();
-  });
+  // Сохранение имени
+  saveBtn.addEventListener("click", saveProfileChanges);
 
-  // Выход
+  // Выход из аккаунта
   logoutBtn.addEventListener("click", () => {
     logout();
     closeProfileModal();
