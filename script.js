@@ -230,6 +230,8 @@ function createModal(
   document.body.style.overflow = 'hidden';
   document.documentElement.style.overscrollBehavior = 'none';
 
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
   // 2. Оверлей
   const modal = document.createElement('div');
   modal.id = id;
@@ -250,7 +252,7 @@ function createModal(
   contentDiv.className = 'modal-content';
   Object.assign(contentDiv.style, {
     position: 'absolute',
-    top: `${cornerTopMargin}px`,
+    top: isStandalone ? 'env(safe-area-inset-top, 0px)' : '0',
     left: '50%',
     transform: 'translateX(-50%)',
     width: '100%',
@@ -314,6 +316,7 @@ function createModal(
       cursor: 'pointer',
       transition: 'transform 0.3s',
       zIndex: '1001',
+      top: isStandalone ? 'env(safe-area-inset-top, 0px)' : '0',
     });
     closeBtn.addEventListener('click', cleanup);
     closeBtn.addEventListener('mouseenter', () => {
