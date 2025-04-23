@@ -209,6 +209,9 @@ if ('serviceWorker' in navigator && 'PushManager' in window) {
  * @param {Object} [options.customStyles] - Additional inline styles for modal container.
  * @param {Function} [options.onClose] - Callback on close.
  */
+/**
+ * Creates a modal window.
+ */
 function createModal(
   id,
   content,
@@ -222,12 +225,11 @@ function createModal(
     onClose = null,
   } = {}
 ) {
-  // Убираем любые старые модалки и сбрасываем прокрутку
+  // Уберём все предыдущие модалки
   removeAllModals();
 
-  // Блокируем скролл заднего фона
+  // Заблокируем фон
   document.body.style.overflow = 'hidden';
-  // на iOS лучше ещё и эту штуку
   document.documentElement.style.overscrollBehavior = 'none';
 
   // Оверлей
@@ -249,10 +251,13 @@ function createModal(
   const contentDiv = document.createElement('div');
   contentDiv.className = 'modal-content';
   Object.assign(contentDiv.style, {
+    position: 'absolute',
+    top: `${cornerTopMargin}px`,
+    left: '50%',
+    transform: 'translateX(-50%)',
     width: '100%',
     maxWidth: '500px',
-    marginTop: `${cornerTopMargin}px`,
-    height: `calc(100% - ${cornerTopMargin}px)`,
+    bottom: '0',
     overflowY: hasVerticalScroll ? 'auto' : 'hidden',
     WebkitOverflowScrolling: 'touch',
     overscrollBehavior: 'contain',
@@ -265,13 +270,26 @@ function createModal(
     ...customStyles,
   });
 
-  // Вставляем кнопку закрытия и контент
+  // Чтобы клики по контенту не уходили на overlay
+  contentDiv.addEventListener('click', e => e.stopPropagation());
+
+  // Подгоняем высоту при изменении viewport (открытие/закрытие клавиатуры)
+  const resizeHandler = () => {
+    // bottom:0 в стилях + absolute автоматически тянет до низа window.innerHeight
+    // Но на iOS WebApp иногда нужно форсить repaint:
+    contentDiv.style.maxHeight = `${window.innerHeight - cornerTopMargin}px`;
+  };
+  window.addEventListener('resize', resizeHandler);
+  // первый вызов
+  resizeHandler();
+
+  // Вставляем кнопку закрытия и HTML
   contentDiv.innerHTML = `
     ${showCloseBtn ? '<button class="modal-close-btn">&times;</button>' : ''}
     ${content}
   `;
 
-  // Стили и события кнопки закрытия
+  // Обработчик крестика
   if (showCloseBtn) {
     const closeBtn = contentDiv.querySelector('.modal-close-btn');
     Object.assign(closeBtn.style, {
@@ -293,7 +311,7 @@ function createModal(
       zIndex: '1001',
     });
     closeBtn.addEventListener('click', () => {
-      removeAllModals();
+      cleanup();
       if (typeof onClose === 'function') onClose();
     });
     closeBtn.addEventListener('mouseenter', () => {
@@ -306,24 +324,30 @@ function createModal(
     });
   }
 
+  // Собираем и показываем
   modal.appendChild(contentDiv);
   document.body.appendChild(modal);
 
-  // Закрытие по клику на оверлей
-  modal.addEventListener('click', e => {
-    if (e.target === modal) {
-      removeAllModals();
-      if (typeof onClose === 'function') onClose();
-    }
+  // Клик по фону закрывает
+  modal.addEventListener('click', () => {
+    cleanup();
+    if (typeof onClose === 'function') onClose();
   });
+
+  // Убирает модалку + слушатели + возвращает скролл
+  function cleanup() {
+    modal.remove();
+    window.removeEventListener('resize', resizeHandler);
+    document.body.style.overflow = '';
+    document.documentElement.style.overscrollBehavior = '';
+  }
 }
 
 /**
- * Removes all modal windows and восстанавливает прокрутку фона.
+ * Removes all modal windows (и восстанавливает скролл bоди).
  */
 function removeAllModals() {
   document.querySelectorAll('.modal').forEach(m => m.remove());
-  // Восстанавливаем скролл боди и поведение качания
   document.body.style.overflow = '';
   document.documentElement.style.overscrollBehavior = '';
 }
