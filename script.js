@@ -1098,12 +1098,14 @@ function createMainUI() {
     balanceContainer.appendChild(gugaCard);
   }
 
-  // Прилепляем balance-wrapper под .main-header
+  // Прилепляем balance-wrapper под .main-header и растягиваем до низа экрана
   requestAnimationFrame(() => {
     const header = document.getElementById("mainHeaderContainer");
     const rect = header.getBoundingClientRect();
     balanceWrapper.style.position = "absolute";
     balanceWrapper.style.top = `${rect.bottom + window.scrollY}px`;
+    balanceWrapper.style.bottom = "env(safe-area-inset-bottom, 0px)";
+    balanceWrapper.style.height = `calc(100vh - ${rect.bottom}px - env(safe-area-inset-bottom, 0px))`;
   });
 
   if (!document.getElementById("bottomBar")) {
