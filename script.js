@@ -998,7 +998,6 @@ function togglePasswordVisibility(inputId, toggleEl) {
 function createMainUI() {
   injectMainUIStyles();
 
-  // Определяем PWA режим и добавляем класс к body
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
   if (isStandalone) {
     document.body.classList.add("pwa-mode");
@@ -1073,8 +1072,9 @@ function createMainUI() {
     headerEl.appendChild(document.createElement("div")).className = "header-divider";
   }
 
-  if (!document.querySelector(".balance-wrapper")) {
-    const balanceWrapper = document.createElement("div");
+  let balanceWrapper = document.querySelector(".balance-wrapper");
+  if (!balanceWrapper) {
+    balanceWrapper = document.createElement("div");
     balanceWrapper.className = "balance-wrapper";
 
     const balanceContainer = document.createElement("div");
@@ -1082,12 +1082,6 @@ function createMainUI() {
     balanceContainer.className = "balance-container";
     balanceWrapper.appendChild(balanceContainer);
     document.body.appendChild(balanceWrapper);
-
-    requestAnimationFrame(() => {
-      const header = document.getElementById("mainHeaderContainer");
-      const headerRect = header.getBoundingClientRect();
-      balanceWrapper.style.top = `${mainHeaderContainer.bottom}px`;
-    });
 
     const rubCard = document.createElement("div");
     rubCard.className = "balance-card rub";
@@ -1103,6 +1097,14 @@ function createMainUI() {
       <div class="balance-info"><div class="balance-label">GUGA</div><div id="gugaBalanceValue" class="balance-amount">0.00000 ₲</div></div>`;
     balanceContainer.appendChild(gugaCard);
   }
+
+  // Прилепляем balance-wrapper под .main-header
+  requestAnimationFrame(() => {
+    const header = document.getElementById("mainHeaderContainer");
+    const rect = header.getBoundingClientRect();
+    balanceWrapper.style.position = "absolute";
+    balanceWrapper.style.top = `${rect.bottom + window.scrollY}px`;
+  });
 
   if (!document.getElementById("bottomBar")) {
     const bottomBar = document.createElement("div");
