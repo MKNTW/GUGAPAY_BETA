@@ -1139,13 +1139,15 @@ function injectMainUIStyles() {
       min-height: 100vh;
     }
     .main-header {
-      width: 100%;
-      background: transparent;
-      padding: 16px;
-      border-bottom-left-radius: 20px;
-      border-bottom-right-radius: 20px;
-      z-index: 90000;
-    }
+  width: 100%;
+  background: linear-gradient(90deg, #2F80ED, #2D9CDB);
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+  padding: 16px;
+  padding-top: calc(16px + env(safe-area-inset-top, 0px)); /* 👈 вот это */
+  box-sizing: border-box;
+  z-index: 90000;
+}
     .action-container {
       display: flex;
       gap: 4px;
