@@ -307,17 +307,7 @@ function createModal(
     if (typeof onClose === 'function') onClose();
   }
 
-  function resizeHandler() {
-    if (hasVerticalScroll) {
-      contentDiv.style.height = isStandalone
-        ? `calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))`
-        : '100vh';
-    }
-  }
-  window.addEventListener('resize', resizeHandler);
-  resizeHandler();
-}
-
+  
 function removeAllModals() {
   document.querySelectorAll('.modal').forEach(m => m.remove());
   document.body.style.overflow = '';
