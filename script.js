@@ -975,7 +975,6 @@ function openAuthModal() {
       cursor: pointer;
       font-size: 18px;
     }
-    `;
     
     .main-screen {
       position: relative;
@@ -1057,6 +1056,7 @@ function openAuthModal() {
       font-weight: 700;
       color: #1A1A1A;
     }
+    `;
 
   document.head.appendChild(style);
   }
