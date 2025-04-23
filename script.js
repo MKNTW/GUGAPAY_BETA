@@ -1151,8 +1151,6 @@ function injectMainUIStyles() {
       background: linear-gradient(180deg, #2F80ED, #2D9CDB);
       min-height: 100vh;
     }
-
-    
     
     .main-header {
       width: 100%;
@@ -1161,6 +1159,7 @@ function injectMainUIStyles() {
       padding: 16px;
       box-sizing: border-box;
       z-index: 90000;
+      padding-top: env(safe-area-inset-top, 0px);
     }
     
     .action-container {
@@ -1212,6 +1211,7 @@ function injectMainUIStyles() {
       box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
       overflow-y: auto;
       z-index: 10;
+      padding-top: env(safe-area-inset-top, 0px);
     }
     .balance-container {
       display: flex;
