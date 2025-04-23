@@ -270,6 +270,28 @@ function createModal(
     ...customStyles,
   });
 
+  // 1) Убедимся, что все наши кнопки не являются submit (иначе могут дергать форму):
+contentDiv.querySelectorAll('button').forEach(btn => {
+  btn.type = 'button';
+});
+
+// 2) При клике на любую кнопку внутри модалки — сначала снимаем фокус с активного элемента:
+contentDiv.addEventListener('click', e => {
+  if (e.target.tagName === 'BUTTON') {
+    const active = document.activeElement;
+    if (active && typeof active.blur === 'function') {
+      active.blur();
+    }
+  }
+});
+
+// 3) Оставшийся ваш код:
+// вставка HTML
+contentDiv.innerHTML = `
+  ${showCloseBtn ? '<button class="modal-close-btn">&times;</button>' : ''}
+  ${content}
+`;
+
   // Чтобы клики по контенту не уходили на overlay
   contentDiv.addEventListener('click', e => e.stopPropagation());
 
