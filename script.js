@@ -1103,9 +1103,9 @@ function createMainUI() {
     const header = document.getElementById("mainHeaderContainer");
     const rect = header.getBoundingClientRect();
     balanceWrapper.style.position = "absolute";
-    balanceWrapper.style.top = `${rect.bottom + window.scrollY}px`;
+    balanceWrapper.style.top = `260px`;
     balanceWrapper.style.bottom = "env(safe-area-inset-bottom, 0px)";
-    balanceWrapper.style.height = `calc(100vh - ${rect.bottom}px - env(safe-area-inset-bottom, 0px))`;
+    balanceWrapper.style.height = `calc(100vh - 260px - env(safe-area-inset-bottom, 0px))`;
   });
 
   if (!document.getElementById("bottomBar")) {
