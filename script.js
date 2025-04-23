@@ -1104,9 +1104,9 @@ function createMainUI() {
     const rect = header.getBoundingClientRect();
     const extraOffset = isStandalone ? 12 : 0; // смещение только в приложении
     balanceWrapper.style.position = "absolute";
-    balanceWrapper.style.top = `${rect.bottom + window.scrollY + extraOffset}px`;
+    balanceWrapper.style.top = `260px`;
     balanceWrapper.style.bottom = "env(safe-area-inset-bottom, 0px)";
-    balanceWrapper.style.height = `calc(100vh - ${rect.bottom + extraOffset}px - env(safe-area-inset-bottom, 0px))`;
+    balanceWrapper.style.height = `calc(100vh - 280px - env(safe-area-inset-bottom, 0px))`;
   });
 
   if (!document.getElementById("bottomBar")) {
