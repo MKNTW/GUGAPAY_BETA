@@ -1106,7 +1106,7 @@ function createMainUI() {
     balanceWrapper.style.position = "absolute";
     balanceWrapper.style.top = `260px`;
     balanceWrapper.style.bottom = "env(safe-area-inset-bottom, 0px)";
-    balanceWrapper.style.height = `calc(100vh - 260px - env(safe-area-inset-bottom, 10px))`;
+    balanceWrapper.style.height = `calc(100vh - 240px - env(safe-area-inset-bottom, 10px))`;
   });
 
   if (!document.getElementById("bottomBar")) {
