@@ -208,9 +208,9 @@ if ('serviceWorker' in navigator && 'PushManager' in window) {
  * @param {boolean} [options.noRadiusByDefault=false] - Remove default radius.
  * @param {Object} [options.customStyles] - Additional inline styles for modal container.
  * @param {Function} [options.onClose] - Callback on close.
- */
-/**
- * Creates a modal window.
+ * @param {string} id - Unique identifier for the modal.
+ * @param {string} content - HTML content for the modal.
+ * @param {Object} options - Modal options.
  */
 function createModal(
   id,
@@ -225,12 +225,12 @@ function createModal(
     onClose = null,
   } = {}
 ) {
-  // 1) Чистим старые модалки и блокируем фон
+  // 1. Чистим старые модалки и блокируем фон
   removeAllModals();
   document.body.style.overflow = 'hidden';
   document.documentElement.style.overscrollBehavior = 'none';
 
-  // 2) Оверлей
+  // 2. Оверлей
   const modal = document.createElement('div');
   modal.id = id;
   modal.className = 'modal';
@@ -245,7 +245,7 @@ function createModal(
     overscrollBehavior: 'none',
   });
 
-  // 3) Контент
+  // 3. Контейнер содержимого
   const contentDiv = document.createElement('div');
   contentDiv.className = 'modal-content';
   Object.assign(contentDiv.style, {
@@ -268,34 +268,34 @@ function createModal(
     ...customStyles,
   });
 
-  // 4) Ловим нажатие ПОСЛЕ pointerdown, чтобы успеть снять фокус
-  const onPointerDown = e => {
-    if (e.target.tagName === 'BUTTON') {
-      const active = document.activeElement;
-      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
-        active.blur();
-      }
-    }
-  };
-  modal.addEventListener('pointerdown', onPointerDown, { capture: true });
+  // 4. Вставляем HTML и сразу делаем у всех кнопок type="button"
+  contentDiv.innerHTML = `
+    ${showCloseBtn ? '<button class="modal-close-btn">&times;</button>' : ''}
+    ${content}
+  `;
+  contentDiv.querySelectorAll('button').forEach(btn => btn.type = 'button');
 
-  // 5) Чтобы клики на контент не всплывали на overlay
+  // 5. Клики по контенту не должны уходить на оверлей
   contentDiv.addEventListener('click', e => e.stopPropagation());
 
-  // 6) Подгоняем высоту при появлении клавиатуры
+  // 6. При первом касании кнопки — снимаем фокус с активного элемента
+  const blurHandler = e => {
+    if (e.target.closest('button')) {
+      const active = document.activeElement;
+      if (active && active.blur) active.blur();
+    }
+  };
+  modal.addEventListener('pointerdown', blurHandler, { capture: true });
+  modal.addEventListener('touchstart',  blurHandler, { capture: true });
+
+  // 7. Подгоняем высоту при изменении размеров viewport (iOS клавиатура)
   const resizeHandler = () => {
     contentDiv.style.maxHeight = `${window.innerHeight - cornerTopMargin}px`;
   };
   window.addEventListener('resize', resizeHandler);
   resizeHandler();
 
-  // 7) Вставляем HTML
-  contentDiv.innerHTML = `
-    ${showCloseBtn ? '<button class="modal-close-btn">&times;</button>' : ''}
-    ${content}
-  `;
-
-  // 8) Крестик
+  // 8. Стили и обработчик для крестика
   if (showCloseBtn) {
     const closeBtn = contentDiv.querySelector('.modal-close-btn');
     Object.assign(closeBtn.style, {
@@ -312,33 +312,31 @@ function createModal(
       alignItems: 'center',
       justifyContent: 'center',
       cursor: 'pointer',
-      boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-      transition: 'transform 0.3s, background-color 0.3s',
+      transition: 'transform 0.3s',
       zIndex: '1001',
     });
     closeBtn.addEventListener('click', cleanup);
     closeBtn.addEventListener('mouseenter', () => {
-      closeBtn.style.backgroundColor = '#333';
       closeBtn.style.transform = 'scale(1.1)';
     });
     closeBtn.addEventListener('mouseleave', () => {
-      closeBtn.style.backgroundColor = '#000';
       closeBtn.style.transform = 'scale(1)';
     });
   }
 
-  // 9) Финальная сборка и показ
+  // 9. Монтируем в DOM
   modal.appendChild(contentDiv);
   document.body.appendChild(modal);
 
-  // 10) Закрытие по клику на overlay
+  // 10. Клик по фону закрывает
   modal.addEventListener('click', cleanup);
 
-  // 11) Убираем слушатели и возвращаем скролл
+  // 11. Убираем слушатели и возвращаем прокрутку
   function cleanup() {
     modal.remove();
     window.removeEventListener('resize', resizeHandler);
-    modal.removeEventListener('pointerdown', onPointerDown, { capture: true });
+    modal.removeEventListener('pointerdown', blurHandler, { capture: true });
+    modal.removeEventListener('touchstart',  blurHandler, { capture: true });
     document.body.style.overflow = '';
     document.documentElement.style.overscrollBehavior = '';
     if (typeof onClose === 'function') onClose();
@@ -346,7 +344,7 @@ function createModal(
 }
 
 /**
- * Удаляет все модалки и возвращает скролл боди.
+ * Удаляет все модалки и возвращает прокрутку боди.
  */
 function removeAllModals() {
   document.querySelectorAll('.modal').forEach(m => m.remove());
