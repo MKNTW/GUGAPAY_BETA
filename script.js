@@ -195,23 +195,6 @@ if ('serviceWorker' in navigator && 'PushManager' in window) {
 /**************************************************
  * MODALS (Generic Modal Management)
  **************************************************/
-/**
- * Creates a modal window.
- * @param {string} id - Unique identifier for the modal.
- * @param {string} content - HTML content for the modal.
- * @param {Object} options - Modal options.
- * @param {boolean} [options.showCloseBtn=true] - Show close button.
- * @param {boolean} [options.hasVerticalScroll=true] - Enable vertical scroll.
- * @param {boolean} [options.defaultFromBottom=true] - Animate from bottom.
- * @param {number} [options.cornerTopMargin=0] - Top margin in px.
- * @param {number} [options.cornerTopRadius=0] - Corner radius for top corners.
- * @param {boolean} [options.noRadiusByDefault=false] - Remove default radius.
- * @param {Object} [options.customStyles] - Additional inline styles for modal container.
- * @param {Function} [options.onClose] - Callback on close.
- * @param {string} id - Unique identifier for the modal.
- * @param {string} content - HTML content for the modal.
- * @param {Object} options - Modal options.
- */
 function createModal(
   id,
   content,
@@ -225,12 +208,12 @@ function createModal(
     onClose = null,
   } = {}
 ) {
-  // 1. Чистим старые модалки и блокируем фон
   removeAllModals();
   document.body.style.overflow = 'hidden';
   document.documentElement.style.overscrollBehavior = 'none';
 
-  // 2. Оверлей
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
   const modal = document.createElement('div');
   modal.id = id;
   modal.className = 'modal';
@@ -245,40 +228,34 @@ function createModal(
     overscrollBehavior: 'none',
   });
 
-  // 3. Контейнер содержимого
   const contentDiv = document.createElement('div');
   contentDiv.className = 'modal-content';
   Object.assign(contentDiv.style, {
-    position: 'absolute',
-    top: `calc(${cornerTopMargin}px + env(safe-area-inset-top, 0px))`,
-    left: '50%',
-    transform: 'translateX(-50%)',
+    position: 'fixed',
+    top: isStandalone ? 'env(safe-area-inset-top, 0px)' : '0',
+    left: '0',
     width: '100%',
-    maxWidth: '500px',
-    bottom: '0',
+    height: isStandalone
+      ? 'calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))'
+      : '100vh',
     overflowY: hasVerticalScroll ? 'auto' : 'hidden',
     WebkitOverflowScrolling: 'touch',
     overscrollBehavior: 'contain',
-    borderRadius: noRadiusByDefault
-      ? '0'
-      : `${cornerTopRadius}px ${cornerTopRadius}px 0 0`,
+    borderRadius: noRadiusByDefault ? '0' : `${cornerTopRadius}px ${cornerTopRadius}px 0 0`,
     background: '#fff',
     boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
     padding: '20px',
+    boxSizing: 'border-box',
     ...customStyles,
   });
 
-  // 4. Вставляем HTML и сразу делаем у всех кнопок type="button"
   contentDiv.innerHTML = `
     ${showCloseBtn ? '<button class="modal-close-btn">&times;</button>' : ''}
     ${content}
   `;
   contentDiv.querySelectorAll('button').forEach(btn => btn.type = 'button');
-
-  // 5. Клики по контенту не должны уходить на оверлей
   contentDiv.addEventListener('click', e => e.stopPropagation());
 
-  // 6. При первом касании кнопки — снимаем фокус с активного элемента
   const blurHandler = e => {
     if (e.target.closest('button')) {
       const active = document.activeElement;
@@ -286,21 +263,13 @@ function createModal(
     }
   };
   modal.addEventListener('pointerdown', blurHandler, { capture: true });
-  modal.addEventListener('touchstart',  blurHandler, { capture: true });
+  modal.addEventListener('touchstart', blurHandler, { capture: true });
 
-  // 7. Подгоняем высоту при изменении размеров viewport (iOS клавиатура)
-  const resizeHandler = () => {
-    contentDiv.style.maxHeight = `${window.innerHeight - cornerTopMargin}px`;
-  };
-  window.addEventListener('resize', resizeHandler);
-  resizeHandler();
-
-  // 8. Стили и обработчик для крестика
   if (showCloseBtn) {
     const closeBtn = contentDiv.querySelector('.modal-close-btn');
     Object.assign(closeBtn.style, {
       position: 'absolute',
-      top: '15px',
+      top: isStandalone ? 'calc(15px + env(safe-area-inset-top, 0px))' : '15px',
       right: '20px',
       width: '30px',
       height: '30px',
@@ -324,33 +293,37 @@ function createModal(
     });
   }
 
-  // 9. Монтируем в DOM
   modal.appendChild(contentDiv);
   document.body.appendChild(modal);
-
-  // 10. Клик по фону закрывает
   modal.addEventListener('click', cleanup);
 
-  // 11. Убираем слушатели и возвращаем прокрутку
   function cleanup() {
     modal.remove();
     window.removeEventListener('resize', resizeHandler);
     modal.removeEventListener('pointerdown', blurHandler, { capture: true });
-    modal.removeEventListener('touchstart',  blurHandler, { capture: true });
+    modal.removeEventListener('touchstart', blurHandler, { capture: true });
     document.body.style.overflow = '';
     document.documentElement.style.overscrollBehavior = '';
     if (typeof onClose === 'function') onClose();
   }
+
+  function resizeHandler() {
+    if (hasVerticalScroll) {
+      contentDiv.style.height = isStandalone
+        ? `calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))`
+        : '100vh';
+    }
+  }
+  window.addEventListener('resize', resizeHandler);
+  resizeHandler();
 }
 
-/**
- * Удаляет все модалки и возвращает прокрутку боди.
- */
 function removeAllModals() {
   document.querySelectorAll('.modal').forEach(m => m.remove());
   document.body.style.overflow = '';
   document.documentElement.style.overscrollBehavior = '';
 }
+
 
 /**************************************************
  * AUTHENTICATION (Login/Registration)
