@@ -1008,7 +1008,7 @@ function createMainUI() {
     profileIconContainer.id = "profileIconContainer";
     Object.assign(profileIconContainer.style, {
       position: "absolute",
-      top: isStandalone ? "env(safe-area-inset-top, 0px)" : "10px",
+      top: isStandalone ? "env(safe-area-inset-top, 0px)",
       right: "10px",
       width: "35px",
       height: "35px",
@@ -1149,6 +1149,11 @@ function injectMainUIStyles() {
       font-family: "Oswald", sans-serif;
       background: linear-gradient(180deg, #2F80ED, #2D9CDB);
       min-height: 100vh;
+    }
+
+    body.pwa-mode {
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
     }
     
     .main-header {
