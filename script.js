@@ -19,6 +19,8 @@ async function fetchCsrfToken() {
 
 fetchCsrfToken();
 
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
 // 0) Ваш публичный VAPID-ключ от web-push (Base64 URL-safe)
 const PUBLIC_VAPID_KEY = 'BO-xrqEyeoH4EHZkg6YJgrO5tfniBp52aRL3V1JKokIe59OLPwFcoyHpciJnpJ3jBRlEXwMewKWYYcVFpuKOcoI';
 
@@ -1587,6 +1589,7 @@ function openProfileModal() {
         gap: 20px;
         padding: 24px;
         box-sizing: border-box;
+        top: isStandalone ? 'env(safe-area-inset-top, 0px)' : '0',
       ">
         <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
           <img id="profilePhotoPreview" src="${photo}" style="
@@ -2836,6 +2839,7 @@ notificationStyle.textContent = `
     flex-direction: column;
     gap: 10px;
     align-items: flex-end;
+    top: isStandalone ? 'env(safe-area-inset-top, 0px)' : '0',
   }
   .notification {
     font-family: "Oswald", sans-serif;
@@ -2853,6 +2857,7 @@ notificationStyle.textContent = `
     display: flex;
     align-items: center;
     justify-content: space-between;
+    top: isStandalone ? 'env(safe-area-inset-top, 0px)' : '0',
   }
   .notification::before {
     content: "";
@@ -2862,6 +2867,7 @@ notificationStyle.textContent = `
     width: 10px;
     height: 100%;
     border-radius: 12px 0 0 12px;
+    top: isStandalone ? 'env(safe-area-inset-top, 0px)' : '0',
   }
   .notification-success::before {
     background-color: #2F80ED;
@@ -2880,6 +2886,7 @@ notificationStyle.textContent = `
     cursor: pointer;
     margin-left: 8px;
     transition: color 0.2s;
+    top: isStandalone ? 'env(safe-area-inset-top, 0px)' : '0',
   }
   .notification-close:hover {
     color: #666;
