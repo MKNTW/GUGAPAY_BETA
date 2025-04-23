@@ -1183,16 +1183,19 @@ function injectMainUIStyles() {
     }
     .header-divider { height: 0px; }
     .balance-wrapper {
-      position: relative;
-      top: 240px;
-      width: 100%;
-      background: #fff;
-      border-top-left-radius: 24px;
-      border-top-right-radius: 24px;
-      padding: 20px 16px;
-      box-sizing: border-box;
-      box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
-    }
+    position: absolute;
+    top: 290px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #fff;
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    padding: 20px 16px 100px;
+    box-sizing: border-box;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+    overflow-y: auto;
+}
     .balance-container {
       display: flex;
       flex-direction: column;
@@ -1200,7 +1203,7 @@ function injectMainUIStyles() {
     }
     .balance-card {
       background: #F8F9FB;
-      border-radius: 15px;
+      border-radius: 20px;
       padding: 10px;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
       display: flex;
