@@ -223,95 +223,90 @@ function createModal(
     onClose = null,
   } = {}
 ) {
-  // Remove existing modal with same ID
-  const existingModal = document.getElementById(id);
-  if (existingModal) {
-    existingModal.remove();
-  }
+  // Удаляем ВСЕ предыдущие модалки
+  removeAllModals();
 
-  // Main modal overlay
-  const modal = document.createElement("div");
+  // Создаём оверлей
+  const modal = document.createElement('div');
   modal.id = id;
-  modal.className = "modal";
-  modal.style.position = "fixed";
-  modal.style.top = "0";
-  modal.style.left = "0";
-  modal.style.width = "100%";
-  modal.style.height = "100%";
-  modal.style.display = "flex";
-  modal.style.justifyContent = "center";
-  modal.style.alignItems = "center";
-  modal.style.background = "rgba(0,0,0,0.5)";
-  modal.style.zIndex = "100000";
+  modal.className = 'modal';
+  modal.style.position = 'fixed';
+  // Вместо top/left/width/height — inset, чтобы покрыть safe-area
+  modal.style.inset = '0';
+  modal.style.display = 'flex';
+  modal.style.justifyContent = 'center';
+  modal.style.alignItems = 'center';
+  modal.style.background = 'rgba(0,0,0,0.5)';
+  modal.style.zIndex = '100000';
 
-  // Content container
-  const contentDiv = document.createElement("div");
-  contentDiv.className = "modal-content";
-  contentDiv.style.width = "100%";
-  contentDiv.style.maxWidth = "500px";
+  // Контейнер содержимого
+  const contentDiv = document.createElement('div');
+  contentDiv.className = 'modal-content';
+  contentDiv.style.width = '100%';
+  contentDiv.style.maxWidth = '500px';
   contentDiv.style.marginTop = `${cornerTopMargin}px`;
   contentDiv.style.height = `calc(100% - ${cornerTopMargin}px)`;
-  contentDiv.style.overflowY = hasVerticalScroll ? "auto" : "hidden";
-  contentDiv.style.borderRadius = noRadiusByDefault ? "0" : `${cornerTopRadius}px ${cornerTopRadius}px 0 0`;
-  contentDiv.style.background = "#fff";
-  contentDiv.style.boxShadow = "0 2px 5px rgba(0,0,0,0.1)";
-  contentDiv.style.padding = "20px";
-  // Apply any custom inline styles
+  contentDiv.style.overflowY = hasVerticalScroll ? 'auto' : 'hidden';
+  contentDiv.style.borderRadius = noRadiusByDefault
+    ? '0'
+    : `${cornerTopRadius}px ${cornerTopRadius}px 0 0`;
+  contentDiv.style.background = '#fff';
+  contentDiv.style.boxShadow = '0 2px 5px rgba(0,0,0,0.1)';
+  contentDiv.style.padding = '20px';
   Object.assign(contentDiv.style, customStyles);
 
-  // Insert content and close button
+  // Вставляем кнопку закрытия и контент
   contentDiv.innerHTML = `
-        ${showCloseBtn ? '<button class="modal-close-btn">&times;</button>' : ""}
-        ${content}
-    `;
+    ${showCloseBtn ? '<button class="modal-close-btn">&times;</button>' : ''}
+    ${content}
+  `;
 
-  // Style close button if present
-  const closeBtn = contentDiv.querySelector(".modal-close-btn");
-  if (closeBtn) {
-    Object.assign(closeBtn.style, {
-      position: "absolute",
-      top: "15px",
-      right: "20px",
-      width: "30px",
-      height: "30px",
-      backgroundColor: "#000",
-      color: "#fff",
-      borderRadius: "50%",
-      border: "none",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      cursor: "pointer",
-      boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-      transition: "all 0.3s ease",
-      zIndex: "1001",
-    });
-    // Hover effects for close button
-    closeBtn.addEventListener("mouseenter", () => {
-      closeBtn.style.backgroundColor = "#333";
-      closeBtn.style.transform = "scale(1.1)";
-    });
-    closeBtn.addEventListener("mouseleave", () => {
-      closeBtn.style.backgroundColor = "#000";
-      closeBtn.style.transform = "scale(1)";
-    });
+  // Стили и обработчики для кнопки закрытия
+  if (showCloseBtn) {
+    const closeBtn = contentDiv.querySelector('.modal-close-btn');
+    if (closeBtn) {
+      Object.assign(closeBtn.style, {
+        position: 'absolute',
+        top: '15px',
+        right: '20px',
+        width: '30px',
+        height: '30px',
+        backgroundColor: '#000',
+        color: '#fff',
+        borderRadius: '50%',
+        border: 'none',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: 'pointer',
+        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+        transition: 'transform 0.3s, background-color 0.3s',
+        zIndex: '1001',
+      });
+      closeBtn.addEventListener('click', () => {
+        modal.remove();
+        if (typeof onClose === 'function') onClose();
+      });
+      closeBtn.addEventListener('mouseenter', () => {
+        closeBtn.style.backgroundColor = '#333';
+        closeBtn.style.transform = 'scale(1.1)';
+      });
+      closeBtn.addEventListener('mouseleave', () => {
+        closeBtn.style.backgroundColor = '#000';
+        closeBtn.style.transform = 'scale(1)';
+      });
+    }
   }
 
+  // Собираем и встраиваем в документ
   modal.appendChild(contentDiv);
   document.body.appendChild(modal);
 
-  // Close button event
-  if (showCloseBtn && closeBtn) {
-    closeBtn.addEventListener("click", () => {
+  // Клик по оверлею закрывает модалку
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
       modal.remove();
-      if (onClose) onClose();
-    });
-  }
-  // Close on overlay click
-  modal.addEventListener("click", (event) => {
-    if (event.target === modal) {
-      modal.remove();
-      if (onClose) onClose();
+      if (typeof onClose === 'function') onClose();
     }
   });
 }
@@ -320,7 +315,7 @@ function createModal(
  * Removes all modal windows from the DOM.
  */
 function removeAllModals() {
-  document.querySelectorAll(".modal").forEach((modal) => modal.remove());
+  document.querySelectorAll('.modal').forEach((m) => m.remove());
 }
 
 /**************************************************
