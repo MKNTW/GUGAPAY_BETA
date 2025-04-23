@@ -1008,7 +1008,7 @@ function createMainUI() {
     profileIconContainer.id = "profileIconContainer";
     Object.assign(profileIconContainer.style, {
       position: "absolute",
-      top: isStandalone ? "env(safe-area-inset-top, 0px)" : "25px",
+      top: isStandalone ? "calc(10px + env(safe-area-inset-top, 0px))" : "10px",
       right: "10px",
       width: "35px",
       height: "35px",
@@ -1098,14 +1098,15 @@ function createMainUI() {
     balanceContainer.appendChild(gugaCard);
   }
 
-  // Прилепляем balance-wrapper под .main-header и растягиваем до низа экрана
+  // Прилепляем balance-wrapper под .main-header и корректируем смещение для PWA
   requestAnimationFrame(() => {
     const header = document.getElementById("mainHeaderContainer");
     const rect = header.getBoundingClientRect();
+    const extraOffset = isStandalone ? 12 : 0; // смещение только в приложении
     balanceWrapper.style.position = "absolute";
-    balanceWrapper.style.top = `260px`;
+    balanceWrapper.style.top = `${rect.bottom + window.scrollY + extraOffset}px`;
     balanceWrapper.style.bottom = "env(safe-area-inset-bottom, 0px)";
-    balanceWrapper.style.height = `calc(100vh - 280px - env(safe-area-inset-bottom, 0px))`;
+    balanceWrapper.style.height = `calc(100vh - ${rect.bottom + extraOffset}px - env(safe-area-inset-bottom, 0px))`;
   });
 
   if (!document.getElementById("bottomBar")) {
