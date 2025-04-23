@@ -1086,7 +1086,7 @@ function createMainUI() {
     requestAnimationFrame(() => {
       const header = document.getElementById("mainHeaderContainer");
       const headerRect = header.getBoundingClientRect();
-      balanceWrapper.style.top = `${headerRect.bottom}px`;
+      balanceWrapper.style.top = `${mainHeaderContainer.bottom}px`;
     });
 
     const rubCard = document.createElement("div");
@@ -1152,7 +1152,6 @@ function injectMainUIStyles() {
     }
     .main-header {
       width: 100%;
-      background: linear-gradient(90deg, #2F80ED, #2D9CDB);
       border-bottom-left-radius: 20px;
       border-bottom-right-radius: 20px;
       padding: 16px;
@@ -1160,7 +1159,7 @@ function injectMainUIStyles() {
       z-index: 90000;
     }
     body.pwa-mode .main-header {
-      padding-top: calc(16px + env(safe-area-inset-top, 0px));
+      padding-top: calc(0px + env(safe-area-inset-top, 0px));
     }
     .action-container {
       display: flex;
@@ -1266,7 +1265,7 @@ function injectMainUIStyles() {
       z-index: 999999;
     }
     body.pwa-mode .bottom-bar {
-      padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+      padding-bottom: calc(0px + env(safe-area-inset-bottom, 0px));
     }
     .nav-btn {
       display: flex;
