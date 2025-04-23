@@ -225,14 +225,12 @@ function createModal(
     onClose = null,
   } = {}
 ) {
-  // Уберём все предыдущие модалки
+  // 1) Чистим старые модалки и блокируем фон
   removeAllModals();
-
-  // Заблокируем фон
   document.body.style.overflow = 'hidden';
   document.documentElement.style.overscrollBehavior = 'none';
 
-  // Оверлей
+  // 2) Оверлей
   const modal = document.createElement('div');
   modal.id = id;
   modal.className = 'modal';
@@ -247,7 +245,7 @@ function createModal(
     overscrollBehavior: 'none',
   });
 
-  // Контейнер содержимого
+  // 3) Контент
   const contentDiv = document.createElement('div');
   contentDiv.className = 'modal-content';
   Object.assign(contentDiv.style, {
@@ -270,48 +268,34 @@ function createModal(
     ...customStyles,
   });
 
-  // 1) Убедимся, что все наши кнопки не являются submit (иначе могут дергать форму):
-contentDiv.querySelectorAll('button').forEach(btn => {
-  btn.type = 'button';
-});
-
-// 2) При клике на любую кнопку внутри модалки — сначала снимаем фокус с активного элемента:
-contentDiv.addEventListener('click', e => {
-  if (e.target.tagName === 'BUTTON') {
-    const active = document.activeElement;
-    if (active && typeof active.blur === 'function') {
-      active.blur();
+  // 4) Ловим нажатие ПОСЛЕ pointerdown, чтобы успеть снять фокус
+  const onPointerDown = e => {
+    if (e.target.tagName === 'BUTTON') {
+      const active = document.activeElement;
+      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
+        active.blur();
+      }
     }
-  }
-});
+  };
+  modal.addEventListener('pointerdown', onPointerDown, { capture: true });
 
-// 3) Оставшийся ваш код:
-// вставка HTML
-contentDiv.innerHTML = `
-  ${showCloseBtn ? '<button class="modal-close-btn">&times;</button>' : ''}
-  ${content}
-`;
-
-  // Чтобы клики по контенту не уходили на overlay
+  // 5) Чтобы клики на контент не всплывали на overlay
   contentDiv.addEventListener('click', e => e.stopPropagation());
 
-  // Подгоняем высоту при изменении viewport (открытие/закрытие клавиатуры)
+  // 6) Подгоняем высоту при появлении клавиатуры
   const resizeHandler = () => {
-    // bottom:0 в стилях + absolute автоматически тянет до низа window.innerHeight
-    // Но на iOS WebApp иногда нужно форсить repaint:
     contentDiv.style.maxHeight = `${window.innerHeight - cornerTopMargin}px`;
   };
   window.addEventListener('resize', resizeHandler);
-  // первый вызов
   resizeHandler();
 
-  // Вставляем кнопку закрытия и HTML
+  // 7) Вставляем HTML
   contentDiv.innerHTML = `
     ${showCloseBtn ? '<button class="modal-close-btn">&times;</button>' : ''}
     ${content}
   `;
 
-  // Обработчик крестика
+  // 8) Крестик
   if (showCloseBtn) {
     const closeBtn = contentDiv.querySelector('.modal-close-btn');
     Object.assign(closeBtn.style, {
@@ -332,10 +316,7 @@ contentDiv.innerHTML = `
       transition: 'transform 0.3s, background-color 0.3s',
       zIndex: '1001',
     });
-    closeBtn.addEventListener('click', () => {
-      cleanup();
-      if (typeof onClose === 'function') onClose();
-    });
+    closeBtn.addEventListener('click', cleanup);
     closeBtn.addEventListener('mouseenter', () => {
       closeBtn.style.backgroundColor = '#333';
       closeBtn.style.transform = 'scale(1.1)';
@@ -346,27 +327,26 @@ contentDiv.innerHTML = `
     });
   }
 
-  // Собираем и показываем
+  // 9) Финальная сборка и показ
   modal.appendChild(contentDiv);
   document.body.appendChild(modal);
 
-  // Клик по фону закрывает
-  modal.addEventListener('click', () => {
-    cleanup();
-    if (typeof onClose === 'function') onClose();
-  });
+  // 10) Закрытие по клику на overlay
+  modal.addEventListener('click', cleanup);
 
-  // Убирает модалку + слушатели + возвращает скролл
+  // 11) Убираем слушатели и возвращаем скролл
   function cleanup() {
     modal.remove();
     window.removeEventListener('resize', resizeHandler);
+    modal.removeEventListener('pointerdown', onPointerDown, { capture: true });
     document.body.style.overflow = '';
     document.documentElement.style.overscrollBehavior = '';
+    if (typeof onClose === 'function') onClose();
   }
 }
 
 /**
- * Removes all modal windows (и восстанавливает скролл bоди).
+ * Удаляет все модалки и возвращает скролл боди.
  */
 function removeAllModals() {
   document.querySelectorAll('.modal').forEach(m => m.remove());
