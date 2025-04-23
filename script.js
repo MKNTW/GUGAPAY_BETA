@@ -1150,10 +1150,7 @@ function injectMainUIStyles() {
       background: linear-gradient(180deg, #2F80ED, #2D9CDB);
       min-height: 100vh;
     }
-    body.pwa-mode {
-      padding-top: env(safe-area-inset-top, 0px);
-      padding-bottom: env(safe-area-inset-bottom, 0px);
-    }
+    
     .main-header {
       width: 100%;
       border-bottom-left-radius: 20px;
@@ -1162,9 +1159,7 @@ function injectMainUIStyles() {
       box-sizing: border-box;
       z-index: 90000;
     }
-    body.pwa-mode .main-header {
-      padding-top: calc(0px + env(safe-area-inset-top, 0px));
-    }
+    
     .action-container {
       display: flex;
       gap: 4px;
