@@ -975,90 +975,8 @@ function openAuthModal() {
       cursor: pointer;
       font-size: 18px;
     }
-    
-    .main-screen {
-      position: relative;
-      width: 100%;
-      min-height: 100vh;
-      overflow: hidden;
-      background: #f5f5f5;
-    }
-    .main-top-bg {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 300px;
-      background: linear-gradient(to bottom, #2F80ED, #2D9CDB);
-      padding-top: env(safe-area-inset-top);
-      z-index: 0;
-    }
-    .main-content {
-      position: relative;
-      z-index: 1;
-      background: #fff;
-      border-top-left-radius: 24px;
-      border-top-right-radius: 24px;
-      margin-top: 220px;
-      padding: 20px 16px 90px;
-      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
-    }
-
-  
-    .action-btn {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      border: none;
-      background: none;
-      cursor: pointer;
-      color: #1A1A1A;
-      font-size: 12px;
-      font-weight: 500;
-      margin: 0 6px;
-      min-width: 60px;
-    }
-    .action-btn .icon-wrap {
-      width: 54px;
-      height: 54px;
-      background: #ffffff;
-      border-radius: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    }
-    .action-btn .action-icon {
-      width: 28px;
-      height: 28px;
-    }
-    .balance-card {
-      background: #ffffff;
-      border-radius: 20px;
-      padding: 16px;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.05);
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      transition: transform 0.2s ease;
-    }
-    .balance-card:hover {
-      transform: translateY(-2px);
-    }
-    .balance-label {
-      font-size: 14px;
-      font-weight: 600;
-      color: #2F80ED;
-    }
-    .balance-amount {
-      font-size: 18px;
-      font-weight: 700;
-      color: #1A1A1A;
-    }
     `;
-
-  document.head.appendChild(style);
+    document.head.appendChild(style);
   }
 }
 
@@ -1110,35 +1028,12 @@ function createMainUI() {
   }
 
   // Header container with action buttons
-  
-  const main = document.getElementById("mainContainer");
-  if (main) {
-  // Очищаем
-  main.innerHTML = "";
-
-  // Обёртка
-  const mainScreen = document.createElement("div");
-  mainScreen.className = "main-screen";
-
-  const topBg = document.createElement("div");
-  topBg.className = "main-top-bg";
-
-  const content = document.createElement("div");
-  content.className = "main-content";
-  content.id = "mainContentWrapper";
-
-  mainScreen.appendChild(topBg);
-  mainScreen.appendChild(content);
-  main.appendChild(mainScreen);
-}
-
-
-let headerEl = document.getElementById("mainHeaderContainer");
+  let headerEl = document.getElementById("mainHeaderContainer");
   if (!headerEl) {
     headerEl = document.createElement("div");
     headerEl.id = "mainHeaderContainer";
     headerEl.className = "main-header";
-    document.getElementById("mainContentWrapper")?.appendChild(headerEl);
+    document.body.appendChild(headerEl);
     // Action buttons (Transfer, Request, Pay)
     const actionContainer = document.createElement("div");
     actionContainer.className = "action-container";
@@ -1198,7 +1093,7 @@ let headerEl = document.getElementById("mainHeaderContainer");
     balanceContainer = document.createElement("div");
     balanceContainer.id = "balanceContainer";
     balanceContainer.className = "balance-container";
-    document.getElementById("mainContentWrapper")?.appendChild(balanceContainer);
+    document.body.appendChild(balanceContainer);
     // RUB card
     const rubCard = document.createElement("div");
     rubCard.className = "balance-card rub";
@@ -1437,89 +1332,7 @@ function injectMainUIStyles() {
       margin-bottom: 8px;
       margin-top: 3px;
     }
-  
-    .main-screen {
-      position: relative;
-      width: 100%;
-      min-height: 100vh;
-      overflow: hidden;
-      background: #f5f5f5;
-    }
-    .main-top-bg {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 300px;
-      background: linear-gradient(to bottom, #2F80ED, #2D9CDB);
-      padding-top: env(safe-area-inset-top);
-      z-index: 0;
-    }
-    .main-content {
-      position: relative;
-      z-index: 1;
-      background: #fff;
-      border-top-left-radius: 24px;
-      border-top-right-radius: 24px;
-      margin-top: 220px;
-      padding: 20px 16px 90px;
-      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
-    }
-
-  
-    .action-btn {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      border: none;
-      background: none;
-      cursor: pointer;
-      color: #1A1A1A;
-      font-size: 12px;
-      font-weight: 500;
-      margin: 0 6px;
-      min-width: 60px;
-    }
-    .action-btn .icon-wrap {
-      width: 54px;
-      height: 54px;
-      background: #ffffff;
-      border-radius: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    }
-    .action-btn .action-icon {
-      width: 28px;
-      height: 28px;
-    }
-    .balance-card {
-      background: #ffffff;
-      border-radius: 20px;
-      padding: 16px;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.05);
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      transition: transform 0.2s ease;
-    }
-    .balance-card:hover {
-      transform: translateY(-2px);
-    }
-    .balance-label {
-      font-size: 14px;
-      font-weight: 600;
-      color: #2F80ED;
-    }
-    .balance-amount {
-      font-size: 18px;
-      font-weight: 700;
-      color: #1A1A1A;
-    }
-    `;
-
+  `;
   document.head.appendChild(style);
 }
 
@@ -2316,89 +2129,7 @@ function openPayQRModal() {
         height: 80%;
       }
     }
-  
-    .main-screen {
-      position: relative;
-      width: 100%;
-      min-height: 100vh;
-      overflow: hidden;
-      background: #f5f5f5;
-    }
-    .main-top-bg {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 300px;
-      background: linear-gradient(to bottom, #2F80ED, #2D9CDB);
-      padding-top: env(safe-area-inset-top);
-      z-index: 0;
-    }
-    .main-content {
-      position: relative;
-      z-index: 1;
-      background: #fff;
-      border-top-left-radius: 24px;
-      border-top-right-radius: 24px;
-      margin-top: 220px;
-      padding: 20px 16px 90px;
-      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
-    }
-
-  
-    .action-btn {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      border: none;
-      background: none;
-      cursor: pointer;
-      color: #1A1A1A;
-      font-size: 12px;
-      font-weight: 500;
-      margin: 0 6px;
-      min-width: 60px;
-    }
-    .action-btn .icon-wrap {
-      width: 54px;
-      height: 54px;
-      background: #ffffff;
-      border-radius: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    }
-    .action-btn .action-icon {
-      width: 28px;
-      height: 28px;
-    }
-    .balance-card {
-      background: #ffffff;
-      border-radius: 20px;
-      padding: 16px;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.05);
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      transition: transform 0.2s ease;
-    }
-    .balance-card:hover {
-      transform: translateY(-2px);
-    }
-    .balance-label {
-      font-size: 14px;
-      font-weight: 600;
-      color: #2F80ED;
-    }
-    .balance-amount {
-      font-size: 18px;
-      font-weight: 700;
-      color: #1A1A1A;
-    }
-    `;
-
+  `;
   document.head.appendChild(style);
 
   const videoEl = document.getElementById("opPayVideo");
@@ -2890,8 +2621,7 @@ const exchangeStyles = `
 `;
 const style = document.createElement('style');
 style.textContent = exchangeStyles;
-
-  document.head.appendChild(style);
+document.head.appendChild(style);
 
 /**************************************************
  * EXCHANGE INITIALIZATION
