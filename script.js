@@ -1425,7 +1425,6 @@ function injectMainUIStyles() {
       margin-bottom: 8px;
       margin-top: 3px;
     }
-  `;
   
     .main-screen {
       position: relative;
@@ -1507,6 +1506,7 @@ function injectMainUIStyles() {
       font-weight: 700;
       color: #1A1A1A;
     }
+    `;
 
   document.head.appendChild(style);
 }
