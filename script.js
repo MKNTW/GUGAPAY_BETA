@@ -250,7 +250,7 @@ function createModal(
   contentDiv.className = 'modal-content';
   Object.assign(contentDiv.style, {
     position: 'absolute',
-    top: `${cornerTopMargin}px`,
+    top: `calc(${cornerTopMargin}px + env(safe-area-inset-top, 0px))`,
     left: '50%',
     transform: 'translateX(-50%)',
     width: '100%',
