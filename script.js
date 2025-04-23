@@ -1179,7 +1179,7 @@ function injectMainUIStyles() {
     }
     .action-container {
       display: flex;
-      gap: 0px;
+      gap: 4px;
       justify-content: center;
       margin-bottom: 16px;
       margin-top: 45px;
