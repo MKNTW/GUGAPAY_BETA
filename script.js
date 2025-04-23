@@ -1015,6 +1015,7 @@ function createMainUI() {
       boxShadow: "0 2px 5px rgba(0, 0, 0, 0.1)",
       cursor: "pointer",
       zIndex: "9999",
+      paddingtop: "calc(16px + env(safe-area-inset-top, 0px))",
     });
     const profileIcon = document.createElement("img");
     profileIcon.id = "profileIcon";
@@ -1196,6 +1197,7 @@ function injectMainUIStyles() {
     padding: 20px 16px 100px;
     box-sizing: border-box;
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+    padding-top: calc(16px + env(safe-area-inset-top, 0px));
     overflow-y: auto;
 }
     .balance-container {
