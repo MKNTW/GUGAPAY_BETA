@@ -2304,7 +2304,6 @@ function openPayQRModal() {
         height: 80%;
       }
     }
-  `;
   
     .main-screen {
       position: relative;
@@ -2386,6 +2385,7 @@ function openPayQRModal() {
       font-weight: 700;
       color: #1A1A1A;
     }
+    `;
 
   document.head.appendChild(style);
 
