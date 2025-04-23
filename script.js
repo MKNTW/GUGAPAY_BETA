@@ -998,12 +998,18 @@ function togglePasswordVisibility(inputId, toggleEl) {
 function createMainUI() {
   injectMainUIStyles();
 
+  // Определяем PWA режим и добавляем класс к body
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  if (isStandalone) {
+    document.body.classList.add("pwa-mode");
+  }
+
   if (!currentMerchantId && !document.getElementById("profileIconContainer")) {
     const profileIconContainer = document.createElement("div");
     profileIconContainer.id = "profileIconContainer";
     Object.assign(profileIconContainer.style, {
       position: "absolute",
-      top: "env(safe-area-inset-top, 0px)",
+      top: isStandalone ? "env(safe-area-inset-top, 0px)" : "10px",
       right: "10px",
       width: "35px",
       height: "35px",
@@ -1140,15 +1146,21 @@ function injectMainUIStyles() {
       background: linear-gradient(180deg, #2F80ED, #2D9CDB);
       min-height: 100vh;
     }
+    body.pwa-mode {
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
     .main-header {
       width: 100%;
       background: linear-gradient(90deg, #2F80ED, #2D9CDB);
       border-bottom-left-radius: 20px;
       border-bottom-right-radius: 20px;
       padding: 16px;
-      padding-top: calc(0px + env(safe-area-inset-top, 0px));
       box-sizing: border-box;
       z-index: 90000;
+    }
+    body.pwa-mode .main-header {
+      padding-top: calc(16px + env(safe-area-inset-top, 0px));
     }
     .action-container {
       display: flex;
@@ -1253,6 +1265,9 @@ function injectMainUIStyles() {
       box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
       z-index: 999999;
     }
+    body.pwa-mode .bottom-bar {
+      padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    }
     .nav-btn {
       display: flex;
       flex-direction: column;
@@ -1278,6 +1293,7 @@ function injectMainUIStyles() {
   `;
   document.head.appendChild(style);
 }
+
 
 /**
  * Форматирует число с пробелами в качестве разделителей тысяч
