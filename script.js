@@ -223,23 +223,23 @@ function createModal(
     onClose = null,
   } = {}
 ) {
-  // Удаляем ВСЕ предыдущие модалки
+  // 1) удаляем все существующие модалки
   removeAllModals();
 
-  // Создаём оверлей
+  // 2) создаем overlay, полностью покрывающий экран (включая safe-area)
   const modal = document.createElement('div');
   modal.id = id;
   modal.className = 'modal';
   modal.style.position = 'fixed';
-  // Вместо top/left/width/height — inset, чтобы покрыть safe-area
-  modal.style.inset = '0';
+  modal.style.inset = '0';                 // вместо top/left/width/height
   modal.style.display = 'flex';
   modal.style.justifyContent = 'center';
   modal.style.alignItems = 'center';
   modal.style.background = 'rgba(0,0,0,0.5)';
   modal.style.zIndex = '100000';
+  modal.style.overscrollBehavior = 'none'; // отключаем прокрутку overlay
 
-  // Контейнер содержимого
+  // 3) контейнер контента
   const contentDiv = document.createElement('div');
   contentDiv.className = 'modal-content';
   contentDiv.style.width = '100%';
@@ -247,6 +247,8 @@ function createModal(
   contentDiv.style.marginTop = `${cornerTopMargin}px`;
   contentDiv.style.height = `calc(100% - ${cornerTopMargin}px)`;
   contentDiv.style.overflowY = hasVerticalScroll ? 'auto' : 'hidden';
+  contentDiv.style.WebkitOverflowScrolling = 'touch';       // плавный скролл на iOS
+  contentDiv.style.overscrollBehavior = 'contain';          // предотвращаем bounce внутри
   contentDiv.style.borderRadius = noRadiusByDefault
     ? '0'
     : `${cornerTopRadius}px ${cornerTopRadius}px 0 0`;
@@ -255,13 +257,13 @@ function createModal(
   contentDiv.style.padding = '20px';
   Object.assign(contentDiv.style, customStyles);
 
-  // Вставляем кнопку закрытия и контент
+  // 4) вставляем кнопку закрытия и основной HTML
   contentDiv.innerHTML = `
     ${showCloseBtn ? '<button class="modal-close-btn">&times;</button>' : ''}
     ${content}
   `;
 
-  // Стили и обработчики для кнопки закрытия
+  // 5) стили и обработка кнопки «×»
   if (showCloseBtn) {
     const closeBtn = contentDiv.querySelector('.modal-close-btn');
     if (closeBtn) {
@@ -298,12 +300,12 @@ function createModal(
     }
   }
 
-  // Собираем и встраиваем в документ
+  // 6) собираем DOM и показываем
   modal.appendChild(contentDiv);
   document.body.appendChild(modal);
 
-  // Клик по оверлею закрывает модалку
-  modal.addEventListener('click', (e) => {
+  // 7) закрытие по клику на overlay
+  modal.addEventListener('click', e => {
     if (e.target === modal) {
       modal.remove();
       if (typeof onClose === 'function') onClose();
@@ -315,7 +317,7 @@ function createModal(
  * Removes all modal windows from the DOM.
  */
 function removeAllModals() {
-  document.querySelectorAll('.modal').forEach((m) => m.remove());
+  document.querySelectorAll('.modal').forEach(m => m.remove());
 }
 
 /**************************************************
