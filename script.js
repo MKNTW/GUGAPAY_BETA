@@ -1182,7 +1182,7 @@ function injectMainUIStyles() {
       gap: 0px;
       justify-content: center;
       margin-bottom: 16px;
-      margin-top: 50px;
+      margin-top: 45px;
     }
     .action-btn {
       display: flex;
@@ -1222,7 +1222,7 @@ function injectMainUIStyles() {
     }
     .balance-container {
       position: absolute;
-      top: 300px;
+      top: 310px;
       width: 90%;
       max-width: 500px;
       left: 50%;
@@ -1416,7 +1416,7 @@ async function fetchUserData() {
             font-size: 32px;
             font-weight: 600;
             color: #ffffff;
-            margin-top: 85px;
+            margin-top: 80px;
           `;
           // вставляем перед кнопками
           const actionContainer = headerEl.querySelector(".action-container");
