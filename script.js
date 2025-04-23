@@ -1412,11 +1412,12 @@ async function fetchUserData() {
           headerBalanceEl.id = "headerBalance";
           // стили можно вынести в CSS, здесь для примера сразу inline
           headerBalanceEl.style.cssText = `
-            text-align: center;
+            text-align: left;
             font-size: 32px;
             font-weight: 600;
             color: #ffffff;
             margin-top: 80px;
+            margin-left: 7px;
           `;
           // вставляем перед кнопками
           const actionContainer = headerEl.querySelector(".action-container");
