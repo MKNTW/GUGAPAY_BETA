@@ -1003,7 +1003,7 @@ function createMainUI() {
     profileIconContainer.id = "profileIconContainer";
     Object.assign(profileIconContainer.style, {
       position: "absolute",
-      top: "10px",
+      top: "env(safe-area-inset-top, 0px)",
       right: "10px",
       width: "35px",
       height: "35px",
@@ -1014,8 +1014,7 @@ function createMainUI() {
       justifyContent: "center",
       boxShadow: "0 2px 5px rgba(0, 0, 0, 0.1)",
       cursor: "pointer",
-      zIndex: "9999",
-      paddingtop: "calc(16px + env(safe-area-inset-top, 0px))",
+      zIndex: "9999"
     });
     const profileIcon = document.createElement("img");
     profileIcon.id = "profileIcon";
@@ -1068,9 +1067,6 @@ function createMainUI() {
     headerEl.appendChild(document.createElement("div")).className = "header-divider";
   }
 
-  // ──────────────────────────────────────────────
-  // Баланс блок в белом контейнере с скруглением
-  // ──────────────────────────────────────────────
   if (!document.querySelector(".balance-wrapper")) {
     const balanceWrapper = document.createElement("div");
     balanceWrapper.className = "balance-wrapper";
@@ -1080,6 +1076,12 @@ function createMainUI() {
     balanceContainer.className = "balance-container";
     balanceWrapper.appendChild(balanceContainer);
     document.body.appendChild(balanceWrapper);
+
+    requestAnimationFrame(() => {
+      const header = document.getElementById("mainHeaderContainer");
+      const headerRect = header.getBoundingClientRect();
+      balanceWrapper.style.top = `${headerRect.bottom}px`;
+    });
 
     const rubCard = document.createElement("div");
     rubCard.className = "balance-card rub";
@@ -1096,7 +1098,6 @@ function createMainUI() {
     balanceContainer.appendChild(gugaCard);
   }
 
-  // Нижняя панель навигации
   if (!document.getElementById("bottomBar")) {
     const bottomBar = document.createElement("div");
     bottomBar.id = "bottomBar";
@@ -1140,21 +1141,21 @@ function injectMainUIStyles() {
       min-height: 100vh;
     }
     .main-header {
-  width: 100%;
-  background: linear-gradient(90deg, #2F80ED, #2D9CDB);
-  border-bottom-left-radius: 20px;
-  border-bottom-right-radius: 20px;
-  padding: 16px;
-  padding-top: calc(16px + env(safe-area-inset-top, 0px)); /* 👈 вот это */
-  box-sizing: border-box;
-  z-index: 90000;
-}
+      width: 100%;
+      background: linear-gradient(90deg, #2F80ED, #2D9CDB);
+      border-bottom-left-radius: 20px;
+      border-bottom-right-radius: 20px;
+      padding: 16px;
+      padding-top: calc(0px + env(safe-area-inset-top, 0px));
+      box-sizing: border-box;
+      z-index: 90000;
+    }
     .action-container {
       display: flex;
       gap: 4px;
       justify-content: center;
       margin-bottom: 16px;
-      margin-top: 45px;
+      margin-top: 20px;
     }
     .action-btn {
       display: flex;
@@ -1186,20 +1187,19 @@ function injectMainUIStyles() {
     }
     .header-divider { height: 0px; }
     .balance-wrapper {
-    position: absolute;
-    top: 290px;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: #fff;
-    border-top-left-radius: 24px;
-    border-top-right-radius: 24px;
-    padding: 20px 16px 100px;
-    box-sizing: border-box;
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
-    padding-top: calc(16px + env(safe-area-inset-top, 0px));
-    overflow-y: auto;
-}
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #fff;
+      border-top-left-radius: 24px;
+      border-top-right-radius: 24px;
+      padding: 20px 16px 100px;
+      box-sizing: border-box;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+      overflow-y: auto;
+      z-index: 10;
+    }
     .balance-container {
       display: flex;
       flex-direction: column;
