@@ -215,7 +215,6 @@ function createModal(
   {
     showCloseBtn = true,
     hasVerticalScroll = true,
-    defaultFromBottom = true,
     cornerTopMargin = 0,
     cornerTopRadius = 0,
     noRadiusByDefault = false,
@@ -223,101 +222,110 @@ function createModal(
     onClose = null,
   } = {}
 ) {
-  // 1) удаляем все существующие модалки
+  // Убираем любые старые модалки и сбрасываем прокрутку
   removeAllModals();
 
-  // 2) создаем overlay, полностью покрывающий экран (включая safe-area)
+  // Блокируем скролл заднего фона
+  document.body.style.overflow = 'hidden';
+  // на iOS лучше ещё и эту штуку
+  document.documentElement.style.overscrollBehavior = 'none';
+
+  // Оверлей
   const modal = document.createElement('div');
   modal.id = id;
   modal.className = 'modal';
-  modal.style.position = 'fixed';
-  modal.style.inset = '0';                 // вместо top/left/width/height
-  modal.style.display = 'flex';
-  modal.style.justifyContent = 'center';
-  modal.style.alignItems = 'center';
-  modal.style.background = 'rgba(0,0,0,0.5)';
-  modal.style.zIndex = '100000';
-  modal.style.overscrollBehavior = 'none'; // отключаем прокрутку overlay
+  Object.assign(modal.style, {
+    position: 'fixed',
+    inset: '0',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    background: 'rgba(0,0,0,0.5)',
+    zIndex: '100000',
+    overscrollBehavior: 'none',
+  });
 
-  // 3) контейнер контента
+  // Контейнер содержимого
   const contentDiv = document.createElement('div');
   contentDiv.className = 'modal-content';
-  contentDiv.style.width = '100%';
-  contentDiv.style.maxWidth = '500px';
-  contentDiv.style.marginTop = `${cornerTopMargin}px`;
-  contentDiv.style.height = `calc(100% - ${cornerTopMargin}px)`;
-  contentDiv.style.overflowY = hasVerticalScroll ? 'auto' : 'hidden';
-  contentDiv.style.WebkitOverflowScrolling = 'touch';       // плавный скролл на iOS
-  contentDiv.style.overscrollBehavior = 'contain';          // предотвращаем bounce внутри
-  contentDiv.style.borderRadius = noRadiusByDefault
-    ? '0'
-    : `${cornerTopRadius}px ${cornerTopRadius}px 0 0`;
-  contentDiv.style.background = '#fff';
-  contentDiv.style.boxShadow = '0 2px 5px rgba(0,0,0,0.1)';
-  contentDiv.style.padding = '20px';
-  Object.assign(contentDiv.style, customStyles);
+  Object.assign(contentDiv.style, {
+    width: '100%',
+    maxWidth: '500px',
+    marginTop: `${cornerTopMargin}px`,
+    height: `calc(100% - ${cornerTopMargin}px)`,
+    overflowY: hasVerticalScroll ? 'auto' : 'hidden',
+    WebkitOverflowScrolling: 'touch',
+    overscrollBehavior: 'contain',
+    borderRadius: noRadiusByDefault
+      ? '0'
+      : `${cornerTopRadius}px ${cornerTopRadius}px 0 0`,
+    background: '#fff',
+    boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+    padding: '20px',
+    ...customStyles,
+  });
 
-  // 4) вставляем кнопку закрытия и основной HTML
+  // Вставляем кнопку закрытия и контент
   contentDiv.innerHTML = `
     ${showCloseBtn ? '<button class="modal-close-btn">&times;</button>' : ''}
     ${content}
   `;
 
-  // 5) стили и обработка кнопки «×»
+  // Стили и события кнопки закрытия
   if (showCloseBtn) {
     const closeBtn = contentDiv.querySelector('.modal-close-btn');
-    if (closeBtn) {
-      Object.assign(closeBtn.style, {
-        position: 'absolute',
-        top: '15px',
-        right: '20px',
-        width: '30px',
-        height: '30px',
-        backgroundColor: '#000',
-        color: '#fff',
-        borderRadius: '50%',
-        border: 'none',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        cursor: 'pointer',
-        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-        transition: 'transform 0.3s, background-color 0.3s',
-        zIndex: '1001',
-      });
-      closeBtn.addEventListener('click', () => {
-        modal.remove();
-        if (typeof onClose === 'function') onClose();
-      });
-      closeBtn.addEventListener('mouseenter', () => {
-        closeBtn.style.backgroundColor = '#333';
-        closeBtn.style.transform = 'scale(1.1)';
-      });
-      closeBtn.addEventListener('mouseleave', () => {
-        closeBtn.style.backgroundColor = '#000';
-        closeBtn.style.transform = 'scale(1)';
-      });
-    }
+    Object.assign(closeBtn.style, {
+      position: 'absolute',
+      top: '15px',
+      right: '20px',
+      width: '30px',
+      height: '30px',
+      backgroundColor: '#000',
+      color: '#fff',
+      borderRadius: '50%',
+      border: 'none',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      cursor: 'pointer',
+      boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+      transition: 'transform 0.3s, background-color 0.3s',
+      zIndex: '1001',
+    });
+    closeBtn.addEventListener('click', () => {
+      removeAllModals();
+      if (typeof onClose === 'function') onClose();
+    });
+    closeBtn.addEventListener('mouseenter', () => {
+      closeBtn.style.backgroundColor = '#333';
+      closeBtn.style.transform = 'scale(1.1)';
+    });
+    closeBtn.addEventListener('mouseleave', () => {
+      closeBtn.style.backgroundColor = '#000';
+      closeBtn.style.transform = 'scale(1)';
+    });
   }
 
-  // 6) собираем DOM и показываем
   modal.appendChild(contentDiv);
   document.body.appendChild(modal);
 
-  // 7) закрытие по клику на overlay
+  // Закрытие по клику на оверлей
   modal.addEventListener('click', e => {
     if (e.target === modal) {
-      modal.remove();
+      removeAllModals();
       if (typeof onClose === 'function') onClose();
     }
   });
 }
 
 /**
- * Removes all modal windows from the DOM.
+ * Removes all modal windows and восстанавливает прокрутку фона.
  */
 function removeAllModals() {
   document.querySelectorAll('.modal').forEach(m => m.remove());
+  // Восстанавливаем скролл боди и поведение качания
+  document.body.style.overflow = '';
+  document.documentElement.style.overscrollBehavior = '';
 }
 
 /**************************************************
