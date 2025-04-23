@@ -1008,7 +1008,7 @@ function createMainUI() {
     profileIconContainer.id = "profileIconContainer";
     Object.assign(profileIconContainer.style, {
       position: "absolute",
-      top: isStandalone ? "env(safe-area-inset-top, 0px)" : "15px",
+      top: isStandalone ? "env(safe-area-inset-top, 0px)" : "25px",
       right: "10px",
       width: "35px",
       height: "35px",
