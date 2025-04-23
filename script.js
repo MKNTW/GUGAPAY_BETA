@@ -1354,8 +1354,8 @@ async function fetchUserData() {
       const currentRate = (ratesData.success && ratesData.rates.length)
         ? parseFloat(ratesData.rates[0].exchange_rate)
         : 0;
-      const firstName = userData.user.first_name || "Гость";
-      const photoUrl  = userData.user.photo_url || "";
+      const firstName = userData.user.first_name || "GugaUser";
+      const photoUrl  = userData.user.photo_url || "/photo/15.png";
 
       // === шапка: профиль — фото + имя и ID ===
       let userInfoContainer = document.getElementById("user-info");
