@@ -1652,26 +1652,44 @@ app.get('/userPublicKey/:id', verifyToken, async (req, res) => {
   res.json({ success:true, public_key:data.public_key });
 });
 
-// 2) Эндпоинт для подписки на пуши
+// Сохранение подписки
 app.post('/subscribe', verifyToken, async (req, res) => {
-  const subscription = req.body;
-  const { error } = await supabase
-    .from('push_subscriptions')
-    .insert([{ user_id: req.user.userId, subscription }]);
-  if (error) return res.status(500).json({ success: false, error: error.message });
-  res.json({ success: true });
+  try {
+    const subscription = req.body;
+    const userId = req.user.userId;
+    const { error } = await supabase
+      .from('subscriptions')
+      .upsert([{ user_id: userId, subscription }]);
+
+    if (error) {
+      console.error('[subscribe] Ошибка:', error);
+      return res.status(500).json({ success: false, error: 'Ошибка при сохранении подписки' });
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[subscribe] Ошибка:', err);
+    res.status(500).json({ success: false });
+  }
 });
 
-// 3) Утилита для отправки пуш-уведомлений
+// Отправка пуша
 async function sendPush(toUserId, payload) {
   const { data, error } = await supabase
-    .from('push_subscriptions')
+    .from('subscriptions')
     .select('subscription')
-    .eq('user_id', toUserId);
-  if (error || !data.length) return;
-  await Promise.all(
-    data.map(row =>
-      webpush.sendNotification(row.subscription, JSON.stringify(payload))
-    )
-  );
+    .eq('user_id', toUserId)
+    .maybeSingle();
+
+  if (error || !data) return;
+
+  try {
+    await webpush.sendNotification(
+      data.subscription,
+      JSON.stringify(payload)
+    );
+  } catch (err) {
+    console.error('[sendPush] Ошибка отправки:', err);
+  }
 }
+
