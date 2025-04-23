@@ -1113,13 +1113,25 @@ function createMainUI() {
   
   const main = document.getElementById("mainContainer");
   if (main) {
-    main.innerHTML = `
-      <div class="main-screen">
-        <div class="main-top-bg"></div>
-        <div class="main-content" id="mainContentWrapper"></div>
-      </div>
-    `;
-  }
+  // Очищаем
+  main.innerHTML = "";
+
+  // Обёртка
+  const mainScreen = document.createElement("div");
+  mainScreen.className = "main-screen";
+
+  const topBg = document.createElement("div");
+  topBg.className = "main-top-bg";
+
+  const content = document.createElement("div");
+  content.className = "main-content";
+  content.id = "mainContentWrapper";
+
+  mainScreen.appendChild(topBg);
+  mainScreen.appendChild(content);
+  main.appendChild(mainScreen);
+}
+
 
 let headerEl = document.getElementById("mainHeaderContainer");
   if (!headerEl) {
