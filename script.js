@@ -1104,9 +1104,8 @@ function createMainUI() {
     const rect = header.getBoundingClientRect();
     const extraOffset = isStandalone ? 12 : 0; // смещение только в приложении
     balanceWrapper.style.position = "absolute";
-    balanceWrapper.style.top = `260px`;
     balanceWrapper.style.bottom = "env(safe-area-inset-bottom, 0px)";
-    balanceWrapper.style.height = `calc(100vh - 240px - env(safe-area-inset-bottom, 10px))`;
+    balanceWrapper.style.height = `calc(110vh - 240px - env(safe-area-inset-bottom, 10px))`;
   });
 
   if (!document.getElementById("bottomBar")) {
@@ -1211,7 +1210,6 @@ function injectMainUIStyles() {
       box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
       overflow-y: auto;
       z-index: 10;
-      padding-top: env(safe-area-inset-top, 0px);
     }
     .balance-container {
       display: flex;
