@@ -1094,14 +1094,14 @@ function createMainUI() {
     balanceContainer.appendChild(gugaCard);
   }
 
-  // Прилепляем balance-wrapper под .main-header и корректируем смещение для PWA
+  // Настраиваем balance-wrapper для правильного отображения
   requestAnimationFrame(() => {
     const header = document.getElementById("mainHeaderContainer");
-    const rect = header.getBoundingClientRect();
-    const extraOffset = 0;
-    balanceWrapper.style.position = "absolute";
-    balanceWrapper.style.bottom = "0px";
-    balanceWrapper.style.height = `calc(93vh - 240px - 10px)`;
+    if (header) {
+      const headerHeight = header.offsetHeight;
+      balanceWrapper.style.top = `${headerHeight}px`;
+      balanceWrapper.style.height = `calc(100vh - ${headerHeight}px - 80px)`;
+    }
   });
 
   if (!document.getElementById("bottomBar")) {
@@ -1144,17 +1144,21 @@ function injectMainUIStyles() {
       padding: 0;
       font-family: "Oswald", sans-serif;
       background: linear-gradient(180deg, #2F80ED, #2D9CDB);
-      min-height: 100vh;
+      height: 100vh;
+      overflow: hidden;
     }
     
     .main-header {
+      position: fixed;
+      top: 0;
+      left: 0;
       width: 100%;
       border-bottom-left-radius: 20px;
       border-bottom-right-radius: 20px;
       padding: 16px;
       box-sizing: border-box;
       z-index: 90000;
-      padding-top: 0px;
+      background: linear-gradient(180deg, #2F80ED, #2D9CDB);
     }
     
     .action-container {
@@ -1194,14 +1198,14 @@ function injectMainUIStyles() {
     }
     .header-divider { height: 0px; }
     .balance-wrapper {
-      position: absolute;
+      position: fixed;
       left: 0;
       right: 0;
-      bottom: 0;
+      bottom: 80px;
       background: #fff;
       border-top-left-radius: 24px;
       border-top-right-radius: 24px;
-      padding: 20px 16px 100px;
+      padding: 20px 16px 20px;
       box-sizing: border-box;
       box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
       overflow-y: auto;
@@ -1256,12 +1260,9 @@ function injectMainUIStyles() {
       display: flex;
       justify-content: space-around;
       align-items: center;
-      padding-bottom: 20px;
+      padding: 10px 0;
       box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
       z-index: 999999;
-    }
-    body.pwa-mode .bottom-bar {
-      padding-bottom: 0px;
     }
     .nav-btn {
       display: flex;
