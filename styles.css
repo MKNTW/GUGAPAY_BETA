@@ -98,13 +98,15 @@ body {
   bottom: 0;
   left: 0;
   width: 100%;
-  padding: 10px 0;
+  height: 70px;
+  padding: 8px 0;
   display: flex;
   justify-content: space-evenly;
   align-items: center;
   background-color: #fff;
   box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.1);
   z-index: 999999;
+  box-sizing: border-box;
 }
 
 #bottomBar button {
@@ -265,25 +267,31 @@ body {
 .modal-content {
   position: relative;
   width: 100%;
-  max-width: 600px; /* если нужно ограничить ширину */
-  margin: 0px auto 0 auto; /* отступ сверху 40px */
-  height: calc(100% - 40px); /* занимаем оставшуюся высоту */
+  max-width: 600px;
+  margin: 0px auto 0 auto;
+  height: calc(100% - 40px);
   background-color: #fff;
-  overflow-y: auto; /* прокрутка */
-  border-radius: 8px; /* или 0, если не нужно скругление */
-  /* Кнопка закрытия (.close-btn) внутри */
+  overflow-y: auto;
+  border-radius: 8px;
+  padding: 60px 20px 20px 20px;
+  box-sizing: border-box;
 }
 /* Круглая кнопка закрытия в правом верхнем углу */
 .close-btn {
   position: absolute;
-  top: 10px; right: 10px;
+  top: 20px; right: 20px;
   width: 32px; height: 32px;
   border: none;
   background-color: #000;
   color: #fff;
   border-radius: 50%;
   cursor: pointer;
-  font-size: 18px;
+  font-size: 20px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
 }
 
 /* =========================================
@@ -447,7 +455,8 @@ body {
 .modal-content {
   background: #fff;
   border-radius: 15px;
-  /* padding: 20px; */
+  padding: 60px 20px 20px 20px;
+  box-sizing: border-box;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   animation-duration: 0.3s;
   animation-fill-mode: forwards;

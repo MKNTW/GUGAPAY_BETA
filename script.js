@@ -264,7 +264,7 @@ function createModal(
       : `${cornerTopRadius}px ${cornerTopRadius}px 0 0`,
     background: '#fff',
     boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
-    padding: '20px',
+    padding: '60px 20px 20px 20px',
     ...customStyles,
   });
 
@@ -300,10 +300,10 @@ function createModal(
     const closeBtn = contentDiv.querySelector('.modal-close-btn');
     Object.assign(closeBtn.style, {
       position: 'absolute',
-      top: '15px',
+      top: '20px',
       right: '20px',
-      width: '30px',
-      height: '30px',
+      width: '32px',
+      height: '32px',
       backgroundColor: '#000',
       color: '#fff',
       borderRadius: '50%',
@@ -314,7 +314,8 @@ function createModal(
       cursor: 'pointer',
       transition: 'transform 0.3s',
       zIndex: '1001',
-      top: '0',
+      fontSize: '20px',
+      lineHeight: '1',
     });
     closeBtn.addEventListener('click', cleanup);
     closeBtn.addEventListener('mouseenter', () => {
@@ -1003,9 +1004,9 @@ function createMainUI() {
     const profileIconContainer = document.createElement("div");
     profileIconContainer.id = "profileIconContainer";
     Object.assign(profileIconContainer.style, {
-      position: "absolute",
-      top: "10px",
-      right: "10px",
+      position: "fixed",
+      top: "16px",
+      right: "16px",
       width: "35px",
       height: "35px",
       background: "#fff",
@@ -1015,7 +1016,7 @@ function createMainUI() {
       justifyContent: "center",
       boxShadow: "0 2px 5px rgba(0, 0, 0, 0.1)",
       cursor: "pointer",
-      zIndex: "9999"
+      zIndex: "100000"
     });
     const profileIcon = document.createElement("img");
     profileIcon.id = "profileIcon";
@@ -1100,7 +1101,7 @@ function createMainUI() {
     if (header) {
       const headerHeight = header.offsetHeight;
       balanceWrapper.style.top = `${headerHeight}px`;
-      balanceWrapper.style.height = `calc(100vh - ${headerHeight}px - 80px)`;
+      balanceWrapper.style.height = `calc(100vh - ${headerHeight}px - 70px)`;
     }
   });
 
@@ -1156,6 +1157,7 @@ function injectMainUIStyles() {
       border-bottom-left-radius: 20px;
       border-bottom-right-radius: 20px;
       padding: 16px;
+      padding-top: 20px;
       box-sizing: border-box;
       z-index: 90000;
       background: linear-gradient(180deg, #2F80ED, #2D9CDB);
@@ -1201,7 +1203,7 @@ function injectMainUIStyles() {
       position: fixed;
       left: 0;
       right: 0;
-      bottom: 80px;
+      bottom: 70px;
       background: #fff;
       border-top-left-radius: 24px;
       border-top-right-radius: 24px;
@@ -1256,11 +1258,13 @@ function injectMainUIStyles() {
       position: fixed;
       bottom: 0; left: 0;
       width: 100%;
+      height: 70px;
       background-color: #fff;
       display: flex;
       justify-content: space-around;
       align-items: center;
-      padding: 10px 0;
+      padding: 8px 0;
+      box-sizing: border-box;
       box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
       z-index: 999999;
     }
