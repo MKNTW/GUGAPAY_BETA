@@ -19,8 +19,6 @@ async function fetchCsrfToken() {
 
 fetchCsrfToken();
 
-const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-
 // 0) Ваш публичный VAPID-ключ от web-push (Base64 URL-safe)
 const PUBLIC_VAPID_KEY = 'BO-xrqEyeoH4EHZkg6YJgrO5tfniBp52aRL3V1JKokIe59OLPwFcoyHpciJnpJ3jBRlEXwMewKWYYcVFpuKOcoI';
 
@@ -232,8 +230,6 @@ function createModal(
   document.body.style.overflow = 'hidden';
   document.documentElement.style.overscrollBehavior = 'none';
 
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-
   // 2. Оверлей
   const modal = document.createElement('div');
   modal.id = id;
@@ -254,7 +250,7 @@ function createModal(
   contentDiv.className = 'modal-content';
   Object.assign(contentDiv.style, {
     position: 'absolute',
-    top: isStandalone ? 'env(safe-area-inset-top, 0px)' : '0',
+    top: '0',
     left: '50%',
     transform: 'translateX(-50%)',
     width: '100%',
@@ -292,7 +288,7 @@ function createModal(
   modal.addEventListener('pointerdown', blurHandler, { capture: true });
   modal.addEventListener('touchstart',  blurHandler, { capture: true });
 
-  // 7. Подгоняем высоту при изменении размеров viewport (iOS клавиатура)
+  // 7. Подгоняем высоту при изменении размеров viewport (мобильная клавиатура)
   const resizeHandler = () => {
     contentDiv.style.maxHeight = `${window.innerHeight - cornerTopMargin}px`;
   };
@@ -318,7 +314,7 @@ function createModal(
       cursor: 'pointer',
       transition: 'transform 0.3s',
       zIndex: '1001',
-      top: isStandalone ? 'env(safe-area-inset-top, 0px)' : '0',
+      top: '0',
     });
     closeBtn.addEventListener('click', cleanup);
     closeBtn.addEventListener('mouseenter', () => {
@@ -1003,17 +999,12 @@ function togglePasswordVisibility(inputId, toggleEl) {
 function createMainUI() {
   injectMainUIStyles();
 
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-  if (isStandalone) {
-    document.body.classList.add("pwa-mode");
-  }
-
   if (!currentMerchantId && !document.getElementById("profileIconContainer")) {
     const profileIconContainer = document.createElement("div");
     profileIconContainer.id = "profileIconContainer";
     Object.assign(profileIconContainer.style, {
       position: "absolute",
-      top: isStandalone ? "calc(10px + env(safe-area-inset-top, 0px))" : "10px",
+      top: "10px",
       right: "10px",
       width: "35px",
       height: "35px",
@@ -1107,10 +1098,10 @@ function createMainUI() {
   requestAnimationFrame(() => {
     const header = document.getElementById("mainHeaderContainer");
     const rect = header.getBoundingClientRect();
-    const extraOffset = isStandalone ? 12 : 0; // смещение только в приложении
+    const extraOffset = 0;
     balanceWrapper.style.position = "absolute";
-    balanceWrapper.style.bottom = "env(safe-area-inset-bottom, 0px)";
-    balanceWrapper.style.height = `calc(93vh - 240px - env(safe-area-inset-bottom, 10px))`;
+    balanceWrapper.style.bottom = "0px";
+    balanceWrapper.style.height = `calc(93vh - 240px - 10px)`;
   });
 
   if (!document.getElementById("bottomBar")) {
@@ -1163,7 +1154,7 @@ function injectMainUIStyles() {
       padding: 16px;
       box-sizing: border-box;
       z-index: 90000;
-      padding-top: env(safe-area-inset-top, 0px);
+      padding-top: 0px;
     }
     
     .action-container {
@@ -1270,7 +1261,7 @@ function injectMainUIStyles() {
       z-index: 999999;
     }
     body.pwa-mode .bottom-bar {
-      padding-bottom: calc(0px + env(safe-area-inset-bottom, 0px));
+      padding-bottom: 0px;
     }
     .nav-btn {
       display: flex;
@@ -1589,7 +1580,7 @@ function openProfileModal() {
         gap: 20px;
         padding: 24px;
         box-sizing: border-box;
-        top: isStandalone ? 'env(safe-area-inset-top, 0px)' : '0',
+        top: '0',
       ">
         <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
           <img id="profilePhotoPreview" src="${photo}" style="
@@ -2839,7 +2830,6 @@ notificationStyle.textContent = `
     flex-direction: column;
     gap: 10px;
     align-items: flex-end;
-    top: isStandalone ? 'env(safe-area-inset-top, 0px)' : '0',
   }
   .notification {
     font-family: "Oswald", sans-serif;
@@ -2857,7 +2847,6 @@ notificationStyle.textContent = `
     display: flex;
     align-items: center;
     justify-content: space-between;
-    top: isStandalone ? 'env(safe-area-inset-top, 0px)' : '0',
   }
   .notification::before {
     content: "";
@@ -2867,7 +2856,6 @@ notificationStyle.textContent = `
     width: 10px;
     height: 100%;
     border-radius: 12px 0 0 12px;
-    top: isStandalone ? 'env(safe-area-inset-top, 0px)' : '0',
   }
   .notification-success::before {
     background-color: #2F80ED;
@@ -2886,7 +2874,6 @@ notificationStyle.textContent = `
     cursor: pointer;
     margin-left: 8px;
     transition: color 0.2s;
-    top: isStandalone ? 'env(safe-area-inset-top, 0px)' : '0',
   }
   .notification-close:hover {
     color: #666;

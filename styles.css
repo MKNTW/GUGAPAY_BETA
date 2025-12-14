@@ -21,7 +21,7 @@ ul {
 body {
   font-family: 'Oswald', sans-serif;
   margin: 0;
-  padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
+  padding: 0;
   background: linear-gradient(180deg, #2F80ED, #2D9CDB);
   position: relative;
   overflow-x: hidden;
@@ -212,7 +212,7 @@ body {
 ========================================= */
 #actionButtonsContainer {
   position: relative;
-  #margin: 20px auto;
+  margin: 20px auto;
   display: flex;
   gap: 16px;
   justify-content: center;
@@ -307,28 +307,7 @@ body {
   text-align: left;
 }
 
-.modal-content input {
-  // width: 100%;
-  #padding: 8px;
-  #margin-top: 5px;
-  #border: 2px solid #000;
-  #border-radius: 0;
-  #font-size: 16px;
-  #text-align: left;
-}
-
-.modal-content button {
-  #margin-top: 10px;
-  #padding: 8px;
-  #border: 2px solid #000;
-  #cursor: pointer;
-  #border-radius: 0;
-  #transition: background-color 0.3s ease;
-  #font-size: 16px;
-  #font-weight: 600;
-  // background-color: transparent;
-  #color: #000;
-}
+/* .modal-content input и .modal-content button стили задаются через inline или другие селекторы */
 
 .modal-content button:hover {
   background-color: #f0f0f0;
@@ -468,7 +447,7 @@ body {
 .modal-content {
   background: #fff;
   border-radius: 15px;
-  #padding: 20px;
+  /* padding: 20px; */
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   animation-duration: 0.3s;
   animation-fill-mode: forwards;
@@ -596,12 +575,12 @@ body {
 
 /* Основные стили обмена */
 .exchange-container {
-    #max-width: 440px;
-    #margin: 0 auto;
-    #padding: 24px;
+    /* max-width: 440px; */
+    /* margin: 0 auto; */
+    /* padding: 24px; */
     background: #FFFFFF;
-    #border-radius: 24px;
-    #box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    /* border-radius: 24px; */
+    /* box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); */
 }
 
 .exchange-header {
@@ -634,8 +613,8 @@ body {
 .chart-wrapper {
     background: #F8F9FB;
     border-radius: 16px;
-    #padding: 16px;
-    #margin-bottom: 24px;
+    /* padding: 16px; */
+    /* margin-bottom: 24px; */
 }
 
 .chart-header {
@@ -797,8 +776,6 @@ body {
     height: 160px !important;
 }
 
-\\\\\\\\\\\\
-
 /* ===== Единый стиль для History Modal ===== */
 
 /* Контейнер всей модалки истории (без радиуса, как просили) */
@@ -873,12 +850,12 @@ body {
   min-width: 44px;
   min-height: 44px;
   border-radius: 50%;
-  #background: #eeeeee;
+  /* background: #eeeeee; */
   display: flex;
   align-items: center;
   justify-content: center;
   margin-right: 10px;
-   background: linear-gradient(90deg, #2F80ED, #2D9CDB);
+  background: linear-gradient(90deg, #2F80ED, #2D9CDB);
 }
 
 /* Центральная часть (заголовок и подзаголовок) */
@@ -990,10 +967,10 @@ body {
 }
 
 .tx-sheet {
-  // padding: 24px;
+  /* padding: 24px; */
   text-align: center;
-  // font-family: 'Inter', sans-serif;
-  // margin-top: 50px;
+  /* font-family: 'Inter', sans-serif; */
+  /* margin-top: 50px; */
 }
 
 .tx-icon {
@@ -1083,7 +1060,7 @@ body {
   font-size: 13px;
   color: #666;
   margin-top: 4px;
-  // max-width: 90%;
+  /* max-width: 90%; */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1204,7 +1181,6 @@ body {
   /* подвиньте по вертикали */
   margin-top: 0px;
   padding: 0px;
-  padding-top: calc(0px + env(safe-area-inset-top, 0px));
 }
 
 .user-info .user-photo {
@@ -1260,7 +1236,6 @@ body {
       right: 0;
       height: 300px;
       background: linear-gradient(to bottom, #2F80ED, #2D9CDB);
-      padding-top: env(safe-area-inset-top);
       z-index: 0;
     }
     .main-content {
