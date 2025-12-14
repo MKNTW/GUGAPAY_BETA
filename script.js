@@ -91,7 +91,7 @@ appStyle.textContent = `
     flex: 1;
     overflow-y: auto;
     padding: 16px;
-    padding-bottom: 80px;
+    padding-bottom: 20px;
   }
 `;
 document.head.appendChild(appStyle);
@@ -595,7 +595,7 @@ function openRequestModal() {
       hasVerticalScroll: true,
       defaultFromBottom: true,
       noRadiusByDefault: false,
-      contentMaxHeight: "calc(100vh - 160px)",
+      contentMaxHeight: "calc(100vh - 80px)",
       onClose: () => {
         if (bottomBar) bottomBar.style.display = "flex";
         if (window.stopQRListener) {
@@ -673,7 +673,7 @@ function openRequestModal() {
         hasVerticalScroll: true,
         defaultFromBottom: true,
         noRadiusByDefault: false,
-        contentMaxHeight: "calc(100vh - 160px)",
+        contentMaxHeight: "calc(100vh - 80px)",
         onClose: () => {
           if (bottomBar) bottomBar.style.display = "flex";
           if (window.stopQRListener) {
